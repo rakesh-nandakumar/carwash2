@@ -96,14 +96,26 @@ class ReportController extends Controller
         $startDate = $request->input('start_date', now()->startOfMonth()->format('Y-m-d'));
         $endDate = $request->input('end_date', now()->endOfDay()->format('Y-m-d'));
 
-        $movements = DB::table('inventory_movements')
+        $user = auth()->user();
+
+        $query = DB::table('inventory_movements')
             ->join('products', 'products.id', '=', 'inventory_movements.product_id')
+            ->join('branches', 'branches.id', '=', 'inventory_movements.branch_id')
             ->whereBetween('inventory_movements.created_at', [$startDate, $endDate])
+            ->where('products.business_id', $user->business_id)
             ->select(
                 'inventory_movements.*',
                 'products.name',
-                'products.sku'
-            )
+                'products.sku',
+                'branches.name as branch_name'
+            );
+
+        // Non-admin users only see their own branch
+        if (!$user->isAdmin()) {
+            $query->where('inventory_movements.branch_id', $user->branch_id);
+        }
+
+        $movements = $query
             ->orderBy('inventory_movements.created_at', 'desc')
             ->paginate(20)
             ->withQueryString();

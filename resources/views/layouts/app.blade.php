@@ -348,8 +348,7 @@
             }
         }
 
-        /* Open state for tablet/mobile — this was the missing rule
-           that kept the sidebar from ever appearing when toggled. */
+        /* Open state for tablet/mobile */
         @media (max-width: 1024px) {
             aside.sidebar.active {
                 left: 0 !important;
@@ -501,18 +500,44 @@
 
             @if(auth()->user()->hasPermission('view_item_master'))
                 <a href="{{ route('inventory.index') }}" class="{{ request()->routeIs('inventory.*') ? 'active' : '' }}">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                        <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+                        <line x1="12" y1="22.08" x2="12" y2="12"/>
+                    </svg>
                     <span>Item Master</span>
                 </a>
+
+                {{-- Stock Adjustments --}}
+                @if(auth()->user()->hasPermission('view_stock_adjustments'))
+                    <a href="{{ route('stock-adjustments.index') }}"
+                       class="{{ request()->routeIs('stock-adjustments.*') ? 'active' : '' }}">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 3v18"/>
+                            <path d="M3 12h18"/>
+                            <path d="M5 5h14v14H5z"/>
+                        </svg>
+                        <span>Stock Adjustments</span>
+                    </a>
+                @endif
+
                 <a href="{{ route('categories.index') }}" class="{{ request()->routeIs('categories.*') ? 'active' : '' }}">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                    </svg>
                     <span>Categories</span>
                 </a>
+
                 @if(auth()->user()->hasPermission('view_services'))
-                <a href="{{ route('services.index') }}" class="{{ request()->routeIs('services.*') ? 'active' : '' }}">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-                    <span>Services</span>
-                </a>
+                    <a href="{{ route('services.index') }}" class="{{ request()->routeIs('services.*') ? 'active' : '' }}">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                            <path d="M2 17l10 5 10-5"/>
+                            <path d="M2 12l10 5 10-5"/>
+                        </svg>
+                        <span>Services</span>
+                    </a>
                 @endif
             @endif
 
@@ -701,12 +726,6 @@
         }
 
         // ===== Auto-fit sidebar nav so it never needs to scroll =====
-        // Iteratively shrinks padding / font-size / icon size / gaps /
-        // nav padding (and, as a last resort, the brand block) until the
-        // nav's content height fits its available space exactly, or a
-        // readable floor is hit. Re-measures the DOM after every change
-        // instead of relying on a single calculated ratio, so it corrects
-        // for font metrics, sub-pixel rounding, and mobile viewport quirks.
         const NAV_BASE = {
             paddingV: 8,
             paddingH: 14,
@@ -720,11 +739,11 @@
             paddingV: 25,
             paddingB: 20
         };
-        const NAV_MIN_SCALE = 0.45;   // don't shrink link metrics below ~45% of base
-        const NAV_MIN_FONT = 10;      // px floor for readability
-        const NAV_MIN_ICON = 12;      // px floor for readability
+        const NAV_MIN_SCALE = 0.45;
+        const NAV_MIN_FONT = 10;
+        const NAV_MIN_ICON = 12;
         const MAX_ITERATIONS = 30;
-        const STEP = 0.03;            // how much to shrink per iteration
+        const STEP = 0.03;
 
         function applyNavScale(scale) {
             sidebar.style.setProperty('--nav-link-padding-v', (NAV_BASE.paddingV * scale).toFixed(2) + 'px');
@@ -748,26 +767,21 @@
         function fitSidebarNav() {
             if (!sidebarNav) return;
 
-            // Reset to full size first so measurement reflects natural content.
             applyNavScale(1);
             applyBrandScale(1);
 
             requestAnimationFrame(() => {
-                if (fits()) return; // already fits, keep base sizes
+                if (fits()) return;
 
                 let scale = 1;
                 let iterations = 0;
 
-                // Phase 1: shrink link/nav metrics down to the readability floor.
                 while (!fits() && scale > NAV_MIN_SCALE && iterations < MAX_ITERATIONS) {
                     scale -= STEP;
                     applyNavScale(scale);
                     iterations++;
                 }
 
-                // Phase 2: if still overflowing (very short viewport / many
-                // permissions), shrink the brand/logo block a bit too rather
-                // than leaving a scrollbar.
                 let brandScale = 1;
                 while (!fits() && brandScale > 0.4 && iterations < MAX_ITERATIONS * 2) {
                     brandScale -= STEP;
@@ -775,7 +789,6 @@
                     iterations++;
                 }
 
-                // Final safety pass in case of any leftover 1px rounding.
                 requestAnimationFrame(() => {
                     let guard = 0;
                     while (!fits() && scale > NAV_MIN_SCALE && guard < 10) {
@@ -787,7 +800,6 @@
             });
         }
 
-        // Debounce resize-triggered refits slightly for smoother behavior.
         let navFitTimeout;
         function scheduleFitSidebarNav() {
             clearTimeout(navFitTimeout);
@@ -800,8 +812,6 @@
         window.addEventListener('orientationchange', scheduleFitSidebarNav);
         window.addEventListener('load', fitSidebarNav);
 
-        // Re-fit once fonts have actually loaded — icon/text metrics before
-        // that point can be inaccurate and lead to an under-shrink.
         if (document.fonts && document.fonts.ready) {
             document.fonts.ready.then(fitSidebarNav);
         }
