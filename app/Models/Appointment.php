@@ -1,0 +1,2 @@
+<?php namespace App\Models; use Illuminate\Database\Eloquent\Model; use Illuminate\Database\Eloquent\Factories\HasFactory;
+class Appointment extends Model { use HasFactory; protected $guarded=[]; protected $casts=['active'=>'boolean','scheduled_at'=>'datetime']; public function customer(){return $this->belongsTo(Customer::class);} public function vehicle(){return $this->belongsTo(Vehicle::class);} }

@@ -1,0 +1,19 @@
+{
+  "name": "carwash/service-center",
+  "type": "project",
+  "description": "Car Wash & Vehicle Service Center Management and Automation System",
+  "require": {
+    "php": "^8.2",
+    "laravel/framework": "^12.0",
+    "laravel/tinker": "^2.10"
+  },
+  "require-dev": {
+    "fakerphp/faker": "^1.24",
+    "phpunit/phpunit": "^11.0"
+  },
+  "autoload": {"psr-4": {"App\\": "app/", "Database\\Factories\\": "database/factories/", "Database\\Seeders\\": "database/seeders/"}},
+  "autoload-dev": {"psr-4": {"Tests\\": "tests/"}},
+  "scripts": {"post-autoload-dump": ["@php artisan package:discover --ansi"], "setup": ["@php artisan migrate --seed", "@php artisan storage:link"]},
+  "minimum-stability": "stable",
+  "prefer-stable": true
+}

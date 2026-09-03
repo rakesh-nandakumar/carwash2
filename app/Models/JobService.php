@@ -1,0 +1,1 @@
+<?php namespace App\Models; use Illuminate\Database\Eloquent\Model; class JobService extends Model {protected $guarded=[]; protected $casts=['removed'=>'boolean']; public function service(){return $this->belongsTo(Service::class);} public function approval(){return $this->hasOne(ServiceApproval::class);}}
