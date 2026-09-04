@@ -14,7 +14,7 @@
                     <input type="text" name="name" value="{{ old('name') }}" required>
                 </label>
                 <label>URL prefix (slug)
-                    <input type="text" name="slug" value="{{ old('slug') }}" required pattern="[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?">
+                    <input type="text" name="slug" value="{{ old('slug') }}" required pattern="[a-z0-9]([a-z0-9\-]{0,61}[a-z0-9])?">
                     <small style="color:#64748b;font-weight:400;">lowercase letters, digits and dashes; e.g. acme → /acme/…</small>
                 </label>
             </div>
