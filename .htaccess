@@ -1,0 +1,29 @@
+# =========================================================
+# AutoCare - Root .htaccess (cPanel shared hosting)
+# Works when document root = project root (/public redirect below)
+# =========================================================
+
+Options -Indexes
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # --- 1. Block direct access to sensitive files ---
+    RewriteRule ^(\.env|\.env\.example|\.git|artisan|composer\.(json|lock)|package\.(json|lock)|phpunit\.xml|vite\.config\.js|README\.md)$ - [F,L]
+
+    # --- 2. Block direct access to Laravel internal directories (only top-level) ---
+    RewriteRule ^(app|bootstrap|config|database|routes|resources|tests|vendor)(/|$) - [F,L]
+
+    # --- 3. Prevent serving root storage/ but keep public/storage/ working ---
+    RewriteCond %{REQUEST_URI} ^/(storage|backups)(/|$)
+    RewriteRule ^ - [F]
+
+    # --- 4. Redirect everything else to public/ ---
+    RewriteCond %{REQUEST_URI} !^/public(/|$)
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
+
+# --- Deny access to all dotfiles (e.g. .htaccess, .gitignore) ---
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>
