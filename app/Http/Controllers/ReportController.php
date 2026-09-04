@@ -2,7 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\{Invoice, Job, Customer, Vehicle, Product, Service};
+use App\Models\{Invoice, Job, Customer, Vehicle, Product, Service, InventoryMovement};
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 
@@ -113,34 +114,59 @@ class ReportController extends Controller
             403
         );
 
-        $startDate = $request->input('start_date', now()->startOfMonth()->format('Y-m-d'));
-        $endDate = $request->input('end_date', now()->endOfDay()->format('Y-m-d'));
+        $startDate = Carbon::parse(
+            $request->input(
+                'start_date',
+                now()->startOfMonth()->toDateString()
+            )
+        )->startOfDay();
+
+        $endDate = Carbon::parse(
+            $request->input(
+                'end_date',
+                now()->toDateString()
+            )
+        )->endOfDay();
 
         $user = auth()->user();
 
-        $query = DB::table('inventory_movements')
-            ->join('products', 'products.id', '=', 'inventory_movements.product_id')
-            ->join('branches', 'branches.id', '=', 'inventory_movements.branch_id')
-            ->whereBetween('inventory_movements.created_at', [$startDate, $endDate])
-            ->where('products.business_id', $user->business_id)
-            ->select(
-                'inventory_movements.*',
-                'products.name',
-                'products.sku',
-                'branches.name as branch_name'
-            );
+        $query = InventoryMovement::query()
+            ->with([
+                'product',
+                'branch',
+                'user',
+            ])
+            ->whereBetween('created_at', [
+                $startDate,
+                $endDate,
+            ]);
 
-        // Users without full reports access only see their own branch
-        if (! $user->hasPermissionTo('reports.access')) {
-            $query->where('inventory_movements.branch_id', $user->branch_id);
+        /*
+         * Non-admin users only see their own branch.
+         *
+         * InventoryMovement already uses BelongsToTenant,
+         * so tenant isolation is handled by TenantScope.
+         */
+        if (!$user->isAdmin() && $user->branch_id) {
+            $query->where(
+                'branch_id',
+                $user->branch_id
+            );
         }
 
         $movements = $query
-            ->orderBy('inventory_movements.created_at', 'desc')
+            ->latest('created_at')
             ->paginate(20)
             ->withQueryString();
 
-        return view('reports.stock_movement', compact('movements', 'startDate', 'endDate'));
+        return view(
+            'reports.stock_movement',
+            compact(
+                'movements',
+                'startDate',
+                'endDate'
+            )
+        );
     }
 
     public function serviceReport(Request $request)

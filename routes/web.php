@@ -132,6 +132,10 @@ Route::prefix('{tenant}')
                 ->name('vehicles.store')
                 ->middleware('permission:vehicles.create');
 
+            Route::get('/vehicles/{vehicle}', [VehicleController::class, 'show'])
+                ->name('vehicles.show')
+                ->middleware('permission:vehicles.access');
+
             Route::get('/vehicles/{vehicle}/edit', [VehicleController::class, 'edit'])
                 ->name('vehicles.edit')
                 ->middleware('permission:vehicles.edit');
@@ -191,6 +195,10 @@ Route::prefix('{tenant}')
             Route::post('/jobs', [JobController::class, 'store'])
                 ->name('jobs.store')
                 ->middleware('permission:job_cards.create');
+
+            Route::get('/jobs/{job}', [JobController::class, 'show'])
+                ->name('jobs.show')
+                ->middleware('permission:job_cards.access');
 
             Route::get('/jobs/{job}/edit', [JobController::class, 'edit'])
                 ->name('jobs.edit')

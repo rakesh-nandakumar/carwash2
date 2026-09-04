@@ -6,6 +6,7 @@ use App\Models\{Job, Customer, Vehicle, Service, Product, JobService as JS, JobP
 use App\Services\{JobService, InventoryService, CommunicationService, ApprovalService, PricingService};
 use App\Enums\JobStatus;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class JobController extends Controller
 {
@@ -168,10 +169,31 @@ class JobController extends Controller
             ]);
         }
 
-        $job->transitionTo($newStatus, auth()->user(), $r->reason);
-
         if ($newStatus === JobStatus::READY_FOR_PAYMENT) {
-            $this->invoicing->generate($job->id);
+            try {
+                DB::transaction(function () use ($job, $newStatus, $r) {
+                    $this->inventory->consumeUnappliedJobParts($job);
+
+                    $job->transitionTo(
+                        $newStatus,
+                        auth()->user(),
+                        $r->reason
+                    );
+
+                    $this->invoicing->generate($job->id);
+                });
+            } catch (\Throwable $e) {
+                return back()->with(
+                    'error',
+                    $e->getMessage()
+                );
+            }
+        } else {
+            $job->transitionTo(
+                $newStatus,
+                auth()->user(),
+                $r->reason
+            );
         }
 
         if ($newStatus === JobStatus::PAID && $job->invoice) {
@@ -277,10 +299,39 @@ class JobController extends Controller
 
     public function applyPart(Request $r, Job $job, JobPart $part)
     {
-        $this->inventory->consume($part->product, $job->branch_id, $part->quantity, $job->id);
-        $part->update(['applied' => true]);
+        if ($part->job_id !== $job->id) {
+            abort(404);
+        }
 
-        return back()->with('success', 'Part applied successfully.');
+        if ($part->applied) {
+            return back()->with(
+                'error',
+                'This part has already been applied.'
+            );
+        }
+
+        try {
+            $this->inventory->consume(
+                $part->product,
+                $job->branch_id,
+                (float) $part->quantity,
+                $job->id
+            );
+
+            $part->update([
+                'applied' => true,
+            ]);
+
+            return back()->with(
+                'success',
+                'Part applied successfully.'
+            );
+        } catch (\Throwable $e) {
+            return back()->with(
+                'error',
+                $e->getMessage()
+            );
+        }
     }
 
     public function removePart(Request $r, Job $job, JobPart $part)

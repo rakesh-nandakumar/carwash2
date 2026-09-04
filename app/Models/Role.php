@@ -5,9 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use App\Models\Concerns\BelongsToTenant;
 
 class Role extends Model
 {
+    use BelongsToTenant;
+
     protected $fillable = [
         'tenant_id',
         'business_id',
