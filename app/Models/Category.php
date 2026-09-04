@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToTenant;
+
 use Illuminate\Database\Eloquent\Model;
 
 class Category extends Model
-{
-    protected $fillable = ['name', 'parent_id', 'business_id'];
+{ use BelongsToTenant;
+    protected $fillable = ['tenant_id', 'name', 'parent_id', 'business_id'];
 
     public function business()
     {

@@ -182,7 +182,7 @@ class PricingService
         }
         
         // Get membership discount from settings
-        $discountPercent = (float) Setting::get('loyalty', 'membership_discount_percent', 10);
+        $discountPercent = (float) \App\Services\Settings::num('loyalty.membership_discount_percent', 10);
         
         return $amount * ($discountPercent / 100);
     }
@@ -217,7 +217,7 @@ class PricingService
         $totalAfterDiscount = $subtotal - $discount - $membershipDiscount;
         
         // Calculate tax (if applicable)
-        $taxRate = (float) Setting::get('general', 'tax_rate', 0);
+        $taxRate = (float) \App\Services\Settings::num('billing.tax_rate', 0);
         $tax = $totalAfterDiscount * ($taxRate / 100);
         
         $total = $totalAfterDiscount + $tax;

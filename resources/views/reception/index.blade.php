@@ -52,7 +52,7 @@
             <a href="{{ route('invoices.index') }}" @if(!auth()->user()->hasPermission('view_invoices')) style="display:none" @endif>Billing</a>
             <a href="{{ route('reports') }}" @if(!auth()->user()->hasPermission('view_reports')) style="display:none" @endif>Reports</a>
             <a href="{{ route('users.index') }}" @if(!auth()->user()->hasPermission('view_users')) style="display:none" @endif>Users</a>
-            <a href="{{ route('settings.billing') }}" @if(!auth()->user()->hasPermission('view_settings')) style="display:none" @endif>Settings</a>
+            
             <a href="{{ route('logout') }}" class="logout-link">Sign Out</a>
         </div>
     </div>
@@ -613,7 +613,7 @@ function removeJobImage() {
 }
 
 async function performSearch(query) {
-    const response = await fetch('/reception/search', {
+    const response = await fetch('{{ route('reception.search') }}', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -734,7 +734,7 @@ function closeJobModal() {
 
 async function loadCustomersForModal() {
     try {
-        const response = await fetch('/customers/list');
+        const response = await fetch('{{ route('customers.list') }}');
         const customers = await response.json();
         const select = document.getElementById('modalVehicleCustomer');
         select.innerHTML = '<option value="">Select existing customer...</option>';
@@ -778,7 +778,7 @@ async function createVehicleFromModal() {
             formData.append('image', vehicleImageFile);
         }
 
-        const response = await fetch('/vehicles', {
+        const response = await fetch('{{ route('vehicles.store') }}', {
             method: 'POST',
             headers: {
                 'Accept': 'application/json',
@@ -840,7 +840,7 @@ async function createCustomerFromModal() {
     }
 
     try {
-        const response = await fetch('/customers', {
+        const response = await fetch('{{ route('customers.store') }}', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -1040,7 +1040,7 @@ function showJobForm() {
 }
 
 async function loadServices() {
-    const response = await fetch('/reception/services');
+    const response = await fetch('{{ route('reception.services') }}');
     const services = await response.json();
 
     receptionServices = services;
@@ -1072,7 +1072,7 @@ let receptionProducts = [];
 
 async function loadProducts() {
     try {
-        const response = await fetch('/reception/products');
+        const response = await fetch('{{ route('reception.products') }}');
 
         if (!response.ok) {
             throw new Error('Failed to load products');
@@ -1397,7 +1397,7 @@ async function createJob() {
             formData.append('vehicle_image', jobImageFile);
         }
 
-        const response = await fetch('/reception/job', {
+        const response = await fetch('{{ route('reception.create-job') }}', {
             method: 'POST',
             headers: {
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content

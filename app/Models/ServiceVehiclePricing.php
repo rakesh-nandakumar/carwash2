@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToTenant;
+
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ServiceVehiclePricing extends Model
-{
+{ use BelongsToTenant;
     protected $table = 'service_vehicle_pricing';
 
     protected $guarded = [];

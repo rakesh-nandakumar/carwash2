@@ -94,7 +94,7 @@
 
 <script>
 function toggleServiceStatus(serviceId, checkbox) {
-    fetch(`/services/${serviceId}/toggle`, {
+    fetch(`{{ route('services.toggle', ['service' => '__ID__']) }}`.replace('__ID__', serviceId), {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',

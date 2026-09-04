@@ -2,28 +2,20 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToTenant;
+use App\Services\Settings;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * One row per (tenant_id, key) — an OVERRIDE of the catalog default from
+ * Database\Seeders\SettingsSeeder. There is no tenant-facing settings screen
+ * anymore: values are edited only from master control
+ * (App\Http\Controllers\Central\TenantSettingController) and read here via
+ * App\Services\Settings at render time.
+ */
 class Setting extends Model
 {
+    use BelongsToTenant;
+
     protected $guarded = [];
-
-    protected $casts = [
-        'value' => 'array',
-    ];
-
-    public static function get(string $group, string $key, $default = null)
-    {
-        return static::where('group', $group)
-            ->where('key', $key)
-            ->value('value') ?? $default;
-    }
-
-    public static function set(string $group, string $key, $value): void
-    {
-        static::updateOrCreate(
-            ['group' => $group, 'key' => $key],
-            ['value' => $value]
-        );
-    }
 }
