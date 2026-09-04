@@ -15,9 +15,12 @@ class UserController extends Controller
 {
     public function index()
     {
+        $this->authorize('viewAny', User::class);
+
         $businessId = auth()->user()->business_id;
 
         $users = User::with('roles')
+            ->where('tenant_id', auth()->user()->tenant_id)
             ->where('business_id', $businessId)
             ->latest()
             ->paginate(20);
@@ -27,6 +30,8 @@ class UserController extends Controller
 
     public function create()
     {
+        $this->authorize('create', User::class);
+
         $businessId = auth()->user()->business_id;
 
         $roles = Role::where('tenant_id', auth()->user()->tenant_id)
@@ -51,21 +56,39 @@ class UserController extends Controller
         Request $request,
         PermissionEscalationService $escalation
     ) {
+        $this->authorize('create', User::class);
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:8|confirmed',
-
             'roles' => 'nullable|array',
-            'roles.*' => 'exists:roles,id',
-
+            'roles.*' => [
+                'integer',
+                'exists:roles,id',
+            ],
             'permission_overrides' => 'nullable|array',
             'permission_overrides.*' => 'nullable|in:allow,deny',
-
             'active' => 'boolean',
         ]);
 
         $actor = auth()->user();
+
+        if (! empty($validated['roles'])) {
+            abort_unless(
+                $actor->hasPermissionTo('roles.assign'),
+                403,
+                'You do not have permission to assign roles.'
+            );
+        }
+
+        if (! empty($validated['permission_overrides'])) {
+            abort_unless(
+                $actor->hasPermissionTo('users.manage_permissions'),
+                403,
+                'You do not have permission to manage user permissions.'
+            );
+        }
 
         $tenantId = $actor->tenant_id;
         $businessId = $actor->business_id;
@@ -100,11 +123,9 @@ class UserController extends Controller
                 'email' => $validated['email'],
                 'password' => Hash::make($validated['password']),
                 'role' => 'staff',
-
                 // Required tenant/business ownership.
                 'tenant_id' => $tenantId,
                 'business_id' => $businessId,
-
                 'active' => $validated['active'] ?? true,
             ]);
 
@@ -131,16 +152,18 @@ class UserController extends Controller
 
     public function edit(User $user)
     {
+        $this->authorize('update', $user);
+
         $this->ensureSameBusiness($user);
 
         $actor = auth()->user();
-
         $tenantId = $actor->tenant_id;
         $businessId = $actor->business_id;
 
         $roles = Role::where('tenant_id', $tenantId)
             ->where('business_id', $businessId)
             ->where('is_active', true)
+            ->with('permissions')
             ->orderBy('name')
             ->get();
 
@@ -177,6 +200,8 @@ class UserController extends Controller
         User $user,
         PermissionEscalationService $escalation
     ) {
+        $this->authorize('update', $user);
+
         $this->ensureSameBusiness($user);
 
         $actor = auth()->user();
@@ -185,15 +210,31 @@ class UserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,' . $user->id,
             'password' => 'nullable|string|min:8|confirmed',
-
             'roles' => 'nullable|array',
-            'roles.*' => 'exists:roles,id',
-
+            'roles.*' => [
+                'integer',
+                'exists:roles,id',
+            ],
             'permission_overrides' => 'nullable|array',
             'permission_overrides.*' => 'nullable|in:allow,deny',
-
             'active' => 'boolean',
         ]);
+
+        if (! empty($validated['roles'])) {
+            abort_unless(
+                $actor->hasPermissionTo('roles.assign'),
+                403,
+                'You do not have permission to assign roles.'
+            );
+        }
+
+        if (! empty($validated['permission_overrides'])) {
+            abort_unless(
+                $actor->hasPermissionTo('users.manage_permissions'),
+                403,
+                'You do not have permission to manage user permissions.'
+            );
+        }
 
         $tenantId = $actor->tenant_id;
         $businessId = $actor->business_id;
@@ -268,6 +309,8 @@ class UserController extends Controller
 
     public function destroy(User $user)
     {
+        $this->authorize('delete', $user);
+
         $this->ensureSameBusiness($user);
 
         $actor = auth()->user();
@@ -311,7 +354,6 @@ class UserController extends Controller
 
         if (! $permissionIds) {
             $user->permissionOverrides()->delete();
-
             return;
         }
 

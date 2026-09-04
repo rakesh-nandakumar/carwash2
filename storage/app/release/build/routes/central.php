@@ -3,6 +3,7 @@
 use App\Http\Controllers\Central\AuthenticatedSessionController;
 use App\Http\Controllers\Central\CentralAdminController;
 use App\Http\Controllers\Central\CentralDashboardController;
+use App\Http\Controllers\Central\DeployController;
 use App\Http\Controllers\Central\ImpersonationController;
 use App\Http\Controllers\Central\TenantController;
 use App\Http\Controllers\Central\TenantModuleController;
@@ -15,6 +16,14 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/login', [AuthenticatedSessionController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthenticatedSessionController::class, 'login'])->name('login.perform')->middleware('throttle:5,1');
+
+// artisan-over-HTTP for hosts with no SSH/Terminal (see DEPLOY.txt). Outside
+// auth:central on purpose — the first deploy runs before any central admin
+// account exists. Guarded instead by DEPLOY_SECRET (DeployController 404s
+// without it); throttled to slow down secret-guessing.
+Route::get('/deploy/{action}', [DeployController::class, 'run'])
+    ->name('deploy.run')
+    ->middleware('throttle:10,1');
 
 Route::middleware(['auth:central'])->group(function () {
     // Restore the ambient default guard — `auth:central` repoints every

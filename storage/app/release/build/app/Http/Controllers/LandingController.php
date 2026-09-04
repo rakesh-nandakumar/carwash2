@@ -17,19 +17,19 @@ class LandingController extends Controller
 
         $user = auth()->user();
 
-        if ($user->hasPermission('view_reception')) {
+        if ($user->hasPermissionTo('reception.access')) {
             return redirect()->route('reception.index');
         }
 
-        if ($user->hasPermission('view_dashboard')) {
+        if ($user->hasPermissionTo('dashboard.access')) {
             return redirect()->route('dashboard');
         }
 
-        if ($user->hasPermission('view_job_cards')) {
+        if ($user->hasPermissionTo('job_cards.access')) {
             return redirect()->route('jobs.index');
         }
 
-        if ($user->hasPermission('view_customers')) {
+        if ($user->hasPermissionTo('customers.access')) {
             return redirect()->route('customers.index');
         }
 

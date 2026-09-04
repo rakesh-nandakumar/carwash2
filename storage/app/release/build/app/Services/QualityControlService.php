@@ -40,10 +40,14 @@ class QualityControlService
                 'notes' => $notes ?? $qualityCheck->notes,
             ]);
 
-            // Update job status to completed
+            // Update job status to ready for payment
             $job = $qualityCheck->job;
+
             if ($job->status === JobStatus::QUALITY_CHECK) {
-                $job->transitionTo(JobStatus::COMPLETED, auth()->user());
+                $job->transitionTo(
+                    JobStatus::READY_FOR_PAYMENT,
+                    auth()->user()
+                );
             }
 
             return $qualityCheck;
