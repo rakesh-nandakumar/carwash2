@@ -44,7 +44,7 @@
                 <th>Stock</th>
                 <th>Min</th>
                 <th>Sell Price</th>
-                <th>Actions</th>
+                <th style="min-width:320px;">Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -75,14 +75,28 @@
                 <td>{{ $i->product->minimum_stock }}</td>
                 <td>Rs. {{ number_format($i->product->selling_price,2) }}</td>
                 <td>
-                    <form class="inline-form" method="post" action="{{ route('inventory.adjust',$i->product) }}">
-                        @csrf
-                        <input name="quantity" type="number" step=".001" placeholder="+/- qty">
-                        <input name="reason" placeholder="Reason">
-                        <button>Adjust</button>
-                    </form>
-                    <a href="{{ route('inventory.edit',$i->product) }}" class="secondary">Edit</a>
-                    <button class="danger" style="padding:8px 16px;border-radius:6px;border:none;background:#ef4444;color:white;cursor:pointer;font-size:14px;" onclick="showDeleteModal('{{ $i->product->id }}')">Delete</button>
+                    <div class="actions-row">
+                        <form method="post" action="{{ route('inventory.adjust',$i->product) }}" class="add-stock-form">
+                            @csrf
+                            <input 
+                                name="quantity" 
+                                type="number" 
+                                step="0.001" 
+                                min="0" 
+                                placeholder="Qty"
+                                required
+                            >
+                            <input 
+                                name="reason" 
+                                type="text" 
+                                placeholder="Reason"
+                            >
+                            <button type="submit" class="btn-add">+ Add</button>
+                        </form>
+
+                        <a href="{{ route('inventory.edit',$i->product) }}" class="btn-edit">Edit</a>
+                        <button type="button" class="btn-delete" onclick="showDeleteModal('{{ $i->product->id }}')">Delete</button>
+                    </div>
                 </td>
             </tr>
             @endforeach
@@ -125,6 +139,14 @@
                     <span class="value">Rs. {{ number_format($i->product->selling_price,2) }}</span>
                 </div>
             </div>
+
+            {{-- Add Stock on mobile --}}
+            <form method="post" action="{{ route('inventory.adjust',$i->product) }}" class="mobile-add-stock">
+                @csrf
+                <input name="quantity" type="number" step="0.001" min="0" placeholder="Qty to add" required>
+                <input name="reason" type="text" placeholder="Reason (optional)">
+                <button type="submit">+ Add Stock</button>
+            </form>
 
             <div class="card-actions">
                 <a href="{{ route('inventory.edit',$i->product) }}" class="btn-edit">Edit</a>
@@ -185,7 +207,7 @@ function confirmDelete() {
 </script>
 
 <style>
-/* Desktop table stays normal */
+/* ========== DESKTOP ========== */
 .inventory-table {
     width: 100%;
     border-collapse: collapse;
@@ -195,7 +217,78 @@ function confirmDelete() {
     display: none;
 }
 
-/* ========== MOBILE ONLY ========== */
+/* Single row for everything */
+.actions-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: nowrap;
+}
+
+.add-stock-form {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+}
+
+.add-stock-form input[name="quantity"] {
+    width: 70px;
+    padding: 7px 10px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 13px;
+}
+
+.add-stock-form input[name="reason"] {
+    width: 100px;
+    padding: 7px 10px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 13px;
+}
+
+.btn-add {
+    padding: 7px 12px;
+    background: #16a34a;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.btn-add:hover {
+    background: #15803d;
+}
+
+.btn-edit {
+    padding: 7px 12px;
+    background: #f3f4f6;
+    color: #374151;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.btn-delete {
+    padding: 7px 12px;
+    background: #ef4444;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+/* ========== MOBILE ========== */
 @media (max-width: 768px) {
     .page-head {
         flex-direction: column;
@@ -208,12 +301,10 @@ function confirmDelete() {
         text-align: center;
     }
 
-    /* Hide the normal table */
     .inventory-table {
         display: none;
     }
 
-    /* Show cards – auto-fit makes 1 or 2 cards stretch full width */
     .inventory-cards {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -269,6 +360,37 @@ function confirmDelete() {
         font-size: 13.5px;
         font-weight: 500;
         color: #1f2937;
+    }
+
+    /* Mobile Add Stock */
+    .mobile-add-stock {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 12px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #f3f4f6;
+    }
+
+    .mobile-add-stock input {
+        width: 100%;
+        padding: 9px 12px;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        font-size: 14px;
+        box-sizing: border-box;
+    }
+
+    .mobile-add-stock button {
+        width: 100%;
+        padding: 10px;
+        background: #16a34a;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
     }
 
     .card-actions {

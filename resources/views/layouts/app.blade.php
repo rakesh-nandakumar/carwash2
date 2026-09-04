@@ -269,13 +269,24 @@
             }
             aside.sidebar {
                 position: fixed !important;
-                left: -230px !important;
+                left: -200px !important;
                 top: 0 !important;
-                width: 230px !important;
+                width: 200px !important;
                 z-index: 1000 !important;
                 transition: left 0.3s ease !important;
                 background: #0a1f33 !important;
                 box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1) !important;
+
+                /* Smaller content on mobile */
+                --nav-link-padding-v: 6px;
+                --nav-link-padding-h: 12px;
+                --nav-link-font-size: 12.5px;
+                --nav-link-gap: 8px;
+                --nav-link-margin-bottom: 1px;
+                --nav-icon-size: 15px;
+                --nav-padding-v: 8px;
+                --brand-padding-v: 16px;
+                --brand-padding-b: 12px;
             }
             .main {
                 margin-left: 0 !important;
@@ -284,19 +295,37 @@
                 padding: 12px !important;
                 padding-left: 62px !important;
             }
+            .brand-logo {
+                max-height: 56px;
+                max-width: 56px;
+            }
         }
         @media (max-width: 480px) {
             aside.sidebar {
-                width: 220px !important;
-                left: -220px !important;
+                width: 180px !important;
+                left: -180px !important;
+
+                /* Even more compact on very small screens */
+                --nav-link-padding-v: 5px;
+                --nav-link-padding-h: 10px;
+                --nav-link-font-size: 12px;
+                --nav-link-gap: 7px;
+                --nav-link-margin-bottom: 1px;
+                --nav-icon-size: 14px;
+                --nav-padding-v: 6px;
+                --brand-padding-v: 12px;
+                --brand-padding-b: 10px;
             }
             header {
                 padding: 10px !important;
                 padding-left: 62px !important;
             }
+            .brand-logo {
+                max-height: 48px;
+                max-width: 48px;
+            }
         }
-        /* Open state for tablet/mobile — this was the missing rule
-           that kept the sidebar from ever appearing when toggled. */
+        /* Open state for tablet/mobile */
         @media (max-width: 1024px) {
             aside.sidebar.active {
                 left: 0 !important;
@@ -685,6 +714,11 @@
         }
         function fitSidebarNav() {
             if (!sidebarNav) return;
+            // On mobile we already force compact sizes via CSS media queries,
+            // so we only run the auto-scale logic on larger screens.
+            if (window.innerWidth <= 768) {
+                return;
+            }
             applyNavScale(1);
             applyBrandScale(1);
             requestAnimationFrame(() => {

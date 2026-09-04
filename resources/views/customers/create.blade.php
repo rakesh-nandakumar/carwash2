@@ -17,11 +17,23 @@
             </label>
             <label>
                 Phone*
-                <input name="phone" required>
+                <input
+                    name="phone"
+                    id="customerPhone"
+                    type="tel"
+                    required
+                    autocomplete="tel"
+                >
             </label>
             <label>
                 WhatsApp Number
-                <input name="whatsapp_number" placeholder="+94XXXXXXXXX">
+                <input
+                    name="whatsapp_number"
+                    id="customerWhatsapp"
+                    type="tel"
+                    placeholder="+94XXXXXXXXX"
+                    autocomplete="tel"
+                >
             </label>
             <label>
                 NIC / Passport
@@ -95,4 +107,43 @@
     }
 }
 </style>
+
+<script>
+    const customerPhone = document.getElementById('customerPhone');
+    const customerWhatsapp = document.getElementById('customerWhatsapp');
+
+    let whatsappManuallyEdited = false;
+
+    function formatSriLankaWhatsApp(phone) {
+
+        phone = phone.trim();
+
+        if (phone.startsWith('+94')) {
+            return phone;
+        }
+
+        if (phone.startsWith('94')) {
+            return '+' + phone;
+        }
+
+        if (phone.startsWith('0') && phone.length >= 10) {
+            return '+94' + phone.substring(1);
+        }
+
+        return phone;
+    }
+
+    customerWhatsapp.addEventListener('input', function () {
+        whatsappManuallyEdited = true;
+    });
+
+    customerPhone.addEventListener('input', function () {
+
+        if (!whatsappManuallyEdited) {
+            customerWhatsapp.value =
+                formatSriLankaWhatsApp(customerPhone.value);
+        }
+
+    });
+</script>
 @endsection

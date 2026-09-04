@@ -19,7 +19,7 @@
     </div>
     <div>
         <small>Visits</small>
-        <b>{{ $customer->total_visits }}</b>
+        <b>{{ $customer->jobs_count }}</b>
     </div>
     <div>
         <small>Loyalty</small>
@@ -27,7 +27,7 @@
     </div>
     <div>
         <small>Lifetime Value</small>
-        <b>Rs. {{ number_format($customer->total_spending, 2) }}</b>
+        <b>Rs. {{ number_format($customer->invoices_sum_total ?? 0, 2) }}</b>
     </div>
 </div>
 

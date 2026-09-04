@@ -20,10 +20,16 @@ class InventoryController extends Controller
 
         $items = Inventory::with('product')
             ->where('branch_id', $branch)
+            ->whereHas('product', function ($query) {
+                $query->where('active', true);
+            })
             ->paginate(20);
 
         $allItems = Inventory::with('product')
             ->where('branch_id', $branch)
+            ->whereHas('product', function ($query) {
+                $query->where('active', true);
+            })
             ->get();
 
         $lowStockItems = $allItems->filter(function ($item) {
@@ -51,7 +57,10 @@ class InventoryController extends Controller
     public function store(Request $r)
     {
         $validated = $r->validate([
-            'name'          => 'required|unique:products,name',
+            'name' => [
+                'required',
+                'unique:products,name,NULL,id,active,1',
+            ],
             'sku'           => 'nullable',
             'barcode'       => 'nullable|unique:products,barcode',
             'category_id'   => 'required|exists:categories,id',
@@ -131,39 +140,28 @@ class InventoryController extends Controller
     public function destroy(Product $product)
     {
         try {
-            return DB::transaction(function () use ($product) {
-                \App\Models\Inventory::where('product_id', $product->id)->delete();
-                \App\Models\InventoryMovement::where('product_id', $product->id)->delete();
-                \App\Models\CustomerSuppliedPart::where('product_id', $product->id)->delete();
-                \App\Models\EmergencyPurchase::where('product_id', $product->id)->delete();
-                \App\Models\JobPart::where('product_id', $product->id)->delete();
-                \App\Models\PurchaseOrderItem::where('product_id', $product->id)->delete();
-                \App\Models\StockTransferItem::where('product_id', $product->id)->delete();
-                \App\Models\Warranty::where('product_id', $product->id)->delete();
+            $product->update([
+                'active' => false,
+            ]);
 
-                $product->delete();
-
-                return redirect()->route('inventory.index')->with('success', 'Product deleted.');
-            });
+            return redirect()
+                ->route('inventory.index')
+                ->with('success', 'Product deleted.');
         } catch (\Exception $e) {
-            return back()->with('error', 'Cannot delete product: ' . $e->getMessage());
+            return back()->with(
+                'error',
+                'Cannot delete product: ' . $e->getMessage()
+            );
         }
     }
 
     public function adjust(Request $r, Product $product)
     {
         $reason = $r->input('reason') ?: 'Manual adjustment';
-        $quantity = (float) $r->validate(['quantity' => 'required|numeric'])['quantity'];
 
-        $currentInventory = Inventory::where('product_id', $product->id)
-            ->where('branch_id', auth()->user()->branch_id)
-            ->first();
-
-        $currentQty = $currentInventory ? $currentInventory->quantity : 0;
-
-        if ($currentQty + $quantity < 0) {
-            return back()->with('error', 'Cannot reduce stock below zero. Current stock: ' . $currentQty);
-        }
+        $quantity = (float) $r->validate([
+            'quantity' => 'required|numeric|gt:0'
+        ])['quantity'];
 
         $this->service->adjust(
             $product,

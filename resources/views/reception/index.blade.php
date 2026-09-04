@@ -155,7 +155,21 @@
                 </div>
                 <div class="form-group">
                     <label>Phone *</label>
-                    <input type="text" id="modalCustomerPhone" placeholder="Enter phone number">
+                    <input
+                        type="tel"
+                        id="modalCustomerPhone"
+                        placeholder="Enter phone number"
+                        autocomplete="tel"
+                    >
+                </div>
+                <div class="form-group">
+                    <label>WhatsApp Number</label>
+                    <input
+                        type="tel"
+                        id="modalCustomerWhatsapp"
+                        placeholder="+94XXXXXXXXX"
+                        autocomplete="tel"
+                    >
                 </div>
                 <div class="form-group">
                     <label>Email</label>
@@ -334,6 +348,49 @@ let selectedVehicle = null;
 let selectedServices = [];
 let selectedProducts = [];
 let searchTimeout = null;
+
+// ---------- Customer WhatsApp auto-fill ----------
+let receptionWhatsappManuallyEdited = false;
+
+function formatReceptionSriLankaWhatsApp(phone) {
+
+    phone = phone.trim();
+
+    if (phone.startsWith('+94')) {
+        return phone;
+    }
+
+    if (phone.startsWith('94')) {
+        return '+' + phone;
+    }
+
+    if (phone.startsWith('0') && phone.length >= 10) {
+        return '+94' + phone.substring(1);
+    }
+
+    return phone;
+}
+
+document
+    .getElementById('modalCustomerWhatsapp')
+    ?.addEventListener('input', function () {
+
+        receptionWhatsappManuallyEdited = true;
+
+    });
+
+document
+    .getElementById('modalCustomerPhone')
+    ?.addEventListener('input', function () {
+
+        if (!receptionWhatsappManuallyEdited) {
+
+            document.getElementById('modalCustomerWhatsapp').value =
+                formatReceptionSriLankaWhatsApp(this.value);
+
+        }
+
+    });
 
 // Cache of full service objects (id + base_price) loaded from /reception/services,
 // needed because selectedServices only stores the checked ids.
@@ -687,6 +744,11 @@ function openCustomerModal() {
 
 function closeCustomerModal() {
     document.getElementById('customerModal').classList.remove('active');
+    document.getElementById('modalCustomerName').value = '';
+    document.getElementById('modalCustomerPhone').value = '';
+    document.getElementById('modalCustomerWhatsapp').value = '';
+    document.getElementById('modalCustomerEmail').value = '';
+    receptionWhatsappManuallyEdited = false;
 }
 
 function closeJobModal() {
@@ -832,6 +894,7 @@ async function createVehicleFromModal() {
 async function createCustomerFromModal() {
     const name = document.getElementById('modalCustomerName').value.trim();
     const phone = document.getElementById('modalCustomerPhone').value.trim();
+    const whatsapp = document.getElementById('modalCustomerWhatsapp').value.trim();
     const email = document.getElementById('modalCustomerEmail').value.trim();
 
     if (!name || !phone) {
@@ -850,6 +913,7 @@ async function createCustomerFromModal() {
             body: JSON.stringify({
                 full_name: name,
                 phone: phone,
+                whatsapp_number: whatsapp,
                 email: email
             })
         });

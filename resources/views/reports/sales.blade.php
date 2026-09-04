@@ -85,8 +85,8 @@
                 <tr>
                     <td>#{{ $sale->id }}</td>
                     <td>{{ $sale->created_at->format('Y-m-d') }}</td>
-                    <td>{{ $sale->customer?->name ?? $sale->job?->customer?->name ?? '-' }}</td>
-                    <td>{{ $sale->job?->vehicle?->plate_number ?? '-' }}</td>
+                    <td>{{ $sale->customer?->full_name ?? $sale->job?->customer?->full_name ?? '-' }}</td>
+                    <td>{{ $sale->job?->vehicle?->registration_number ?? '-' }}</td>
                     <td class="text-right">Rs. {{ number_format($sale->total, 2) }}</td>
                     <td class="text-right">Rs. {{ number_format($sale->paid, 2) }}</td>
                     <td class="text-right">Rs. {{ number_format($sale->balance, 2) }}</td>
@@ -112,11 +112,11 @@
             <div class="card-body">
                 <div class="row">
                     <span class="label">Customer</span>
-                    <span>{{ $sale->customer?->name ?? $sale->job?->customer?->name ?? '-' }}</span>
+                    <span>{{ $sale->customer?->full_name ?? $sale->job?->customer?->full_name ?? '-' }}</span>
                 </div>
                 <div class="row">
                     <span class="label">Vehicle</span>
-                    <span>{{ $sale->job?->vehicle?->plate_number ?? '-' }}</span>
+                    <span>{{ $sale->job?->vehicle?->registration_number ?? '-' }}</span>
                 </div>
                 <div class="row">
                     <span class="label">Total</span>
@@ -146,7 +146,7 @@
         <p>Generated on {{ now()->format('Y-m-d H:i:s') }}</p>
     </div>
 
-    <!-- Back button (one row below Generated text, right aligned) -->
+    <!-- Back button -->
     <div class="report-back no-print">
         <a href="{{ route('reports') }}" class="back-button">← Back</a>
     </div>
@@ -365,8 +365,96 @@
     font-size: 14px;
 }
 
+/* =========================================================
+   PAGINATION  (Beautiful modern style)
+   ========================================================= */
+
 .pagination-wrap {
-    margin-top: 24px;
+    margin-top: 28px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+
+.pagination-wrap > p,
+.pagination-wrap .text-sm {
+    color: #6b7280;
+    font-size: 13px;
+    margin: 0;
+}
+
+.pagination-wrap nav {
+    display: flex;
+    justify-content: center;
+}
+
+.pagination-wrap .pagination,
+.pagination-wrap nav > div {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.pagination-wrap a,
+.pagination-wrap span {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    min-width: 38px;
+    height: 38px;
+    padding: 0 12px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none !important;
+    color: #374151;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    transition: all 0.15s ease;
+    line-height: 1;
+}
+
+.pagination-wrap a:hover {
+    background: #f3f4f6;
+    border-color: #d1d5db;
+    color: #111827;
+}
+
+.pagination-wrap span[aria-current="page"],
+.pagination-wrap .active span,
+.pagination-wrap [aria-current="page"] span {
+    background: #111827 !important;
+    color: #fff !important;
+    border-color: #111827 !important;
+    font-weight: 600;
+}
+
+.pagination-wrap span[aria-disabled="true"],
+.pagination-wrap .disabled span {
+    color: #9ca3af !important;
+    background: #f9fafb !important;
+    border-color: #e5e7eb !important;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.pagination-wrap svg,
+.pagination-wrap .pagination svg,
+nav[role="navigation"] svg {
+    width: 16px !important;
+    height: 16px !important;
+    max-width: 16px !important;
+    max-height: 16px !important;
+}
+
+.pagination-wrap a[rel="prev"],
+.pagination-wrap a[rel="next"] {
+    font-weight: 500;
+    padding: 0 14px;
 }
 
 .report-footer {
@@ -376,11 +464,11 @@
     font-size: 12px;
 }
 
-/* Back button - one row below Generated text, right aligned */
+/* Back button */
 .report-back {
-    margin-top: 24px;          /* creates one empty row space */
+    margin-top: 24px;
     display: flex;
-    justify-content: flex-end; /* right corner */
+    justify-content: flex-end;
 }
 
 .back-button {
@@ -438,7 +526,6 @@
         font-size: 20px;
     }
 
-    /* Hide table, show 2-column cards */
     .table-wrap {
         display: none;
     }
@@ -448,32 +535,213 @@
     }
 
     .report-back {
-        justify-content: center; /* center on mobile if preferred, or keep flex-end */
+        justify-content: center;
     }
 }
 </style>
 
 <script>
 function printThermal() {
-    const content = `
-SALES REPORT
-Date: {{ $startDate }} to {{ $endDate }}
-================================
-Total Revenue: Rs. {{ number_format($totalRevenue, 2) }}
-Total Paid: Rs. {{ number_format($totalPaid, 2) }}
-Outstanding: Rs. {{ number_format($totalOutstanding, 2) }}
-================================
-@foreach($sales as $sale)
-#{{ $sale->id }} | {{ $sale->job?->customer?->name ?? '-' }} | Rs.{{ number_format($sale->total, 2) }}
-@endforeach
-================================
-Generated: {{ now()->format('Y-m-d H:i') }}
-    `;
-    
-    const printWindow = window.open('', '_blank');
-    printWindow.document.write('<pre style="font-family: monospace; font-size: 12px;">' + content + '</pre>');
+    const printWindow = window.open(
+        '',
+        '_blank',
+        'width=420,height=800'
+    );
+
+    if (!printWindow) {
+        alert('Please allow pop-ups in your browser to print the thermal report.');
+        return;
+    }
+
+    printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Sales Report</title>
+            <style>
+                @page {
+                    size: 80mm auto;
+                    margin: 0;
+                }
+
+                * {
+                    box-sizing: border-box;
+                }
+
+                html,
+                body {
+                    width: 80mm;
+                    margin: 0;
+                    padding: 0;
+                    background: #fff;
+                }
+
+                body {
+                    font-family: Arial, Helvetica, sans-serif;
+                    color: #000;
+                    font-size: 10px;
+                    line-height: 1.4;
+                }
+
+                .thermal {
+                    width: 72mm;
+                    margin: 0 auto;
+                    padding: 5mm 0 8mm;
+                }
+
+                .header {
+                    text-align: center;
+                    margin-bottom: 4mm;
+                }
+
+                .company {
+                    font-size: 17px;
+                    font-weight: 800;
+                }
+
+                .title {
+                    font-size: 11px;
+                    font-weight: 700;
+                    margin-top: 2mm;
+                }
+
+                .period {
+                    font-size: 9px;
+                    margin-top: 1.5mm;
+                }
+
+                .divider {
+                    border-top: 1px dashed #000;
+                    margin: 3mm 0;
+                }
+
+                .summary-row {
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 5px;
+                    margin: 1.5mm 0;
+                    font-size: 9px;
+                }
+
+                .summary-row strong {
+                    font-weight: 700;
+                    white-space: nowrap;
+                }
+
+                .sale {
+                    padding: 2mm 0;
+                    border-bottom: 1px dashed #aaa;
+                }
+
+                .sale-number {
+                    font-size: 10px;
+                    font-weight: 700;
+                    margin-bottom: 1mm;
+                }
+
+                .sale-customer {
+                    font-size: 9px;
+                    margin-bottom: 1mm;
+                    word-break: break-word;
+                }
+
+                .sale-total {
+                    text-align: right;
+                    font-size: 10px;
+                    font-weight: 700;
+                }
+
+                .footer {
+                    text-align: center;
+                    font-size: 8px;
+                    margin-top: 4mm;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="thermal">
+                <div class="header">
+                    <div class="company">
+                        AUTOCARE PRO
+                    </div>
+                    <div class="title">
+                        SALES REPORT
+                    </div>
+                    <div class="period">
+                        {{ \Carbon\Carbon::parse($startDate)->format('d/m/Y') }}
+                        -
+                        {{ \Carbon\Carbon::parse($endDate)->format('d/m/Y') }}
+                    </div>
+                </div>
+
+                <div class="divider"></div>
+
+                <div class="summary-row">
+                    <span>Total Revenue</span>
+                    <strong>
+                        Rs. {{ number_format($totalRevenue, 2) }}
+                    </strong>
+                </div>
+
+                <div class="summary-row">
+                    <span>Total Paid</span>
+                    <strong>
+                        Rs. {{ number_format($totalPaid, 2) }}
+                    </strong>
+                </div>
+
+                <div class="summary-row">
+                    <span>Outstanding</span>
+                    <strong>
+                        Rs. {{ number_format($totalOutstanding, 2) }}
+                    </strong>
+                </div>
+
+                <div class="divider"></div>
+
+                @foreach($sales as $sale)
+                    <div class="sale">
+                        <div class="sale-number">
+                            Invoice #{{ $sale->id }}
+                        </div>
+
+                        <div class="sale-customer">
+                            Customer:
+                            {{ $sale->customer?->full_name
+                                ?? $sale->job?->customer?->full_name
+                                ?? '-' }}
+                        </div>
+
+                        <div class="sale-customer">
+                            Vehicle:
+                            {{ $sale->job?->vehicle?->registration_number ?? '-' }}
+                        </div>
+
+                        <div class="sale-total">
+                            Rs. {{ number_format($sale->total, 2) }}
+                        </div>
+                    </div>
+                @endforeach
+
+                <div class="divider"></div>
+
+                <div class="footer">
+                    AUTOCARE PRO
+                    <br>
+                    Generated:
+                    {{ now()->format('d/m/Y H:i') }}
+                </div>
+            </div>
+        </body>
+        </html>
+    `);
+
     printWindow.document.close();
-    printWindow.print();
+
+    setTimeout(function () {
+        printWindow.focus();
+        printWindow.print();
+    }, 500);
 }
 </script>
 @endsection

@@ -37,17 +37,37 @@ class ReportController extends Controller
             403
         );
 
-        $startDate = $request->input('start_date', now()->startOfMonth()->format('Y-m-d'));
-        $endDate = $request->input('end_date', now()->endOfDay()->format('Y-m-d'));
+        $startDate = Carbon::parse(
+            $request->input(
+                'start_date',
+                now()->startOfMonth()->toDateString()
+            )
+        )->startOfDay();
 
-        $sales = Invoice::whereBetween('created_at', [$startDate, $endDate])
+        $endDate = Carbon::parse(
+            $request->input(
+                'end_date',
+                now()->toDateString()
+            )
+        )->endOfDay();
+
+        $sales = Invoice::whereBetween('created_at', [
+                $startDate,
+                $endDate,
+            ])
             ->with('customer', 'job.vehicle')
-            ->latest()
+            ->latest('created_at')
             ->paginate(20)
             ->withQueryString();
 
-        // Totals should be calculated on the full filtered set (not just current page)
-        $totals = Invoice::whereBetween('created_at', [$startDate, $endDate])
+        /*
+         * Calculate totals from the complete filtered dataset,
+         * not only the current pagination page.
+         */
+        $totals = Invoice::whereBetween('created_at', [
+                $startDate,
+                $endDate,
+            ])
             ->selectRaw('
                 COALESCE(SUM(total), 0) as total_revenue,
                 COALESCE(SUM(paid), 0) as total_paid,
@@ -130,11 +150,18 @@ class ReportController extends Controller
 
         $user = auth()->user();
 
+        /*
+         * Base query
+         *
+         * Tenant isolation is already handled by
+         * InventoryMovement's BelongsToTenant trait.
+         */
         $query = InventoryMovement::query()
             ->with([
                 'product',
                 'branch',
                 'user',
+                'job',
             ])
             ->whereBetween('created_at', [
                 $startDate,
@@ -142,10 +169,8 @@ class ReportController extends Controller
             ]);
 
         /*
-         * Non-admin users only see their own branch.
-         *
-         * InventoryMovement already uses BelongsToTenant,
-         * so tenant isolation is handled by TenantScope.
+         * Non-admin users can only see movements
+         * belonging to their own branch.
          */
         if (!$user->isAdmin() && $user->branch_id) {
             $query->where(
@@ -154,6 +179,20 @@ class ReportController extends Controller
             );
         }
 
+        /*
+         * Get ALL movements for printing.
+         *
+         * Do not paginate this collection because:
+         * - Thermal printing should print the whole report.
+         * - PDF printing should print the whole report.
+         */
+        $printMovements = (clone $query)
+            ->latest('created_at')
+            ->get();
+
+        /*
+         * Screen version remains paginated.
+         */
         $movements = $query
             ->latest('created_at')
             ->paginate(20)
@@ -163,6 +202,7 @@ class ReportController extends Controller
             'reports.stock_movement',
             compact(
                 'movements',
+                'printMovements',
                 'startDate',
                 'endDate'
             )
@@ -176,31 +216,57 @@ class ReportController extends Controller
             403
         );
 
-        $startDate = $request->input('start_date', now()->startOfMonth()->format('Y-m-d'));
-        $endDate = $request->input('end_date', now()->endOfDay()->format('Y-m-d'));
+        $startDate = Carbon::parse(
+            $request->input(
+                'start_date',
+                now()->startOfMonth()->toDateString()
+            )
+        )->startOfDay();
 
-        // This one is aggregated, so we keep it as collection for now
-        // (you can paginate later if needed)
-        $services = Job::whereBetween('created_at', [$startDate, $endDate])
+        $endDate = Carbon::parse(
+            $request->input(
+                'end_date',
+                now()->toDateString()
+            )
+        )->endOfDay();
+
+        $services = Job::whereBetween('created_at', [
+                $startDate,
+                $endDate,
+            ])
             ->with('jobServices.service')
             ->get();
 
         $serviceStats = [];
+
         foreach ($services as $job) {
             foreach ($job->jobServices as $jobService) {
+
                 $serviceName = $jobService->service->name ?? 'Unknown';
+
                 if (!isset($serviceStats[$serviceName])) {
                     $serviceStats[$serviceName] = [
                         'count' => 0,
-                        'revenue' => 0
+                        'revenue' => 0,
                     ];
                 }
+
                 $serviceStats[$serviceName]['count']++;
-                $serviceStats[$serviceName]['revenue'] += $jobService->price;
+
+                $serviceStats[$serviceName]['revenue'] +=
+                    (float) $jobService->unit_price *
+                    (float) $jobService->quantity;
             }
         }
 
-        return view('reports.services', compact('serviceStats', 'startDate', 'endDate'));
+        return view(
+            'reports.services',
+            compact(
+                'serviceStats',
+                'startDate',
+                'endDate'
+            )
+        );
     }
 
     public function customerReport(Request $request)
@@ -213,12 +279,14 @@ class ReportController extends Controller
         $startDate = $request->input('start_date', now()->startOfMonth()->format('Y-m-d'));
         $endDate = $request->input('end_date', now()->endOfDay()->format('Y-m-d'));
 
-        $customers = Customer::with(['jobs' => function ($query) use ($startDate, $endDate) {
-                $query->whereBetween('created_at', [$startDate, $endDate]);
-            }])
-            ->whereHas('jobs', function ($query) use ($startDate, $endDate) {
-                $query->whereBetween('created_at', [$startDate, $endDate]);
-            })
+        $customers = Customer::with([
+            'jobs' => function ($query) use ($startDate, $endDate) {
+                $query->whereBetween('created_at', [
+                    Carbon::parse($startDate)->startOfDay(),
+                    Carbon::parse($endDate)->endOfDay(),
+                ])->with('invoice');
+            }
+        ])
             ->paginate(20)
             ->withQueryString();
 

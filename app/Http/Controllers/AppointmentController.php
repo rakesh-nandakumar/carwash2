@@ -1,2 +1,82 @@
-<?php namespace App\Http\Controllers; use App\Models\{Appointment,Customer,Vehicle,Branch}; use Illuminate\Http\Request;
-class AppointmentController extends Controller {public function index(){ $appointments=Appointment::with(['customer','vehicle'])->latest('scheduled_at')->paginate(20); return view('appointments.index',compact('appointments'));} public function create(){return view('appointments.create',['customers'=>Customer::orderBy('full_name')->get(),'vehicles'=>Vehicle::select('id','registration_number','make','model','customer_id')->orderBy('registration_number')->get()]);} public function store(Request $r){$d=$r->validate(['customer_id'=>'required','vehicle_id'=>'required','scheduled_at'=>'required|date','notes'=>'nullable']);$d+=['business_id'=>auth()->user()->business_id,'branch_id'=>auth()->user()->branch_id,'status'=>'confirmed'];$a=Appointment::create($d);return redirect()->route('appointments.index')->with('success','Appointment created.');} public function show(Appointment $appointment){return view('appointments.show',compact('appointment'));} public function edit(Appointment $appointment){return view('appointments.edit',compact('appointment'));} public function update(Request $r,Appointment $appointment){$appointment->update($r->validate(['scheduled_at'=>'required|date','status'=>'required','notes'=>'nullable']));return back()->with('success','Appointment updated.');} public function destroy(Appointment $appointment){$appointment->update(['status'=>'cancelled']);return back()->with('success','Appointment cancelled.');}}
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\{Appointment, Customer, Vehicle, Branch};
+use Illuminate\Http\Request;
+
+class AppointmentController extends Controller
+{
+    public function index()
+    {
+        $appointments = Appointment::with(['customer', 'vehicle'])
+            ->latest('scheduled_at')
+            ->paginate(20);
+
+        return view('appointments.index', compact('appointments'));
+    }
+
+    public function create()
+    {
+        return view('appointments.create', [
+            'customers' => Customer::orderBy('full_name')->get(),
+            'vehicles' => Vehicle::select('id', 'registration_number', 'make', 'model', 'customer_id')
+                ->orderBy('registration_number')
+                ->get(),
+        ]);
+    }
+
+    public function store(Request $r)
+    {
+        $d = $r->validate([
+            'customer_id' => 'required',
+            'vehicle_id' => 'required',
+            'scheduled_at' => 'required|date',
+            'notes' => 'nullable',
+        ]);
+
+        $d += [
+            'business_id' => auth()->user()->business_id,
+            'branch_id' => auth()->user()->branch_id,
+            'status' => 'confirmed',
+        ];
+
+        $a = Appointment::create($d);
+
+        return redirect()
+            ->route('appointments.index')
+            ->with('success', 'Appointment created.');
+    }
+
+    public function show(Appointment $appointment)
+    {
+        return view('appointments.show', compact('appointment'));
+    }
+
+    public function edit(Appointment $appointment)
+    {
+        return view('appointments.edit', compact('appointment'));
+    }
+
+    public function update(Request $r, Appointment $appointment)
+    {
+        $data = $r->validate([
+            'scheduled_at' => 'required|date',
+            'status' => 'required',
+            'notes' => 'nullable',
+        ]);
+
+        $appointment->update($data);
+
+        return redirect()
+            ->route('appointments.index')
+            ->with('success', 'Appointment updated successfully.');
+    }
+
+    public function destroy(Appointment $appointment)
+    {
+        $appointment->update(['status' => 'cancelled']);
+
+        return back()->with('success', 'Appointment cancelled.');
+    }
+}

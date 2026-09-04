@@ -25,6 +25,11 @@ class InventoryService
         string $reason,
         string $type = 'adjustment'
     ): Inventory {
+        // Protect against negative / zero quantities coming from Item Master
+        if ($qty <= 0) {
+            abort(422, 'Stock can only be increased from Item Master.');
+        }
+
         return DB::transaction(function () use ($product, $branchId, $qty, $reason, $type) {
             $i = Inventory::where('product_id', $product->id)
                 ->where('branch_id', $branchId)
