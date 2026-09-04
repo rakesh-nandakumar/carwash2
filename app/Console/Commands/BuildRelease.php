@@ -356,6 +356,17 @@ class BuildRelease extends Command
            this database — the bundled DatabaseSeeder creates a demo business
            with five test accounts that all use the password "password". That
            seeder is for local development only.
+
+           NO SSH/TERMINAL ON YOUR HOST? Set DEPLOY_SECRET in .env to a long
+           random value, then instead of the artisan commands above, visit
+           each of these once, in order (replace YOUR_SECRET and YOUR_DOMAIN):
+             https://YOUR_DOMAIN/admin/deploy/migrate?secret=YOUR_SECRET
+             https://YOUR_DOMAIN/admin/deploy/seed?secret=YOUR_SECRET
+           (this runs PermissionSeeder only — never the demo seeder). There is
+           no HTTP equivalent for `storage:link` or `central:create-admin` —
+           those still need one-off shell access (cPanel's Terminal app, if
+           available, or ask your host). Blank out DEPLOY_SECRET again once
+           you're done; the route 404s with no secret configured.
         8. Done. No other `php artisan` commands are needed after that — the
            front-end is pre-compiled in public/build (no Node needed on the
            server), and config isn't cached, so any later .env edit takes
@@ -403,7 +414,7 @@ class BuildRelease extends Command
         APP_NAME="AutoCare Pro"
         APP_ENV=production
         APP_KEY=__APP_KEY__
-        APP_DEBUG=false
+        APP_DEBUG=true
         APP_TIMEZONE=Asia/Colombo
         APP_URL=http://localhost
 
@@ -423,9 +434,9 @@ class BuildRelease extends Command
         DB_CONNECTION=mysql
         DB_HOST=127.0.0.1
         DB_PORT=3306
-        DB_DATABASE=autocare
-        DB_USERNAME=autocare
-        DB_PASSWORD=
+        DB_DATABASE=leomclxr_auto
+        DB_USERNAME=leomclxr_auto_user
+        DB_PASSWORD=Cx8Fnj4FQg79Gnk5
 
         SESSION_DRIVER=database
         SESSION_LIFETIME=120
@@ -461,6 +472,10 @@ class BuildRelease extends Command
         # see the TENANCY_BASE_DOMAIN note in DEPLOY.txt.
         TENANCY_CENTRAL_PREFIX=admin
         TENANCY_BASE_DOMAIN=
+
+        # Blank disables GET /admin/deploy/{action} entirely — see DEPLOY.txt
+        # step 7 (no-SSH hosts only).
+        DEPLOY_SECRET=
 
         VITE_APP_NAME="${APP_NAME}"
         ENV;

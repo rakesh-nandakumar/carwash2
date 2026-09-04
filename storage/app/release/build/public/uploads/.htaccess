@@ -1,0 +1,17 @@
+# =========================================================
+# AutoCare - public/uploads/.htaccess
+# Allow serving image files only; block script execution
+# =========================================================
+
+Options -Indexes
+
+# Disable any PHP execution in uploads (prevents malware uploads)
+<FilesMatch "\.(php|phar|phtml|php5|php7|php8|pht|shtml|cgi|pl|py|sh|htaccess)$">
+    Require all denied
+</FilesMatch>
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    # Block double extensions like x.jpg.php
+    RewriteRule \.(php|phar|phtml|php5|php7|php8|pht|shtml|cgi|pl|py|sh)$ - [F]
+</IfModule>
