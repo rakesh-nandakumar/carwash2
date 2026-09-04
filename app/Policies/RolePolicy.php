@@ -71,7 +71,9 @@ class RolePolicy
 
     private function sameBusiness(User $actor, Role $role): bool
     {
-        return $actor->business_id !== null
+        return $actor->tenant_id !== null
+            && $actor->business_id !== null
+            && $role->tenant_id === $actor->tenant_id
             && $role->business_id === $actor->business_id;
     }
 }

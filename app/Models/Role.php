@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 class Role extends Model
 {
     protected $fillable = [
+        'tenant_id',
         'business_id',
         'name',
         'slug',
@@ -23,6 +24,11 @@ class Role extends Model
         'is_active' => 'boolean',
         'is_full_admin' => 'boolean',
     ];
+
+    public function tenant(): BelongsTo
+    {
+        return $this->belongsTo(Tenant::class);
+    }
 
     public function business(): BelongsTo
     {

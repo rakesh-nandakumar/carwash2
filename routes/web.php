@@ -431,9 +431,33 @@ Route::prefix('{tenant}')
             // ==================== END USERS ====================
 
             // ==================== ROLES ====================
-            Route::resource('roles', RoleController::class)
-                ->except(['show'])
-                ->middleware('auth');
+            Route::get('/roles', [RoleController::class, 'index'])
+                ->name('roles.index')
+                ->middleware('permission:roles.access');
+
+            Route::get('/roles/create', [RoleController::class, 'create'])
+                ->name('roles.create')
+                ->middleware('permission:roles.create');
+
+            Route::post('/roles', [RoleController::class, 'store'])
+                ->name('roles.store')
+                ->middleware('permission:roles.create');
+
+            Route::get('/roles/{role}/edit', [RoleController::class, 'edit'])
+                ->name('roles.edit')
+                ->middleware('permission:roles.edit');
+
+            Route::put('/roles/{role}', [RoleController::class, 'update'])
+                ->name('roles.update')
+                ->middleware('permission:roles.edit');
+
+            Route::patch('/roles/{role}', [RoleController::class, 'update'])
+                ->name('roles.update.patch')
+                ->middleware('permission:roles.edit');
+
+            Route::delete('/roles/{role}', [RoleController::class, 'destroy'])
+                ->name('roles.destroy')
+                ->middleware('permission:roles.delete');
             // ==================== END ROLES ====================
 
             // ==================== SERVICE CATEGORIES ====================

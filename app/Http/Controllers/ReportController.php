@@ -10,6 +10,11 @@ class ReportController extends Controller
 {
     public function index()
     {
+        abort_unless(
+            auth()->user()->hasPermissionTo('reports.access'),
+            403
+        );
+
         return view('reports.index', [
             'revenue' => Invoice::sum('total'),
             'paid' => Invoice::sum('paid'),
@@ -26,6 +31,11 @@ class ReportController extends Controller
 
     public function salesReport(Request $request)
     {
+        abort_unless(
+            auth()->user()->hasPermissionTo('reports.sales'),
+            403
+        );
+
         $startDate = $request->input('start_date', now()->startOfMonth()->format('Y-m-d'));
         $endDate = $request->input('end_date', now()->endOfDay()->format('Y-m-d'));
 
@@ -60,6 +70,11 @@ class ReportController extends Controller
 
     public function stockReport(Request $request)
     {
+        abort_unless(
+            auth()->user()->hasPermissionTo('reports.stock'),
+            403
+        );
+
         // Paginated list
         $stock = DB::table('inventory')
             ->join('products', 'products.id', '=', 'inventory.product_id')
@@ -93,6 +108,11 @@ class ReportController extends Controller
 
     public function stockMovementReport(Request $request)
     {
+        abort_unless(
+            auth()->user()->hasPermissionTo('reports.stock_movement'),
+            403
+        );
+
         $startDate = $request->input('start_date', now()->startOfMonth()->format('Y-m-d'));
         $endDate = $request->input('end_date', now()->endOfDay()->format('Y-m-d'));
 
@@ -110,8 +130,8 @@ class ReportController extends Controller
                 'branches.name as branch_name'
             );
 
-        // Non-admin users only see their own branch
-        if (!$user->isAdmin()) {
+        // Users without full reports access only see their own branch
+        if (! $user->hasPermissionTo('reports.access')) {
             $query->where('inventory_movements.branch_id', $user->branch_id);
         }
 
@@ -125,6 +145,11 @@ class ReportController extends Controller
 
     public function serviceReport(Request $request)
     {
+        abort_unless(
+            auth()->user()->hasPermissionTo('reports.services'),
+            403
+        );
+
         $startDate = $request->input('start_date', now()->startOfMonth()->format('Y-m-d'));
         $endDate = $request->input('end_date', now()->endOfDay()->format('Y-m-d'));
 
@@ -154,6 +179,11 @@ class ReportController extends Controller
 
     public function customerReport(Request $request)
     {
+        abort_unless(
+            auth()->user()->hasPermissionTo('reports.customers'),
+            403
+        );
+
         $startDate = $request->input('start_date', now()->startOfMonth()->format('Y-m-d'));
         $endDate = $request->input('end_date', now()->endOfDay()->format('Y-m-d'));
 
