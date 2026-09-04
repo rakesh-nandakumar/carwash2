@@ -132,6 +132,10 @@ Route::prefix('{tenant}')
                 ->name('vehicles.store')
                 ->middleware('permission:vehicles.create');
 
+            Route::get('/vehicles/{vehicle}', [VehicleController::class, 'show'])
+                ->name('vehicles.show')
+                ->middleware('permission:vehicles.access');
+
             Route::get('/vehicles/{vehicle}/edit', [VehicleController::class, 'edit'])
                 ->name('vehicles.edit')
                 ->middleware('permission:vehicles.edit');
@@ -191,6 +195,10 @@ Route::prefix('{tenant}')
             Route::post('/jobs', [JobController::class, 'store'])
                 ->name('jobs.store')
                 ->middleware('permission:job_cards.create');
+
+            Route::get('/jobs/{job}', [JobController::class, 'show'])
+                ->name('jobs.show')
+                ->middleware('permission:job_cards.access');
 
             Route::get('/jobs/{job}/edit', [JobController::class, 'edit'])
                 ->name('jobs.edit')
@@ -431,9 +439,33 @@ Route::prefix('{tenant}')
             // ==================== END USERS ====================
 
             // ==================== ROLES ====================
-            Route::resource('roles', RoleController::class)
-                ->except(['show'])
-                ->middleware('auth');
+            Route::get('/roles', [RoleController::class, 'index'])
+                ->name('roles.index')
+                ->middleware('permission:roles.access');
+
+            Route::get('/roles/create', [RoleController::class, 'create'])
+                ->name('roles.create')
+                ->middleware('permission:roles.create');
+
+            Route::post('/roles', [RoleController::class, 'store'])
+                ->name('roles.store')
+                ->middleware('permission:roles.create');
+
+            Route::get('/roles/{role}/edit', [RoleController::class, 'edit'])
+                ->name('roles.edit')
+                ->middleware('permission:roles.edit');
+
+            Route::put('/roles/{role}', [RoleController::class, 'update'])
+                ->name('roles.update')
+                ->middleware('permission:roles.edit');
+
+            Route::patch('/roles/{role}', [RoleController::class, 'update'])
+                ->name('roles.update.patch')
+                ->middleware('permission:roles.edit');
+
+            Route::delete('/roles/{role}', [RoleController::class, 'destroy'])
+                ->name('roles.destroy')
+                ->middleware('permission:roles.delete');
             // ==================== END ROLES ====================
 
             // ==================== SERVICE CATEGORIES ====================

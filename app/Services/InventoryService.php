@@ -6,6 +6,7 @@ use App\Models\{
     Inventory,
     InventoryMovement,
     Product,
+    Job,
     StockTransfer,
     StockTransferItem,
     EmergencyPurchase,
@@ -102,16 +103,41 @@ class InventoryService
         int $jobId,
         string $referenceType = 'job'
     ): void {
-        DB::transaction(function () use ($product, $branchId, $qty, $jobId, $referenceType) {
-            $i = Inventory::where('product_id', $product->id)
+        DB::transaction(function () use (
+            $product,
+            $branchId,
+            $qty,
+            $jobId,
+            $referenceType
+        ) {
+            $inventory = Inventory::where('product_id', $product->id)
                 ->where('branch_id', $branchId)
+                ->lockForUpdate()
                 ->first();
 
-            if ($i) {
-                $i->quantity -= $qty;
-                $i->reserved_quantity = max(0, $i->reserved_quantity - $qty);
-                $i->save();
+            if (!$inventory) {
+                throw new \RuntimeException(
+                    "No inventory record found for {$product->name}."
+                );
             }
+
+            $available = $inventory->quantity - $inventory->reserved_quantity;
+
+            if ($available < $qty) {
+                throw new \RuntimeException(
+                    "Insufficient stock for {$product->name}. " .
+                    "Available: {$available}, Required: {$qty}."
+                );
+            }
+
+            $inventory->quantity -= $qty;
+
+            $inventory->reserved_quantity = max(
+                0,
+                $inventory->reserved_quantity - $qty
+            );
+
+            $inventory->save();
 
             InventoryMovement::create([
                 'product_id' => $product->id,
@@ -124,6 +150,85 @@ class InventoryService
                 'user_id' => auth()->id(),
                 'reason' => 'Service usage',
             ]);
+        });
+    }
+
+    /**
+     * Consume all approved but not yet applied job parts.
+     * Validates ALL parts first, then consumes them atomically.
+     * Returns the number of parts that were successfully consumed.
+     */
+    public function consumeUnappliedJobParts(Job $job): int
+    {
+        return DB::transaction(function () use ($job) {
+
+            $parts = $job->parts()
+                ->with('product')
+                ->where('approved', true)
+                ->where('applied', false)
+                ->get();
+
+            if ($parts->isEmpty()) {
+                return 0;
+            }
+
+            /*
+             * Validate every part before consuming anything.
+             */
+            foreach ($parts as $part) {
+
+                if (!$part->product) {
+                    throw new \RuntimeException(
+                        "Product not found for job part #{$part->id}."
+                    );
+                }
+
+                $inventory = Inventory::where('product_id', $part->product_id)
+                    ->where('branch_id', $job->branch_id)
+                    ->lockForUpdate()
+                    ->first();
+
+                if (!$inventory) {
+                    throw new \RuntimeException(
+                        "No inventory record found for {$part->product->name}."
+                    );
+                }
+
+                $available = $inventory->quantity
+                    - $inventory->reserved_quantity;
+
+                if ($available < $part->quantity) {
+                    throw new \RuntimeException(
+                        "Insufficient stock for {$part->product->name}. " .
+                        "Available: {$available}, " .
+                        "Required: {$part->quantity}."
+                    );
+                }
+            }
+
+            /*
+             * All parts are available.
+             * Now consume them.
+             */
+            $consumed = 0;
+
+            foreach ($parts as $part) {
+
+                $this->consume(
+                    $part->product,
+                    $job->branch_id,
+                    (float) $part->quantity,
+                    $job->id
+                );
+
+                $part->update([
+                    'applied' => true,
+                ]);
+
+                $consumed++;
+            }
+
+            return $consumed;
         });
     }
 

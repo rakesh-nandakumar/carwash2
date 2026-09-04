@@ -43,15 +43,15 @@
     <div class="reception-nav">
         <button class="nav-toggle" onclick="toggleNav()">☰</button>
         <div class="nav-menu" id="navMenu">
-            <a href="{{ route('dashboard') }}" @if(!auth()->user()->hasPermission('view_dashboard')) style="display:none" @endif>Dashboard</a>
-            <a href="{{ route('jobs.index') }}" @if(!auth()->user()->hasPermission('view_jobs')) style="display:none" @endif>Job Cards</a>
-            <a href="{{ route('customers.index') }}" @if(!auth()->user()->hasPermission('view_customers')) style="display:none" @endif>Customers</a>
-            <a href="{{ route('vehicles.index') }}" @if(!auth()->user()->hasPermission('view_vehicles')) style="display:none" @endif>Vehicles</a>
-            <a href="{{ route('appointments.index') }}" @if(!auth()->user()->hasPermission('view_appointments')) style="display:none" @endif>Appointments</a>
-            <a href="{{ route('inventory.index') }}" @if(!auth()->user()->hasPermission('view_inventory')) style="display:none" @endif>Inventory</a>
-            <a href="{{ route('invoices.index') }}" @if(!auth()->user()->hasPermission('view_invoices')) style="display:none" @endif>Billing</a>
-            <a href="{{ route('reports') }}" @if(!auth()->user()->hasPermission('view_reports')) style="display:none" @endif>Reports</a>
-            <a href="{{ route('users.index') }}" @if(!auth()->user()->hasPermission('view_users')) style="display:none" @endif>Users</a>
+            <a href="{{ route('dashboard') }}" @if(!auth()->user()->hasPermissionTo('dashboard.access')) style="display:none" @endif>Dashboard</a>
+            <a href="{{ route('jobs.index') }}" @if(!auth()->user()->hasPermissionTo('job_cards.access')) style="display:none" @endif>Job Cards</a>
+            <a href="{{ route('customers.index') }}" @if(!auth()->user()->hasPermissionTo('customers.access')) style="display:none" @endif>Customers</a>
+            <a href="{{ route('vehicles.index') }}" @if(!auth()->user()->hasPermissionTo('vehicles.access')) style="display:none" @endif>Vehicles</a>
+            <a href="{{ route('appointments.index') }}" @if(!auth()->user()->hasPermissionTo('appointments.access')) style="display:none" @endif>Appointments</a>
+            <a href="{{ route('inventory.index') }}" @if(!auth()->user()->hasPermissionTo('inventory.access')) style="display:none" @endif>Inventory</a>
+            <a href="{{ route('invoices.index') }}" @if(!auth()->user()->hasPermissionTo('invoices.access')) style="display:none" @endif>Billing</a>
+            <a href="{{ route('reports') }}" @if(!auth()->user()->hasPermissionTo('reports.access')) style="display:none" @endif>Reports</a>
+            <a href="{{ route('users.index') }}" @if(!auth()->user()->hasPermissionTo('users.access')) style="display:none" @endif>Users</a>
             
             <a href="{{ route('logout') }}" class="logout-link">Sign Out</a>
         </div>
@@ -89,7 +89,7 @@
                             <p>Add vehicle photo</p>
                             <div class="upload-actions">
                                 <button type="button" class="btn-upload" onclick="openLiveCamera('vehicle')">
-                                    📷 Camera
+                                    📸 Camera
                                 </button>
                                 <label class="btn-upload btn-upload-secondary" for="vehicleImageInput">
                                     <input type="file" id="vehicleImageInput" accept="image/*" style="display:none;">

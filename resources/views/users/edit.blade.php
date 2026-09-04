@@ -124,13 +124,6 @@
 
                         <div class="col-permissions">
                             @foreach($modulePermissions as $permission)
-                                @php
-                                    $state = old(
-                                        "permission_overrides.{$permission->id}",
-                                        $overrides[$permission->id] ?? ''
-                                    );
-                                @endphp
-
                                 <label class="permission-pill">
                                     <input
                                         type="checkbox"
@@ -138,7 +131,6 @@
                                         data-permission-id="{{ $permission->id }}"
                                         data-permission-slug="{{ $permission->slug }}"
                                         value="1"
-                                        {{ $state === 'allow' || $state === '' ? '' : '' }}
                                     >
 
                                     <input
@@ -146,8 +138,8 @@
                                         class="override-input"
                                         data-permission-id="{{ $permission->id }}"
                                         name="permission_overrides[{{ $permission->id }}]"
-                                        value="{{ $state }}"
-                                        {{ $state === '' ? 'disabled' : '' }}
+                                        value=""
+                                        disabled
                                     >
 
                                     <span class="pill-check">
@@ -206,7 +198,6 @@
         font-size: 0.95rem;
     }
 
-    /* Card */
     .card {
         background: #ffffff;
         border: 1px solid #e5e7eb;
@@ -262,7 +253,6 @@
         color: #db2777;
     }
 
-    /* Form */
     .form-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -315,7 +305,6 @@
         padding-right: 40px;
     }
 
-    /* Active checkbox */
     .active-checkbox {
         display: inline-flex;
         align-items: center;
@@ -363,7 +352,6 @@
         transform: rotate(45deg);
     }
 
-    /* Permissions Table */
     .permissions-table {
         border: 1px solid #e5e7eb;
         border-radius: 12px;
@@ -416,7 +404,6 @@
         align-items: center;
     }
 
-    /* Module checkbox */
     .module-checkbox {
         display: flex;
         align-items: center;
@@ -463,7 +450,6 @@
         transform: rotate(45deg);
     }
 
-    /* Permission Pills */
     .permission-pill {
         display: inline-flex;
         align-items: center;
@@ -521,7 +507,6 @@
         margin-left: 2px;
     }
 
-    /* States */
     .permission-pill.inherited {
         background: #7c3aed;
         border-color: #7c3aed;
@@ -544,7 +529,6 @@
         color: white;
     }
 
-    /* Actions */
     .form-actions {
         display: flex;
         align-items: center;
@@ -586,7 +570,6 @@
         color: #374151;
     }
 
-    /* Alert */
     .alert.error {
         background: #fef2f2;
         border: 1px solid #fecaca;
@@ -606,7 +589,6 @@
         padding-left: 18px;
     }
 
-    /* Responsive */
     @media (max-width: 700px) {
         .form-grid {
             grid-template-columns: 1fr;
@@ -645,22 +627,18 @@ document.addEventListener('DOMContentLoaded', function () {
         })
     );
 
-    // Existing overrides from the server
     const existingOverrides = @json($overrides ?? []);
 
-    const permissionCheckboxes =
-        document.querySelectorAll('.permission-checkbox');
+    const permissionCheckboxes = document.querySelectorAll('.permission-checkbox');
 
     function getSelectedRolePermissions() {
         const inherited = new Set();
 
         Array.from(roleSelect.selectedOptions).forEach(option => {
-            const roleId = option.value;
-            const rolePermissions = roles[roleId] || [];
+            if (!option.value) return;
 
-            rolePermissions.forEach(permission => {
-                inherited.add(permission);
-            });
+            const rolePermissions = roles[option.value] || [];
+            rolePermissions.forEach(slug => inherited.add(slug));
         });
 
         return inherited;
@@ -669,16 +647,13 @@ document.addEventListener('DOMContentLoaded', function () {
     function updatePermission(checkbox, inherited) {
         const slug = checkbox.dataset.permissionSlug;
         const permissionId = checkbox.dataset.permissionId;
-
-        const override = document.querySelector(
-            `.override-input[data-permission-id="${permissionId}"]`
-        );
+        const override = document.querySelector(`.override-input[data-permission-id="${permissionId}"]`);
         const pill = checkbox.closest('.permission-pill');
         const isInherited = inherited.has(slug);
 
         pill.classList.remove('inherited', 'allowed');
 
-        // Role provides permission + checked → Inherited
+        // Role has it + checked → Inherited
         if (isInherited && checkbox.checked) {
             pill.classList.add('inherited');
             pill.querySelector('.permission-state').textContent = 'Inherited';
@@ -687,7 +662,7 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        // Role does NOT provide permission + checked → Allowed
+        // Role does NOT have it + checked → Allowed
         if (!isInherited && checkbox.checked) {
             pill.classList.add('allowed');
             pill.querySelector('.permission-state').textContent = 'Allowed';
@@ -696,7 +671,7 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        // Role provides permission + unchecked → silently deny
+        // Role has it + unchecked → silent deny
         if (isInherited && !checkbox.checked) {
             pill.querySelector('.permission-state').textContent = '';
             override.disabled = false;
@@ -704,7 +679,7 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        // No role permission + unchecked → no override
+        // Nothing
         pill.querySelector('.permission-state').textContent = '';
         override.disabled = true;
         override.value = '';
@@ -727,23 +702,23 @@ document.addEventListener('DOMContentLoaded', function () {
 
             if (!moduleCheckbox || !permissions.length) return;
 
-            const checked = Array.from(permissions).filter(input => input.checked).length;
+            const checked = Array.from(permissions).filter(p => p.checked).length;
 
             moduleCheckbox.checked = checked === permissions.length;
             moduleCheckbox.indeterminate = checked > 0 && checked < permissions.length;
         });
     }
 
-    // Role changed → auto-check role permissions
+    // ===== ROLE CHANGED =====
+    // This is the important part you asked for
     roleSelect.addEventListener('change', function () {
         const inherited = getSelectedRolePermissions();
 
+        // Enable (check) all permissions that belong to the new role
+        // Disable (uncheck) the ones that do not
         permissionCheckboxes.forEach(checkbox => {
-            if (inherited.has(checkbox.dataset.permissionSlug)) {
-                checkbox.checked = true;
-            } else {
-                checkbox.checked = false;
-            }
+            const slug = checkbox.dataset.permissionSlug;
+            checkbox.checked = inherited.has(slug);
         });
 
         refreshPermissions();
@@ -769,9 +744,8 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // ========== INITIAL LOAD ==========
-    // Set the correct checked state based on role + existing overrides
-    (function initPermissions() {
+    // ===== INITIAL LOAD =====
+    (function init() {
         const inherited = getSelectedRolePermissions();
 
         permissionCheckboxes.forEach(checkbox => {
@@ -780,13 +754,11 @@ document.addEventListener('DOMContentLoaded', function () {
             const overrideValue = existingOverrides[permissionId] || '';
 
             if (overrideValue === 'allow') {
-                // Explicitly allowed
                 checkbox.checked = true;
             } else if (overrideValue === 'deny') {
-                // Explicitly denied
                 checkbox.checked = false;
             } else {
-                // No override → follow the role
+                // Follow the role
                 checkbox.checked = inherited.has(slug);
             }
         });

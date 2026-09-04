@@ -32,11 +32,11 @@
         <form method="get" class="filter-form">
             <div>
                 <label>Start Date</label>
-                <input type="date" name="start_date" value="{{ $startDate }}">
+                <input type="date" name="start_date" value="{{ $startDate->format('Y-m-d') }}">
             </div>
             <div>
                 <label>End Date</label>
-                <input type="date" name="end_date" value="{{ $endDate }}">
+                <input type="date" name="end_date" value="{{ $endDate->format('Y-m-d') }}">
             </div>
             <div class="filter-btn">
                 <button type="submit" class="primary">Generate Report</button>
@@ -47,7 +47,12 @@
     <!-- Report Title -->
     <div class="report-title">
         <h1>Stock Movement Report</h1>
-        <p>Period: {{ $startDate }} to {{ $endDate }}</p>
+        <p>
+            Period:
+            {{ $startDate->format('Y-m-d') }}
+            to
+            {{ $endDate->format('Y-m-d') }}
+        </p>
     </div>
 
     <!-- Desktop Table -->
@@ -68,11 +73,11 @@
                 @forelse($movements as $movement)
                 <tr>
                     <td>{{ \Carbon\Carbon::parse($movement->created_at)->format('Y-m-d H:i') }}</td>
-                    <td>{{ $movement->name }}</td>
-                    <td>{{ $movement->sku ?? '-' }}</td>
-                    <td>{{ $movement->branch_name ?? '-' }}</td>
+                    <td>{{ $movement->product?->name ?? '-' }}</td>
+                    <td>{{ $movement->product?->sku ?? '-' }}</td>
+                    <td>{{ $movement->branch?->name ?? '-' }}</td>
                     <td>
-                        @switch($movement->type)
+                        @switch($movement->type->value)
                             @case('purchase')
                                 <span class="badge-add">Purchase</span>
                                 @break
@@ -98,11 +103,19 @@
                                 @break
 
                             @default
-                                {{ ucfirst(str_replace('_', ' ', $movement->type)) }}
+                                {{ $movement->type->getLabel() }}
                         @endswitch
                     </td>
                     <td class="text-right">{{ $movement->quantity }}</td>
-                    <td>{{ $movement->reference ?? '-' }}</td>
+                    <td>
+                        @if($movement->reference_type === 'job' && $movement->job)
+                            {{ $movement->job->job_number }}
+                        @elseif($movement->reference_type && $movement->reference_id)
+                            {{ ucfirst($movement->reference_type) }} #{{ $movement->reference_id }}
+                        @else
+                            -
+                        @endif
+                    </td>
                 </tr>
                 @empty
                 <tr>
@@ -118,23 +131,23 @@
         @forelse($movements as $movement)
         <div class="report-card">
             <div class="card-top">
-                <strong>{{ $movement->name }}</strong>
+                <strong>{{ $movement->product?->name ?? '-' }}</strong>
                 <span class="date">{{ \Carbon\Carbon::parse($movement->created_at)->format('Y-m-d H:i') }}</span>
             </div>
 
             <div class="card-body">
                 <div class="row">
                     <span class="label">SKU</span>
-                    <span>{{ $movement->sku ?? '-' }}</span>
+                    <span>{{ $movement->product?->sku ?? '-' }}</span>
                 </div>
                 <div class="row">
                     <span class="label">Branch</span>
-                    <span>{{ $movement->branch_name ?? '-' }}</span>
+                    <span>{{ $movement->branch?->name ?? '-' }}</span>
                 </div>
                 <div class="row">
                     <span class="label">Type</span>
                     <span>
-                        @switch($movement->type)
+                        @switch($movement->type->value)
                             @case('purchase')
                                 <span class="badge-add">Purchase</span>
                                 @break
@@ -160,7 +173,7 @@
                                 @break
 
                             @default
-                                {{ ucfirst(str_replace('_', ' ', $movement->type)) }}
+                                {{ $movement->type->getLabel() }}
                         @endswitch
                     </span>
                 </div>
@@ -170,7 +183,15 @@
                 </div>
                 <div class="row">
                     <span class="label">Reference</span>
-                    <span>{{ $movement->reference ?? '-' }}</span>
+                    <span>
+                        @if($movement->reference_type === 'job' && $movement->job)
+                            {{ $movement->job->job_number }}
+                        @elseif($movement->reference_type && $movement->reference_id)
+                            {{ ucfirst($movement->reference_type) }} #{{ $movement->reference_id }}
+                        @else
+                            -
+                        @endif
+                    </span>
                 </div>
             </div>
         </div>
@@ -378,6 +399,41 @@
     margin-top: 24px;
 }
 
+/* ===== FIX FOR HUGE PAGINATION ARROWS ===== */
+.pagination-wrap svg,
+.pagination svg,
+nav[role="navigation"] svg {
+    width: 16px !important;
+    height: 16px !important;
+    max-width: 16px !important;
+    max-height: 16px !important;
+}
+
+.pagination-wrap .pagination,
+.pagination {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.pagination-wrap a,
+.pagination-wrap span,
+.pagination a,
+.pagination span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
+    height: 36px;
+    padding: 0 10px;
+    border-radius: 8px;
+    font-size: 14px;
+    text-decoration: none;
+}
+
 .report-footer {
     margin-top: 24px;
     text-align: center;
@@ -457,10 +513,10 @@
 function printThermal() {
     const content = `
 STOCK MOVEMENT REPORT
-Date: {{ $startDate }} to {{ $endDate }}
+Date: {{ $startDate->format('Y-m-d') }} to {{ $endDate->format('Y-m-d') }}
 ================================
 @foreach($movements as $movement)
-{{ \Carbon\Carbon::parse($movement->created_at)->format('Y-m-d') }} | {{ $movement->name }} | {{ $movement->branch_name ?? '-' }} | {{ $movement->type }} | {{ $movement->quantity }}
+{{ \Carbon\Carbon::parse($movement->created_at)->format('Y-m-d') }} | {{ $movement->product?->name ?? '-' }} | {{ $movement->branch?->name ?? '-' }} | {{ $movement->type->value }} | {{ $movement->quantity }}
 @endforeach
 ================================
 Generated: {{ now()->format('Y-m-d H:i') }}
