@@ -55,18 +55,14 @@ class UserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:8|confirmed',
-
             'roles' => 'nullable|array',
             'roles.*' => 'exists:roles,id',
-
             'permission_overrides' => 'nullable|array',
             'permission_overrides.*' => 'nullable|in:allow,deny',
-
             'active' => 'boolean',
         ]);
 
         $actor = auth()->user();
-
         $tenantId = $actor->tenant_id;
         $businessId = $actor->business_id;
 
@@ -100,11 +96,9 @@ class UserController extends Controller
                 'email' => $validated['email'],
                 'password' => Hash::make($validated['password']),
                 'role' => 'staff',
-
                 // Required tenant/business ownership.
                 'tenant_id' => $tenantId,
                 'business_id' => $businessId,
-
                 'active' => $validated['active'] ?? true,
             ]);
 
@@ -134,13 +128,13 @@ class UserController extends Controller
         $this->ensureSameBusiness($user);
 
         $actor = auth()->user();
-
         $tenantId = $actor->tenant_id;
         $businessId = $actor->business_id;
 
         $roles = Role::where('tenant_id', $tenantId)
             ->where('business_id', $businessId)
             ->where('is_active', true)
+            ->with('permissions')
             ->orderBy('name')
             ->get();
 
@@ -185,13 +179,10 @@ class UserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,' . $user->id,
             'password' => 'nullable|string|min:8|confirmed',
-
             'roles' => 'nullable|array',
             'roles.*' => 'exists:roles,id',
-
             'permission_overrides' => 'nullable|array',
             'permission_overrides.*' => 'nullable|in:allow,deny',
-
             'active' => 'boolean',
         ]);
 
@@ -311,7 +302,6 @@ class UserController extends Controller
 
         if (! $permissionIds) {
             $user->permissionOverrides()->delete();
-
             return;
         }
 
