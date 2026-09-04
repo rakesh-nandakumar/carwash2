@@ -392,51 +392,51 @@
             @endif
         </div>
         <nav id="sidebarNav">
-            @if(auth()->user()->canAccess('view_reception'))
+            @if(auth()->user()->hasPermissionTo('reception.access'))
                 <a href="{{ route('reception.index') }}" class="reception-link {{ request()->routeIs('reception.*') ? 'active' : '' }}">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>
                     <span>Reception</span>
                 </a>
             @endif
-            @if(auth()->user()->canAccess('view_dashboard'))
+            @if(auth()->user()->hasPermissionTo('dashboard.access'))
                 <a href="{{ route('dashboard') }}" class="{{ request()->routeIs('dashboard') ? 'active' : '' }}">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
                     <span>Dashboard</span>
                 </a>
             @endif
-            @if(auth()->user()->canAccess('view_live_job_board'))
+            @if(auth()->user()->hasPermissionTo('live_job_board.access'))
                 <a href="{{ route('jobs.board') }}" class="{{ request()->routeIs('jobs.board') ? 'active' : '' }}">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
                     <span>Live Job Board</span>
                 </a>
             @endif
-            @if(auth()->user()->canAccess('view_job_cards'))
+            @if(auth()->user()->hasPermissionTo('job_cards.access'))
                 <a href="{{ route('jobs.index') }}" class="{{ request()->routeIs('jobs.index') || request()->routeIs('jobs.show') || request()->routeIs('jobs.create') || request()->routeIs('jobs.edit') ? 'active' : '' }}">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
                     <span>Job Cards</span>
                 </a>
             @endif
-            @if(auth()->user()->canAccess('view_customers'))
+            @if(auth()->user()->hasPermissionTo('customers.access'))
                 <a href="{{ route('customers.index') }}" class="{{ request()->routeIs('customers.*') ? 'active' : '' }}">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                     <span>Customers</span>
                 </a>
             @endif
-            @if(auth()->user()->canAccess('view_vehicles'))
+            @if(auth()->user()->hasPermissionTo('vehicles.access'))
                 <a href="{{ route('vehicles.index') }}" class="{{ request()->routeIs('vehicles.*') ? 'active' : '' }}">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
                     <span>Vehicles</span>
                 </a>
             @endif
-            @if(auth()->user()->canAccess('view_appointments'))
+            @if(auth()->user()->hasPermissionTo('appointments.access'))
                 <a href="{{ route('appointments.index') }}" class="{{ request()->routeIs('appointments.*') ? 'active' : '' }}">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                     <span>Appointments</span>
                 </a>
             @endif
 
-            {{-- ==================== FIXED SECTION START ==================== --}}
-            @if(auth()->user()->canAccess('view_item_master'))
+            {{-- ==================== INVENTORY SECTION ==================== --}}
+            @if(auth()->user()->hasPermissionTo('inventory.access'))
                 <a href="{{ route('inventory.index') }}" class="{{ request()->routeIs('inventory.*') ? 'active' : '' }}">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
@@ -445,21 +445,21 @@
                     </svg>
                     <span>Item Master</span>
                 </a>
-                {{-- Stock Adjustments --}}
-                @if(auth()->user()->hasPermission('view_stock_adjustments'))
-                    <a href="{{ route('stock-adjustments.index') }}"
-                       class="{{ request()->routeIs('stock-adjustments.*') ? 'active' : '' }}">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M12 3v18"/>
-                            <path d="M3 12h18"/>
-                            <path d="M5 5h14v14H5z"/>
-                        </svg>
-                        <span>Stock Adjustments</span>
-                    </a>
-                @endif
             @endif
 
-            @if(auth()->user()->canAccess('view_categories'))
+            @if(auth()->user()->hasPermissionTo('stock_adjustments.access'))
+                <a href="{{ route('stock-adjustments.index') }}"
+                   class="{{ request()->routeIs('stock-adjustments.*') ? 'active' : '' }}">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 3v18"/>
+                        <path d="M3 12h18"/>
+                        <path d="M5 5h14v14H5z"/>
+                    </svg>
+                    <span>Stock Adjustments</span>
+                </a>
+            @endif
+
+            @if(auth()->user()->hasPermissionTo('categories.access'))
                 <a href="{{ route('categories.index') }}" class="{{ request()->routeIs('categories.*') ? 'active' : '' }}">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
@@ -469,7 +469,7 @@
                 </a>
             @endif
 
-            @if(auth()->user()->canAccess('view_services'))
+            @if(auth()->user()->hasPermissionTo('services.access'))
                 <a href="{{ route('services.index') }}" class="{{ request()->routeIs('services.*') ? 'active' : '' }}">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M12 2L2 7l10 5 10-5-10-5z"/>
@@ -479,15 +479,15 @@
                     <span>Services</span>
                 </a>
             @endif
-            {{-- ==================== FIXED SECTION END ==================== --}}
+            {{-- ==================== END INVENTORY SECTION ==================== --}}
 
-            @if(auth()->user()->canAccess('view_invoices'))
+            @if(auth()->user()->hasPermissionTo('invoices.access'))
                 <a href="{{ route('invoices.index') }}" class="{{ request()->routeIs('invoices.*') ? 'active' : '' }}">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
                     <span>Invoices</span>
                 </a>
             @endif
-            @if(auth()->user()->canAccess('view_cashier'))
+            @if(auth()->user()->hasPermissionTo('cashier.access'))
                 <a href="{{ route('cashier.index') }}" class="cashier-link {{ request()->routeIs('cashier.*') ? 'active' : '' }}">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
                     <span>Cashier</span>
@@ -503,13 +503,13 @@
                     @endif
                 </a>
             @endif
-            @if(auth()->user()->canAccess('view_reports'))
+            @if(auth()->user()->hasPermissionTo('reports.access'))
                 <a href="{{ route('reports') }}" class="{{ request()->routeIs('reports*') ? 'active' : '' }}">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
                     <span>Reports</span>
                 </a>
             @endif
-            @if(auth()->user()->canAccess('view_users'))
+            @if(auth()->user()->hasPermissionTo('users.access'))
                 <a href="{{ route('users.index') }}" class="{{ request()->routeIs('users.*') ? 'active' : '' }}">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                     <span>Users</span>
@@ -557,7 +557,7 @@
                 <div></div>
                 <div>
                     <strong>{{ auth()->user()->name }}</strong>
-                    <span class="muted"> · {{ str_replace('_',' ',ucfirst(auth()->user()->role)) }}</span>
+                    <span class="muted"> · {{ auth()->user()->roles->pluck('name')->join(', ') }}</span>
                 </div>
             </div>
         </header>
