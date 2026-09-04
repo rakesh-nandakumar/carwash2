@@ -10,6 +10,7 @@ enum InventoryMovementType: string
     case RETURN = 'return';
     case DAMAGE = 'damage';
     case ADJUSTMENT = 'adjustment';
+    case ADJUSTMENT_REVERSAL = 'adjustment_reversal';
     case TRANSFER = 'transfer';
     case SUPPLIER_RETURN = 'supplier_return';
     case CUSTOMER_RETURN = 'customer_return';
@@ -17,13 +18,14 @@ enum InventoryMovementType: string
 
     public function getLabel(): string
     {
-        return match($this) {
+        return match ($this) {
             self::PURCHASE => 'Purchase',
             self::SALE => 'Sale',
             self::SERVICE_USAGE => 'Service Usage',
             self::RETURN => 'Return',
             self::DAMAGE => 'Damage',
             self::ADJUSTMENT => 'Adjustment',
+            self::ADJUSTMENT_REVERSAL => 'Adjustment Reversal',
             self::TRANSFER => 'Transfer',
             self::SUPPLIER_RETURN => 'Supplier Return',
             self::CUSTOMER_RETURN => 'Customer Return',
@@ -33,6 +35,6 @@ enum InventoryMovementType: string
 
     public function affectsStock(): bool
     {
-        return !in_array($this, [self::DAMAGE, self::ADJUSTMENT]);
+        return true;
     }
 }

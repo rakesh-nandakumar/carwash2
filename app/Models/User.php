@@ -2,18 +2,17 @@
 
 namespace App\Models;
 
-use App\Models\Concerns\BelongsToTenant;
-use App\Services\TenantModules;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Cache;
 
 class User extends Authenticatable
 {
-    use BelongsToTenant, HasFactory, Notifiable;
+    use HasFactory, Notifiable;
 
     protected $fillable = [
         'tenant_id',
@@ -35,6 +34,11 @@ class User extends Authenticatable
         'active' => 'boolean',
     ];
 
+    public function tenant(): BelongsTo
+    {
+        return $this->belongsTo(Tenant::class);
+    }
+
     public function branch(): BelongsTo
     {
         return $this->belongsTo(Branch::class);
@@ -47,83 +51,239 @@ class User extends Authenticatable
 
     public function roles(): BelongsToMany
     {
-        return $this->belongsToMany(Role::class);
+        return $this->belongsToMany(
+            Role::class,
+            'role_user'
+        );
     }
 
-    public function isAdmin(): bool
+    public function permissionOverrides(): HasMany
     {
-        return $this->roles()->where('slug', 'super_admin')->exists()
-            || in_array($this->role, ['super_admin', 'owner']);
+        return $this->hasMany(UserPermissionOverride::class);
     }
 
-    public function hasPermission(string $permission): bool
+    public function isFullAdmin(): bool
     {
-        if ($this->isAdmin()) {
-            return true;
-        }
-
-        return in_array($permission, $this->permissionSlugs(), true);
+        return $this->roles()
+            ->where('is_active', true)
+            ->where('is_full_admin', true)
+            ->exists();
     }
 
     /**
-     * hasPermission() AND the module-licensing gate. The licensing check is
-     * deliberately OUTSIDE hasPermission() — isAdmin() short-circuits the
-     * permission check for anyone whose `users.role` string is super_admin or
-     * owner, but licensing outranks the tenant's own permissions: a disabled
-     * module is 403'd for a super_admin too.
+     * Backwards compatibility.
      */
-    public function canAccess(string $permission): bool
+    public function isAdmin(): bool
     {
-        if (! $this->hasPermission($permission)) {
+        return $this->isFullAdmin();
+    }
+
+    public function effectivePermissions(): array
+    {
+        if (! $this->active) {
+            return [];
+        }
+
+        return Cache::remember(
+            $this->permissionCacheKey(),
+            now()->addMinutes(30),
+            function () {
+                $rolePermissions = $this->roles()
+                    ->where('is_active', true)
+                    ->with('permissions')
+                    ->get()
+                    ->pluck('permissions')
+                    ->flatten()
+                    ->pluck('slug')
+                    ->unique()
+                    ->values()
+                    ->all();
+
+                $overrides = $this->permissionOverrides()
+                    ->with('permission')
+                    ->get();
+
+                $allows = $overrides
+                    ->where('type', 'allow')
+                    ->pluck('permission.slug')
+                    ->filter()
+                    ->values()
+                    ->all();
+
+                $denies = $overrides
+                    ->where('type', 'deny')
+                    ->pluck('permission.slug')
+                    ->filter()
+                    ->values()
+                    ->all();
+
+                return collect($rolePermissions)
+                    ->merge($allows)
+                    ->unique()
+                    ->diff($denies)
+                    ->values()
+                    ->all();
+            }
+        );
+    }
+
+    public function hasPermissionTo(string $permission): bool
+    {
+        if (! $this->active) {
             return false;
         }
 
-        $module = TenantModules::moduleKeyForPermission($permission);
+        if ($this->isFullAdmin()) {
+            return true;
+        }
 
-        if ($module !== null && ! TenantModules::isEnabled($module)) {
-            return false;
+        return in_array(
+            $permission,
+            $this->effectivePermissions(),
+            true
+        );
+    }
+
+    /**
+     * Backwards compatibility while old routes/views are migrated.
+     */
+    public function hasPermission(string $permission): bool
+    {
+        return $this->hasPermissionTo(
+            $this->normalizeLegacyPermission($permission)
+        );
+    }
+
+    public function hasAnyPermission(array $permissions): bool
+    {
+        foreach ($permissions as $permission) {
+            if ($this->hasPermissionTo($permission)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public function hasAllPermissions(array $permissions): bool
+    {
+        foreach ($permissions as $permission) {
+            if (! $this->hasPermissionTo($permission)) {
+                return false;
+            }
         }
 
         return true;
     }
 
+    public function clearPermissionCache(): void
+    {
+        Cache::forget($this->permissionCacheKey());
+    }
+
+    public function permissionCacheKey(): string
+    {
+        return "user.{$this->id}.permissions";
+    }
+
     public function assignRole(string $roleSlug): void
     {
-        $role = Role::where('slug', $roleSlug)->firstOrFail();
-        $this->roles()->syncWithoutDetaching([$role->id]);
-        $this->flushPermissionCache();
+        $role = Role::where('slug', $roleSlug)
+            ->where('tenant_id', $this->tenant_id)
+            ->where('business_id', $this->business_id)
+            ->firstOrFail();
+
+        $this->roles()->syncWithoutDetaching([
+            $role->id,
+        ]);
+
+        $this->clearPermissionCache();
     }
 
     public function removeRole(string $roleSlug): void
     {
-        $role = Role::where('slug', $roleSlug)->firstOrFail();
+        $role = Role::where('slug', $roleSlug)
+            ->where('tenant_id', $this->tenant_id)
+            ->where('business_id', $this->business_id)
+            ->firstOrFail();
+
         $this->roles()->detach($role->id);
-        $this->flushPermissionCache();
+
+        $this->clearPermissionCache();
     }
 
-    public function flushPermissionCache(): void
+    private function normalizeLegacyPermission(string $permission): string
     {
-        Cache::forget("user.{$this->id}.permissions");
-    }
+        static $map = [
+            'view_reception' => 'reception.access',
+            'view_dashboard' => 'dashboard.access',
+            'view_live_job_board' => 'live_job_board.access',
 
-    public function getAuthPassword()
-    {
-        return $this->password;
-    }
+            'view_job_cards' => 'job_cards.access',
+            'create_job_cards' => 'job_cards.create',
+            'edit_job_cards' => 'job_cards.edit',
+            'delete_job_cards' => 'job_cards.delete',
+            'change_status_job_cards' => 'job_cards.change_status',
+            'request_additional_work_job_cards' => 'job_cards.request_additional_work',
+            'approve_job_cards' => 'job_cards.approve',
+            'consume_parts_job_cards' => 'job_cards.consume_parts',
+            'edit_inspection_job_cards' => 'job_cards.edit_inspection',
 
-    /**
-     * @return list<string>
-     */
-    private function permissionSlugs(): array
-    {
-        return Cache::remember("user.{$this->id}.permissions", 3600, function () {
-            return $this->roles()
-                ->with('permissions')
-                ->get()
-                ->pluck('permissions')
-                ->flatten()
-                ->pluck('slug')
-                ->toArray();
-        });
+            'view_customers' => 'customers.access',
+            'create_customers' => 'customers.create',
+            'edit_customers' => 'customers.edit',
+            'delete_customers' => 'customers.delete',
+
+            'view_vehicles' => 'vehicles.access',
+            'create_vehicles' => 'vehicles.create',
+            'edit_vehicles' => 'vehicles.edit',
+            'delete_vehicles' => 'vehicles.delete',
+
+            'view_appointments' => 'appointments.access',
+            'create_appointments' => 'appointments.create',
+            'edit_appointments' => 'appointments.edit',
+            'delete_appointments' => 'appointments.delete',
+
+            'view_item_master' => 'inventory.access',
+            'create_item_master' => 'inventory.create',
+            'edit_item_master' => 'inventory.edit',
+            'delete_item_master' => 'inventory.delete',
+            'adjust_stock_item_master' => 'inventory.adjust_stock',
+
+            'view_stock_adjustments' => 'stock_adjustments.access',
+            'create_stock_adjustments' => 'stock_adjustments.create',
+            'reverse_stock_adjustments' => 'stock_adjustments.reverse',
+
+            'view_categories' => 'categories.access',
+            'create_categories' => 'categories.create',
+            'edit_categories' => 'categories.edit',
+            'delete_categories' => 'categories.delete',
+
+            'view_services' => 'services.access',
+            'create_services' => 'services.create',
+            'edit_services' => 'services.edit',
+            'delete_services' => 'services.delete',
+
+            'view_invoices' => 'invoices.access',
+            'pay_invoices' => 'invoices.pay',
+            'print_invoices' => 'invoices.print',
+
+            'view_cashier' => 'cashier.access',
+            'search_cashier' => 'cashier.search',
+            'payment_cashier' => 'cashier.payment',
+            'print_options_cashier' => 'cashier.print_options',
+
+            'view_reports' => 'reports.access',
+
+            'view_users' => 'users.access',
+            'create_users' => 'users.create',
+            'edit_users' => 'users.edit',
+            'delete_users' => 'users.delete',
+
+            'view_settings' => 'settings.access',
+            'edit_billing_settings' => 'settings.edit_billing',
+        ];
+
+        return $map[$permission] ?? $permission;
     }
 }

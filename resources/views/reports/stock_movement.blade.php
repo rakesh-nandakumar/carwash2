@@ -58,6 +58,7 @@
                     <th>Date</th>
                     <th>Product</th>
                     <th>SKU</th>
+                    <th>Branch</th>
                     <th>Type</th>
                     <th class="text-right">Quantity</th>
                     <th>Reference</th>
@@ -69,23 +70,43 @@
                     <td>{{ \Carbon\Carbon::parse($movement->created_at)->format('Y-m-d H:i') }}</td>
                     <td>{{ $movement->name }}</td>
                     <td>{{ $movement->sku ?? '-' }}</td>
+                    <td>{{ $movement->branch_name ?? '-' }}</td>
                     <td>
-                        @if($movement->type == 'add')
-                            <span class="badge-add">Addition</span>
-                        @elseif($movement->type == 'consume')
-                            <span class="badge-consume">Consumption</span>
-                        @elseif($movement->type == 'adjust')
-                            <span class="badge-adjust">Adjustment</span>
-                        @else
-                            {{ $movement->type }}
-                        @endif
+                        @switch($movement->type)
+                            @case('purchase')
+                                <span class="badge-add">Purchase</span>
+                                @break
+
+                            @case('service_usage')
+                                <span class="badge-consume">Service Usage</span>
+                                @break
+
+                            @case('adjustment')
+                                <span class="badge-adjust">Adjustment</span>
+                                @break
+
+                            @case('adjustment_reversal')
+                                <span class="badge-adjust">Adjustment Reversal</span>
+                                @break
+
+                            @case('transfer')
+                                <span class="badge-adjust">Transfer</span>
+                                @break
+
+                            @case('restock')
+                                <span class="badge-add">Restock</span>
+                                @break
+
+                            @default
+                                {{ ucfirst(str_replace('_', ' ', $movement->type)) }}
+                        @endswitch
                     </td>
                     <td class="text-right">{{ $movement->quantity }}</td>
                     <td>{{ $movement->reference ?? '-' }}</td>
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="6" class="empty">No movements found for this period.</td>
+                    <td colspan="7" class="empty">No movements found for this period.</td>
                 </tr>
                 @endforelse
             </tbody>
@@ -107,17 +128,40 @@
                     <span>{{ $movement->sku ?? '-' }}</span>
                 </div>
                 <div class="row">
+                    <span class="label">Branch</span>
+                    <span>{{ $movement->branch_name ?? '-' }}</span>
+                </div>
+                <div class="row">
                     <span class="label">Type</span>
                     <span>
-                        @if($movement->type == 'add')
-                            <span class="badge-add">Addition</span>
-                        @elseif($movement->type == 'consume')
-                            <span class="badge-consume">Consumption</span>
-                        @elseif($movement->type == 'adjust')
-                            <span class="badge-adjust">Adjustment</span>
-                        @else
-                            {{ $movement->type }}
-                        @endif
+                        @switch($movement->type)
+                            @case('purchase')
+                                <span class="badge-add">Purchase</span>
+                                @break
+
+                            @case('service_usage')
+                                <span class="badge-consume">Service Usage</span>
+                                @break
+
+                            @case('adjustment')
+                                <span class="badge-adjust">Adjustment</span>
+                                @break
+
+                            @case('adjustment_reversal')
+                                <span class="badge-adjust">Adjustment Reversal</span>
+                                @break
+
+                            @case('transfer')
+                                <span class="badge-adjust">Transfer</span>
+                                @break
+
+                            @case('restock')
+                                <span class="badge-add">Restock</span>
+                                @break
+
+                            @default
+                                {{ ucfirst(str_replace('_', ' ', $movement->type)) }}
+                        @endswitch
                     </span>
                 </div>
                 <div class="row">
@@ -144,7 +188,7 @@
         <p>Generated on {{ now()->format('Y-m-d H:i:s') }}</p>
     </div>
 
-    <!-- Back button (one row below Generated text, right aligned) -->
+    <!-- Back button -->
     <div class="report-back no-print">
         <a href="{{ route('reports') }}" class="back-button">← Back</a>
     </div>
@@ -208,7 +252,7 @@
 .report-table {
     width: 100%;
     border-collapse: collapse;
-    min-width: 700px;
+    min-width: 800px;
 }
 
 .report-table th {
@@ -341,7 +385,7 @@
     font-size: 12px;
 }
 
-/* Back button - one row below Generated text, right aligned */
+/* Back button */
 .report-back {
     margin-top: 24px;
     display: flex;
@@ -416,7 +460,7 @@ STOCK MOVEMENT REPORT
 Date: {{ $startDate }} to {{ $endDate }}
 ================================
 @foreach($movements as $movement)
-{{ \Carbon\Carbon::parse($movement->created_at)->format('Y-m-d') }} | {{ $movement->name }} | {{ $movement->type }} | {{ $movement->quantity }}
+{{ \Carbon\Carbon::parse($movement->created_at)->format('Y-m-d') }} | {{ $movement->name }} | {{ $movement->branch_name ?? '-' }} | {{ $movement->type }} | {{ $movement->quantity }}
 @endforeach
 ================================
 Generated: {{ now()->format('Y-m-d H:i') }}

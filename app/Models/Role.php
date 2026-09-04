@@ -2,27 +2,53 @@
 
 namespace App\Models;
 
-use App\Models\Concerns\BelongsToTenant;
-
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Role extends Model
-{ use BelongsToTenant;
-    protected $guarded = [];
+{
+    protected $fillable = [
+        'business_id',
+        'name',
+        'slug',
+        'description',
+        'is_system',
+        'is_active',
+        'is_full_admin',
+    ];
+
+    protected $casts = [
+        'is_system' => 'boolean',
+        'is_active' => 'boolean',
+        'is_full_admin' => 'boolean',
+    ];
+
+    public function business(): BelongsTo
+    {
+        return $this->belongsTo(Business::class);
+    }
 
     public function permissions(): BelongsToMany
     {
-        return $this->belongsToMany(Permission::class);
+        return $this->belongsToMany(
+            Permission::class,
+            'permission_role'
+        );
     }
 
     public function users(): BelongsToMany
     {
-        return $this->belongsToMany(User::class);
+        return $this->belongsToMany(
+            User::class,
+            'role_user'
+        );
     }
 
-    public function hasPermission(string $permissionSlug): bool
+    public function hasPermission(string $permission): bool
     {
-        return $this->permissions()->where('slug', $permissionSlug)->exists();
+        return $this->permissions()
+            ->where('slug', $permission)
+            ->exists();
     }
 }

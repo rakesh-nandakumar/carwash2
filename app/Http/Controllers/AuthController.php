@@ -26,21 +26,20 @@ class AuthController extends Controller
             $request->session()->regenerate();
 
             $user = Auth::user();
-            $user->load('roles.permissions');
 
-            if ($user->hasPermission('view_reception')) {
+            if ($user->hasPermissionTo('reception.access')) {
                 return redirect()->intended(route('reception.index'));
             }
 
-            if ($user->hasPermission('view_dashboard')) {
+            if ($user->hasPermissionTo('dashboard.access')) {
                 return redirect()->intended(route('dashboard'));
             }
 
-            if ($user->hasPermission('view_job_cards')) {
+            if ($user->hasPermissionTo('job_cards.access')) {
                 return redirect()->intended(route('jobs.index'));
             }
 
-            if ($user->hasPermission('view_customers')) {
+            if ($user->hasPermissionTo('customers.access')) {
                 return redirect()->intended(route('customers.index'));
             }
 

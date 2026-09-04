@@ -2,155 +2,361 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
-use App\Models\Role;
 use App\Models\Permission;
+use App\Models\Role;
+use App\Models\User;
+use App\Models\UserPermissionOverride;
+use App\Services\PermissionEscalationService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
     public function index()
     {
-        $users = User::with('roles')->latest()->paginate(20);
+        $businessId = auth()->user()->business_id;
+
+        $users = User::with('roles')
+            ->where('business_id', $businessId)
+            ->latest()
+            ->paginate(20);
+
         return view('users.index', compact('users'));
     }
 
     public function create()
     {
-        $roles = Role::all();
-        $permissions = Permission::all()->groupBy('module');
-        return view('users.create', compact('roles', 'permissions'));
+        $businessId = auth()->user()->business_id;
+
+        $roles = Role::where('tenant_id', auth()->user()->tenant_id)
+            ->where('business_id', $businessId)
+            ->where('is_active', true)
+            ->with('permissions')
+            ->orderBy('name')
+            ->get();
+
+        $permissions = Permission::orderBy('module')
+            ->orderBy('name')
+            ->get()
+            ->groupBy('module');
+
+        return view(
+            'users.create',
+            compact('roles', 'permissions')
+        );
     }
 
-    public function store(Request $request)
-    {
+    public function store(
+        Request $request,
+        PermissionEscalationService $escalation
+    ) {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:8|confirmed',
-            'role' => 'nullable|exists:roles,slug',
-            'permissions' => 'nullable|array',
-            'permissions.*' => 'exists:permissions,id',
+
+            'roles' => 'nullable|array',
+            'roles.*' => 'exists:roles,id',
+
+            'permission_overrides' => 'nullable|array',
+            'permission_overrides.*' => 'nullable|in:allow,deny',
+
             'active' => 'boolean',
         ]);
 
-        $user = User::create([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'password' => Hash::make($validated['password']),
-            'role' => $validated['role'] ?? 'staff',
-            'business_id' => auth()->user()->business_id,
-            'active' => $validated['active'] ?? true,
-        ]);
+        $actor = auth()->user();
 
-        // Assign role if provided
-        if (!empty($validated['role'])) {
-            $user->assignRole($validated['role']);
+        $tenantId = $actor->tenant_id;
+        $businessId = $actor->business_id;
+
+        /*
+         * Only allow roles belonging to the current tenant/business.
+         */
+        $roles = Role::where('tenant_id', $tenantId)
+            ->where('business_id', $businessId)
+            ->whereIn('id', $validated['roles'] ?? [])
+            ->where('is_active', true)
+            ->with('permissions')
+            ->get();
+
+        foreach ($roles as $role) {
+            $escalation->ensureCanAssignRole(
+                $actor,
+                $role
+            );
         }
 
-        // Assign direct permissions if provided
-        if (!empty($validated['permissions'])) {
-            $role = Role::where('slug', 'custom_' . $user->id)->first();
-            if (!$role) {
-                $role = Role::create([
-                    'name' => 'Custom for ' . $user->name,
-                    'slug' => 'custom_' . $user->id,
-                    'is_system' => false
-                ]);
-            }
-            $role->permissions()->sync($validated['permissions']);
-            $user->roles()->syncWithoutDetaching([$role->id]);
-        } elseif (empty($validated['role'])) {
-            // If no role and no permissions selected, assign a default staff role
-            $defaultRole = Role::where('slug', 'staff')->first();
-            if ($defaultRole) {
-                $user->assignRole('staff');
-            }
-        }
+        $user = DB::transaction(function () use (
+            $validated,
+            $tenantId,
+            $businessId,
+            $roles,
+            $escalation,
+            $actor
+        ) {
+            $user = User::create([
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'password' => Hash::make($validated['password']),
+                'role' => 'staff',
 
-        return redirect()->route('users.index')->with('success', 'User created successfully.');
+                // Required tenant/business ownership.
+                'tenant_id' => $tenantId,
+                'business_id' => $businessId,
+
+                'active' => $validated['active'] ?? true,
+            ]);
+
+            $user->roles()->sync(
+                $roles->pluck('id')
+            );
+
+            $this->syncOverrides(
+                $user,
+                $validated['permission_overrides'] ?? [],
+                $escalation,
+                $actor
+            );
+
+            return $user;
+        });
+
+        $user->clearPermissionCache();
+
+        return redirect()
+            ->route('users.index')
+            ->with('success', 'User created successfully.');
     }
 
     public function edit(User $user)
     {
-        $roles = Role::all();
-        $permissions = Permission::all()->groupBy('module');
-        $userRoles = $user->roles->pluck('slug')->toArray();
-        
-        // Get all permissions from all roles assigned to the user
-        $userPermissions = [];
-        foreach ($user->roles as $role) {
-            foreach ($role->permissions as $permission) {
-                $userPermissions[] = $permission->id;
-            }
-        }
-        $userPermissions = array_unique($userPermissions);
-        
-        return view('users.edit', compact('user', 'roles', 'permissions', 'userRoles', 'userPermissions'));
+        $this->ensureSameBusiness($user);
+
+        $actor = auth()->user();
+
+        $tenantId = $actor->tenant_id;
+        $businessId = $actor->business_id;
+
+        $roles = Role::where('tenant_id', $tenantId)
+            ->where('business_id', $businessId)
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
+
+        $permissions = Permission::orderBy('module')
+            ->orderBy('name')
+            ->get()
+            ->groupBy('module');
+
+        $userRoles = $user->roles
+            ->pluck('id')
+            ->all();
+
+        $overrides = $user->permissionOverrides()
+            ->pluck('type', 'permission_id')
+            ->all();
+
+        $effectivePermissions = $user->effectivePermissions();
+
+        return view(
+            'users.edit',
+            compact(
+                'user',
+                'roles',
+                'permissions',
+                'userRoles',
+                'overrides',
+                'effectivePermissions'
+            )
+        );
     }
 
-    public function update(Request $request, User $user)
-    {
+    public function update(
+        Request $request,
+        User $user,
+        PermissionEscalationService $escalation
+    ) {
+        $this->ensureSameBusiness($user);
+
+        $actor = auth()->user();
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,' . $user->id,
             'password' => 'nullable|string|min:8|confirmed',
-            'role' => 'nullable|exists:roles,slug',
-            'permissions' => 'nullable|array',
-            'permissions.*' => 'exists:permissions,id',
+
+            'roles' => 'nullable|array',
+            'roles.*' => 'exists:roles,id',
+
+            'permission_overrides' => 'nullable|array',
+            'permission_overrides.*' => 'nullable|in:allow,deny',
+
             'active' => 'boolean',
         ]);
 
-        $user->update([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'role' => $validated['role'] ?? 'staff',
-            'active' => $validated['active'] ?? true,
-        ]);
+        $tenantId = $actor->tenant_id;
+        $businessId = $actor->business_id;
 
-        if (!empty($validated['password'])) {
-            $user->password = Hash::make($validated['password']);
-            $user->save();
+        /*
+         * Only allow roles belonging to the current tenant/business.
+         */
+        $roles = Role::where('tenant_id', $tenantId)
+            ->where('business_id', $businessId)
+            ->whereIn('id', $validated['roles'] ?? [])
+            ->where('is_active', true)
+            ->with('permissions')
+            ->get();
+
+        foreach ($roles as $role) {
+            $escalation->ensureCanAssignRole(
+                $actor,
+                $role
+            );
         }
 
-        // Sync predefined roles (keep custom role)
-        $customRoleSlug = 'custom_' . $user->id;
-        $user->roles()->where('slug', '!=', $customRoleSlug)->detach();
-        if (!empty($validated['role'])) {
-            $user->assignRole($validated['role']);
+        /*
+         * A non-Full-Administrator cannot modify another
+         * Full Administrator.
+         */
+        if (
+            $user->isFullAdmin()
+            && ! $actor->isFullAdmin()
+        ) {
+            abort(403);
         }
 
-        // Handle custom permissions
-        if (!empty($validated['permissions'])) {
-            $role = Role::where('slug', $customRoleSlug)->first();
-            if (!$role) {
-                $role = Role::create([
-                    'name' => 'Custom for ' . $user->name,
-                    'slug' => $customRoleSlug,
-                    'is_system' => false
+        DB::transaction(function () use (
+            $validated,
+            $user,
+            $roles,
+            $escalation,
+            $actor
+        ) {
+            $user->update([
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'active' => $validated['active'] ?? false,
+            ]);
+
+            if (! empty($validated['password'])) {
+                $user->update([
+                    'password' => Hash::make(
+                        $validated['password']
+                    ),
                 ]);
             }
-            $role->permissions()->sync($validated['permissions']);
-            $user->roles()->syncWithoutDetaching([$role->id]);
-        } else {
-            // Remove custom role if no custom permissions selected
-            $customRole = Role::where('slug', $customRoleSlug)->first();
-            if ($customRole) {
-                $user->roles()->detach($customRole->id);
-            }
-        }
 
-        return redirect()->route('users.index')->with('success', 'User updated successfully.');
+            $user->roles()->sync(
+                $roles->pluck('id')
+            );
+
+            $this->syncOverrides(
+                $user,
+                $validated['permission_overrides'] ?? [],
+                $escalation,
+                $actor
+            );
+        });
+
+        $user->clearPermissionCache();
+
+        return redirect()
+            ->route('users.index')
+            ->with('success', 'User updated successfully.');
     }
 
     public function destroy(User $user)
     {
-        if ($user->id === auth()->id()) {
-            return back()->with('error', 'You cannot delete your own account.');
+        $this->ensureSameBusiness($user);
+
+        $actor = auth()->user();
+
+        /*
+         * Prevent self deletion.
+         */
+        if ($user->id === $actor->id) {
+            return back()->with(
+                'error',
+                'You cannot delete your own account.'
+            );
+        }
+
+        /*
+         * A non-Full-Administrator cannot delete
+         * a Full Administrator.
+         */
+        if (
+            $user->isFullAdmin()
+            && ! $actor->isFullAdmin()
+        ) {
+            abort(403);
         }
 
         $user->delete();
-        return back()->with('success', 'User deleted successfully.');
+
+        return back()->with(
+            'success',
+            'User deleted successfully.'
+        );
+    }
+
+    private function syncOverrides(
+        User $user,
+        array $overrides,
+        PermissionEscalationService $escalation,
+        User $actor
+    ): void {
+        $permissionIds = array_keys($overrides);
+
+        if (! $permissionIds) {
+            $user->permissionOverrides()->delete();
+
+            return;
+        }
+
+        $permissions = Permission::whereIn(
+            'id',
+            $permissionIds
+        )->get();
+
+        /*
+         * Users may only grant permissions that they
+         * themselves possess, unless they are Full Administrator.
+         */
+        $escalation->ensureCanGrantPermissions(
+            $actor,
+            $permissions->pluck('slug')->all()
+        );
+
+        /*
+         * Replace existing overrides with the submitted set.
+         */
+        $user->permissionOverrides()->delete();
+
+        foreach ($permissions as $permission) {
+            $type = $overrides[$permission->id] ?? null;
+
+            if (! in_array($type, ['allow', 'deny'], true)) {
+                continue;
+            }
+
+            UserPermissionOverride::create([
+                'user_id' => $user->id,
+                'permission_id' => $permission->id,
+                'type' => $type,
+                'granted_by' => $actor->id,
+                'granted_at' => now(),
+            ]);
+        }
+    }
+
+    private function ensureSameBusiness(User $user): void
+    {
+        abort_unless(
+            $user->tenant_id === auth()->user()->tenant_id
+            && $user->business_id === auth()->user()->business_id,
+            404
+        );
     }
 }
