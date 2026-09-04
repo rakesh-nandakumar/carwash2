@@ -19,6 +19,7 @@ use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VehicleController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\StockAdjustmentController;
 
 Route::pattern('tenant', '[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?');
 
@@ -95,5 +96,17 @@ Route::prefix('{tenant}')
             Route::get('/reports/customers', [ReportController::class, 'customerReport'])->name('reports.customers')->middleware('permission:view_reports');
             Route::resource('users', UserController::class)->middleware('permission:view_users');
             Route::post('/service-categories', [ServiceCategoryController::class, 'store'])->name('service-categories.store');
+            // Stock Adjustments
+Route::get('/stock-adjustments', [StockAdjustmentController::class, 'index'])
+    ->name('stock-adjustments.index')
+    ->middleware('permission:view_stock_adjustments');
+
+Route::post('/stock-adjustments', [StockAdjustmentController::class, 'store'])
+    ->name('stock-adjustments.store')
+    ->middleware('permission:create_stock_adjustments');
+
+Route::post('/stock-adjustments/{stockAdjustment}/reverse', [StockAdjustmentController::class, 'reverse'])
+    ->name('stock-adjustments.reverse')
+    ->middleware('permission:reverse_stock_adjustments');
         });
     });

@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Permission;
 use App\Models\Role;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 /**
  * The permission catalog is CODE, not tenant data: fixed rows generated from
@@ -103,11 +104,6 @@ class PermissionService
     private function modules(): array
     {
         return [
-        // Clean up pivot + permissions safely (no truncate)
-        DB::table('permission_role')->delete();
-        Permission::query()->delete();
-
-        $modules = [
             'reception' => ['view'],
             'dashboard' => ['view'],
             'live_job_board' => ['view'],
@@ -215,8 +211,10 @@ class PermissionService
                 'edit_users',
                 'delete_users',
 
-                'view_services', 'create_services',
-                'edit_services', 'delete_services',,
+                'view_services',
+                'create_services',
+                'edit_services',
+                'delete_services',
             ],
 
             'manager' => [
@@ -272,8 +270,11 @@ class PermissionService
                 'payment_cashier',
                 'print_options_cashier',
 
-                'view_reports',,
-                'view_services', 'create_services', 'edit_services', 'delete_services',
+                'view_reports',
+                'view_services',
+                'create_services',
+                'edit_services',
+                'delete_services',
             ],
 
             'receptionist' => [
@@ -293,7 +294,7 @@ class PermissionService
                 'view_cashier',
                 'search_cashier',
                 'payment_cashier',
-                'print_options_cashier',,
+                'print_options_cashier',
             ],
 
             'cashier' => [
@@ -312,7 +313,7 @@ class PermissionService
                 'view_appointments',
                 'create_appointments',
                 'view_job_cards',
-                'create_job_cards',,
+                'create_job_cards',
             ],
 
             'technician' => [
@@ -320,7 +321,7 @@ class PermissionService
                 'view_job_cards',
                 'view_live_job_board',
                 'change_status_job_cards',
-                'consume_parts_job_cards',,
+                'consume_parts_job_cards',
             ],
 
             'staff' => [
@@ -335,46 +336,5 @@ class PermissionService
                 'create_appointments',
             ],
         ];
-
-        foreach ($rolePermissions as $roleName => $modules) {
-            $role = Role::firstOrCreate(
-                ['slug' => $roleName],
-                [
-                    'name' => ucfirst(str_replace('_', ' ', $roleName)),
-                    'is_system' => true,
-                ]
-            );
-
-            if ($roleName === 'super_admin') {
-                // Super admin gets all permissions
-                $allPermissions = Permission::all();
-                $role->permissions()->sync($allPermissions->pluck('id'));
-            } else {
-                // Use the permission slugs directly from the array
-                $permissions = Permission::whereIn('slug', $modules)->get();
-                $role->permissions()->sync($permissions->pluck('id'));
-            }
-        }
-    }
-
-    public function userHasPermission(?\App\Models\User $user, string $permissionSlug): bool
-    {
-        if (!$user) {
-            return false;
-        }
-
-        if ($user->isAdmin()) {
-            return true;
-        }
-
-        return Cache::remember("user.{$user->id}.permissions", 3600, function () use ($user) {
-            return $user->roles()
-                ->with('permissions')
-                ->get()
-                ->pluck('permissions')
-                ->flatten()
-                ->pluck('slug')
-                ->toArray();
-        }) && in_array($permissionSlug, Cache::get("user.{$user->id}.permissions", []));
     }
 }
