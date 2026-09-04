@@ -59,16 +59,8 @@ class ReceptionController extends Controller
 
     public function vehicleImage(Vehicle $vehicle)
     {
-        $businessId = auth()->user()->business_id;
-
-        // Vehicle does not have business_id.
-        // Verify ownership through the vehicle's customer.
-        $vehicle = Vehicle::whereKey($vehicle->id)
-            ->whereHas('customer', function ($query) use ($businessId) {
-                $query->where('business_id', $businessId);
-            })
-            ->firstOrFail();
-
+        // Bound model is already tenant-scoped (TenantScope) — the
+        // business_id through-the-customer check is redundant now.
         if (!$vehicle->image) {
             abort(404);
         }
@@ -187,9 +179,7 @@ class ReceptionController extends Controller
                     ->map(fn ($items) => $items->sum(fn ($item) => (float) $item['quantity']));
 
                 foreach ($productQuantities as $productId => $quantity) {
-                    $product = Product::where('business_id', $businessId)
-                        ->where('active', true)
-                        ->findOrFail($productId);
+                    $product = Product::where('active', true)->findOrFail($productId);
 
                     $inventory = Inventory::where('product_id', $product->id)
                         ->where('branch_id', $branchId)
@@ -247,8 +237,7 @@ class ReceptionController extends Controller
 
     public function getServices()
     {
-        $services = Service::where('business_id', auth()->user()->business_id)
-            ->with('category')
+        $services = Service::with('category')
             ->orderBy('name')
             ->get();
 
@@ -261,7 +250,6 @@ class ReceptionController extends Controller
         $businessId = auth()->user()->business_id;
 
         $products = Product::query()
-            ->where('business_id', $businessId)
             ->where('active', true)
             ->with([
                 'inventory' => function ($query) use ($branchId) {

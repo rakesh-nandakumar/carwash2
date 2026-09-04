@@ -29,7 +29,7 @@ class LoyaltyService
             $account = $this->getAccount($customerId);
             
             // Calculate points based on settings
-            $pointsPerRupee = (float) \App\Models\Setting::get('loyalty', 'points_per_rupee', 0.1);
+            $pointsPerRupee = (float) \App\Services\Settings::num('loyalty.points_per_rupee', 0.1);
             $pointsEarned = $amount * $pointsPerRupee;
             
             $account->points += $pointsEarned;
@@ -124,7 +124,7 @@ class LoyaltyService
 
     public function getPointsValue(float $points): float
     {
-        $rupeesPerPoint = (float) \App\Models\Setting::get('loyalty', 'rupees_per_point', 1.0);
+        $rupeesPerPoint = (float) \App\Services\Settings::num('loyalty.rupees_per_point', 1.0);
         return $points * $rupeesPerPoint;
     }
 
@@ -209,7 +209,7 @@ class LoyaltyService
 
     public function expireOldPoints(): void
     {
-        $expiryMonths = (int) \App\Models\Setting::get('loyalty', 'points_expiry_months', 12);
+        $expiryMonths = (int) \App\Services\Settings::num('loyalty.points_expiry_months', 12);
         
         $oldTransactions = LoyaltyTransaction::where('type', LoyaltyTransactionType::EARNED)
             ->where('created_at', '<', now()->subMonths($expiryMonths))

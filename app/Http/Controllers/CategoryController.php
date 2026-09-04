@@ -9,8 +9,7 @@ class CategoryController extends Controller
 {
     public function index()
     {
-        $categories = Category::where('business_id', auth()->user()->business_id)
-            ->whereNull('parent_id')
+        $categories = Category::whereNull('parent_id')
             ->with('children')
             ->latest()
             ->paginate(20);
@@ -19,8 +18,7 @@ class CategoryController extends Controller
 
     public function create()
     {
-        $categories = Category::where('business_id', auth()->user()->business_id)
-            ->whereNull('parent_id')
+        $categories = Category::whereNull('parent_id')
             ->get();
         $selectedParent = request('parent_id');
         return view('categories.create', compact('categories', 'selectedParent'));
@@ -41,8 +39,7 @@ class CategoryController extends Controller
 
     public function edit(Category $category)
     {
-        $categories = Category::where('business_id', auth()->user()->business_id)
-            ->whereNull('parent_id')
+        $categories = Category::whereNull('parent_id')
             ->where('id', '!=', $category->id)
             ->get();
         return view('categories.edit', compact('category', 'categories'));

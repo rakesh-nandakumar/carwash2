@@ -2,13 +2,15 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToTenant;
+
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use App\Enums\CommunicationChannel;
 use App\Enums\CommunicationStatus;
 
 class Communication extends Model
-{
+{ use BelongsToTenant;
     protected $guarded = [];
 
     protected $casts = [
