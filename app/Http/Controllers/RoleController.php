@@ -12,9 +12,12 @@ class RoleController extends Controller
 {
     public function index()
     {
+        $this->authorize('viewAny', Role::class);
+
         $businessId = auth()->user()->business_id;
 
         $roles = Role::withCount('users')
+            ->where('tenant_id', auth()->user()->tenant_id)
             ->where('business_id', $businessId)
             ->orderBy('name')
             ->paginate(20);
@@ -24,6 +27,8 @@ class RoleController extends Controller
 
     public function create()
     {
+        $this->authorize('create', Role::class);
+
         $permissions = Permission::orderBy('module')
             ->orderBy('name')
             ->get()
@@ -36,6 +41,8 @@ class RoleController extends Controller
         Request $request,
         PermissionEscalationService $escalation
     ) {
+        $this->authorize('create', Role::class);
+
         $validated = $request->validate([
             'name' => [
                 'required',
@@ -66,6 +73,7 @@ class RoleController extends Controller
         );
 
         $role = Role::create([
+            'tenant_id' => auth()->user()->tenant_id,
             'business_id' => auth()->user()->business_id,
             'name' => $validated['name'],
             'slug' => Str::slug($validated['name']) . '-' . uniqid(),
@@ -88,8 +96,11 @@ class RoleController extends Controller
 
     public function edit(Role $role)
     {
+        $this->authorize('update', $role);
+
         abort_unless(
-            $role->business_id === auth()->user()->business_id,
+            $role->tenant_id === auth()->user()->tenant_id
+                && $role->business_id === auth()->user()->business_id,
             404
         );
 
@@ -113,8 +124,11 @@ class RoleController extends Controller
         Role $role,
         PermissionEscalationService $escalation
     ) {
+        $this->authorize('update', $role);
+
         abort_unless(
-            $role->business_id === auth()->user()->business_id,
+            $role->tenant_id === auth()->user()->tenant_id
+                && $role->business_id === auth()->user()->business_id,
             404
         );
 
@@ -174,8 +188,11 @@ class RoleController extends Controller
 
     public function destroy(Role $role)
     {
+        $this->authorize('delete', $role);
+
         abort_unless(
-            $role->business_id === auth()->user()->business_id,
+            $role->tenant_id === auth()->user()->tenant_id
+                && $role->business_id === auth()->user()->business_id,
             404
         );
 

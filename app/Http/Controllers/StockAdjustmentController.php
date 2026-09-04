@@ -30,7 +30,7 @@ class StockAdjustmentController extends Controller
             ->where('business_id', $user->business_id)
             ->orderByDesc('created_at');
 
-        if (!$user->isAdmin()) {
+        if (!$user->hasPermissionTo('stock_adjustments.access')) {
             $query->where('branch_id', $user->branch_id);
         }
 
@@ -108,7 +108,7 @@ class StockAdjustmentController extends Controller
             abort(403, 'Invalid branch.');
         }
 
-        if (!$user->isAdmin() && $branch->id !== $user->branch_id) {
+        if (!$user->hasPermissionTo('stock_adjustments.create') && $branch->id !== $user->branch_id) {
             abort(403, 'You do not have access to this branch.');
         }
 
@@ -147,7 +147,7 @@ class StockAdjustmentController extends Controller
             abort(403, 'Unauthorized.');
         }
 
-        if (!$user->isAdmin() &&
+        if (!$user->hasPermissionTo('stock_adjustments.reverse') &&
             $stockAdjustment->branch_id !== $user->branch_id
         ) {
             abort(403, 'Unauthorized.');

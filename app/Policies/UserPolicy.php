@@ -67,7 +67,9 @@ class UserPolicy
 
     private function sameBusiness(User $actor, User $target): bool
     {
-        return $actor->business_id !== null
+        return $actor->tenant_id !== null
+            && $actor->business_id !== null
+            && $actor->tenant_id === $target->tenant_id
             && $actor->business_id === $target->business_id;
     }
 

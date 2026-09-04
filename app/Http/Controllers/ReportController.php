@@ -2,7 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\{Invoice, Job, Customer, Vehicle, Product, Service};
+use App\Models\{Invoice, Job, Customer, Vehicle, Product, Service, InventoryMovement};
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 
@@ -10,6 +11,11 @@ class ReportController extends Controller
 {
     public function index()
     {
+        abort_unless(
+            auth()->user()->hasPermissionTo('reports.access'),
+            403
+        );
+
         return view('reports.index', [
             'revenue' => Invoice::sum('total'),
             'paid' => Invoice::sum('paid'),
@@ -26,6 +32,11 @@ class ReportController extends Controller
 
     public function salesReport(Request $request)
     {
+        abort_unless(
+            auth()->user()->hasPermissionTo('reports.sales'),
+            403
+        );
+
         $startDate = $request->input('start_date', now()->startOfMonth()->format('Y-m-d'));
         $endDate = $request->input('end_date', now()->endOfDay()->format('Y-m-d'));
 
@@ -60,6 +71,11 @@ class ReportController extends Controller
 
     public function stockReport(Request $request)
     {
+        abort_unless(
+            auth()->user()->hasPermissionTo('reports.stock'),
+            403
+        );
+
         // Paginated list
         $stock = DB::table('inventory')
             ->join('products', 'products.id', '=', 'inventory.product_id')
@@ -93,38 +109,73 @@ class ReportController extends Controller
 
     public function stockMovementReport(Request $request)
     {
-        $startDate = $request->input('start_date', now()->startOfMonth()->format('Y-m-d'));
-        $endDate = $request->input('end_date', now()->endOfDay()->format('Y-m-d'));
+        abort_unless(
+            auth()->user()->hasPermissionTo('reports.stock_movement'),
+            403
+        );
+
+        $startDate = Carbon::parse(
+            $request->input(
+                'start_date',
+                now()->startOfMonth()->toDateString()
+            )
+        )->startOfDay();
+
+        $endDate = Carbon::parse(
+            $request->input(
+                'end_date',
+                now()->toDateString()
+            )
+        )->endOfDay();
 
         $user = auth()->user();
 
-        $query = DB::table('inventory_movements')
-            ->join('products', 'products.id', '=', 'inventory_movements.product_id')
-            ->join('branches', 'branches.id', '=', 'inventory_movements.branch_id')
-            ->whereBetween('inventory_movements.created_at', [$startDate, $endDate])
-            ->where('products.business_id', $user->business_id)
-            ->select(
-                'inventory_movements.*',
-                'products.name',
-                'products.sku',
-                'branches.name as branch_name'
-            );
+        $query = InventoryMovement::query()
+            ->with([
+                'product',
+                'branch',
+                'user',
+            ])
+            ->whereBetween('created_at', [
+                $startDate,
+                $endDate,
+            ]);
 
-        // Non-admin users only see their own branch
-        if (!$user->isAdmin()) {
-            $query->where('inventory_movements.branch_id', $user->branch_id);
+        /*
+         * Non-admin users only see their own branch.
+         *
+         * InventoryMovement already uses BelongsToTenant,
+         * so tenant isolation is handled by TenantScope.
+         */
+        if (!$user->isAdmin() && $user->branch_id) {
+            $query->where(
+                'branch_id',
+                $user->branch_id
+            );
         }
 
         $movements = $query
-            ->orderBy('inventory_movements.created_at', 'desc')
+            ->latest('created_at')
             ->paginate(20)
             ->withQueryString();
 
-        return view('reports.stock_movement', compact('movements', 'startDate', 'endDate'));
+        return view(
+            'reports.stock_movement',
+            compact(
+                'movements',
+                'startDate',
+                'endDate'
+            )
+        );
     }
 
     public function serviceReport(Request $request)
     {
+        abort_unless(
+            auth()->user()->hasPermissionTo('reports.services'),
+            403
+        );
+
         $startDate = $request->input('start_date', now()->startOfMonth()->format('Y-m-d'));
         $endDate = $request->input('end_date', now()->endOfDay()->format('Y-m-d'));
 
@@ -154,6 +205,11 @@ class ReportController extends Controller
 
     public function customerReport(Request $request)
     {
+        abort_unless(
+            auth()->user()->hasPermissionTo('reports.customers'),
+            403
+        );
+
         $startDate = $request->input('start_date', now()->startOfMonth()->format('Y-m-d'));
         $endDate = $request->input('end_date', now()->endOfDay()->format('Y-m-d'));
 

@@ -191,7 +191,7 @@ class InventoryController extends Controller
             $request->input('branch_id', $user->branch_id)
         );
 
-        if (!$user->isAdmin() && $branchId !== $user->branch_id) {
+        if (!$user->hasPermissionTo('inventory.access') && $branchId !== $user->branch_id) {
             abort(403, 'Unauthorized.');
         }
 
