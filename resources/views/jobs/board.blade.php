@@ -458,6 +458,36 @@
     }
 </style>
 
+<!-- TV Mode Exit Button -->
+<button
+    type="button"
+    id="exitTvModeBtn"
+    onclick="exitTvMode()"
+    title="Exit TV Mode"
+    style="
+        position: fixed;
+        top: 16px;
+        right: 16px;
+        z-index: 99999;
+        display: none;
+        align-items: center;
+        gap: 8px;
+        padding: 9px 14px;
+        border: 1px solid rgba(255,255,255,0.25);
+        border-radius: 8px;
+        background: rgba(15,23,42,0.90);
+        color: white;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.25);
+        backdrop-filter: blur(8px);
+    "
+>
+    <span style="font-size: 16px;">↙</span>
+    Exit TV Mode
+</button>
+
 <div class="page-head">
     <div>
         <h1>Live Job Board</h1>
@@ -662,6 +692,29 @@ tvToggle.addEventListener('click', () => {
             sidebar?.classList.toggle('collapsed', sidebarStateBeforeTV.sidebarCollapsed);
             main?.classList.toggle('expanded', sidebarStateBeforeTV.mainExpanded);
         }
+    }
+});
+
+// Exit TV Mode Button + Fullscreen Listener
+function exitTvMode() {
+    if (document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {});
+    }
+
+    document.getElementById('exitTvModeBtn').style.display = 'none';
+}
+
+document.addEventListener('fullscreenchange', function () {
+    const button = document.getElementById('exitTvModeBtn');
+
+    if (!button) {
+        return;
+    }
+
+    if (document.fullscreenElement) {
+        button.style.display = 'flex';
+    } else {
+        button.style.display = 'none';
     }
 });
 
