@@ -35,7 +35,7 @@ class RoleSeeder extends Seeder
         }
     }
 
-    private function seedRolesForBusiness(Business $business): void
+    public function seedRolesForBusiness(Business $business): void
     {
         $permissions = Permission::query()
             ->get()

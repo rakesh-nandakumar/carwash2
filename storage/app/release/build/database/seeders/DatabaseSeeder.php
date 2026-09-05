@@ -49,14 +49,20 @@ class DatabaseSeeder extends Seeder
                 'address' => 'Colombo, Sri Lanka',
             ]);
 
+            // RBAC roles (see RoleSeeder) — legacy `role` column alone gives no
+            // permissions; isFullAdmin()/hasPermissionTo() only ever consult
+            // the roles() relation, so every seeded user needs one attached.
+            $this->call(RoleSeeder::class);
+            $rbacRoles = \App\Models\Role::where('business_id', $b->id)->get()->keyBy('slug');
+
             foreach ([
-                ['System Administrator', 'admin@autocare.local', 'super_admin'],
-                ['Business Owner', 'owner@autocare.local', 'owner'],
-                ['Receptionist', 'reception@autocare.local', 'receptionist'],
-                ['Technician', 'tech@autocare.local', 'technician'],
-                ['Cashier', 'cashier@autocare.local', 'cashier'],
-            ] as [$n, $e, $role]) {
-                User::create([
+                ['System Administrator', 'admin@autocare.local', 'super_admin', 'full-administrator'],
+                ['Business Owner', 'owner@autocare.local', 'owner', 'owner'],
+                ['Receptionist', 'reception@autocare.local', 'receptionist', 'service-advisor'],
+                ['Technician', 'tech@autocare.local', 'technician', 'technician'],
+                ['Cashier', 'cashier@autocare.local', 'cashier', 'cashier'],
+            ] as [$n, $e, $role, $roleSlug]) {
+                $user = User::create([
                     'business_id' => $b->id,
                     'branch_id' => $br->id,
                     'name' => $n,
@@ -65,6 +71,10 @@ class DatabaseSeeder extends Seeder
                     'role' => $role,
                     'active' => true,
                 ]);
+
+                if ($rbacRoles->has($roleSlug)) {
+                    $user->roles()->attach($rbacRoles[$roleSlug]->id);
+                }
             }
 
             $cats = [];
