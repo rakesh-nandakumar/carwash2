@@ -21,7 +21,10 @@
             <strong style="color:#dc2626;">Low Stock Alert: {{ $lowStockItems->count() }} product(s) need attention</strong>
             <p style="margin:4px 0 0 0;color:#991b1b;font-size:14px;">
                 @foreach($lowStockItems->take(3) as $item)
-                    {{ $item->product->name }} ({{ $item->quantity }} / {{ $item->product->minimum_stock }}){{ !$loop->last ? ', ' : '' }}
+                    @php
+                        $itemQty = (float) ($item->inventory->first()->quantity ?? 0);
+                    @endphp
+                    {{ $item->name }} ({{ number_format($itemQty, 3) }} / {{ $item->minimum_stock }}){{ !$loop->last ? ', ' : '' }}
                 @endforeach
                 @if($lowStockItems->count() > 3)
                     and {{ $lowStockItems->count() - 3 }} more...
@@ -49,34 +52,37 @@
         </thead>
         <tbody>
             @foreach($items as $i)
+            @php
+                $inv = $i->inventory->first();
+                $quantity = $inv ? (float) $inv->quantity : 0;
+                $reserved = $inv ? (float) ($inv->reserved_quantity ?? 0) : 0;
+                $available = max(0, $quantity - $reserved);
+            @endphp
             <tr>
                 <td>
-                    @if($i->product->image && file_exists(storage_path('app/public/'.$i->product->image)))
-                        <img src="{{ asset('storage/'.$i->product->image) }}" alt="{{ $i->product->name }}" style="width:50px;height:50px;object-fit:cover;border-radius:4px;">
+                    @if($i->image && file_exists(storage_path('app/public/'.$i->image)))
+                        <img src="{{ asset('storage/'.$i->image) }}" alt="{{ $i->name }}" style="width:50px;height:50px;object-fit:cover;border-radius:4px;">
                     @else
                         <span style="color:#9ca3af;">No image</span>
                     @endif
                 </td>
-                <td>{{ $i->product->sku }}</td>
-                <td><b>{{ $i->product->name }}</b></td>
-                <td>{{ $i->product->brand }}</td>
+                <td>{{ $i->sku }}</td>
+                <td><b>{{ $i->name }}</b></td>
+                <td>{{ $i->brand }}</td>
                 <td>
-                    @php
-                        $available = max(0, $i->quantity - ($i->reserved_quantity ?? 0));
-                    @endphp
                     @if($available == 0)
                         <span style="color:#dc2626;font-weight:bold;">Out of Stock</span>
-                    @elseif($available <= $i->product->minimum_stock)
-                        <span style="color:#dc2626;font-weight:bold;">{{ $available }}</span>
+                    @elseif($available <= $i->minimum_stock)
+                        <span style="color:#dc2626;font-weight:bold;">{{ number_format($available, 3) }}</span>
                     @else
-                        {{ $available }}
+                        {{ number_format($available, 3) }}
                     @endif
                 </td>
-                <td>{{ $i->product->minimum_stock }}</td>
-                <td>Rs. {{ number_format($i->product->selling_price,2) }}</td>
+                <td>{{ $i->minimum_stock }}</td>
+                <td>Rs. {{ number_format($i->selling_price,2) }}</td>
                 <td>
                     <div class="actions-row">
-                        <form method="post" action="{{ route('inventory.adjust',$i->product) }}" class="add-stock-form">
+                        <form method="post" action="{{ route('inventory.adjust',$i) }}" class="add-stock-form">
                             @csrf
                             <input 
                                 name="quantity" 
@@ -94,8 +100,8 @@
                             <button type="submit" class="btn-add">+ Add</button>
                         </form>
 
-                        <a href="{{ route('inventory.edit',$i->product) }}" class="btn-edit">Edit</a>
-                        <button type="button" class="btn-delete" onclick="showDeleteModal('{{ $i->product->id }}')">Delete</button>
+                        <a href="{{ route('inventory.edit',$i) }}" class="btn-edit">Edit</a>
+                        <button type="button" class="btn-delete" onclick="showDeleteModal('{{ $i->id }}')">Delete</button>
                     </div>
                 </td>
             </tr>
@@ -107,13 +113,16 @@
     <div class="inventory-cards">
         @forelse($items as $i)
         @php
-            $available = max(0, $i->quantity - ($i->reserved_quantity ?? 0));
+            $inv = $i->inventory->first();
+            $quantity = $inv ? (float) $inv->quantity : 0;
+            $reserved = $inv ? (float) ($inv->reserved_quantity ?? 0) : 0;
+            $available = max(0, $quantity - $reserved);
         @endphp
         <div class="inventory-card">
             <div class="card-top">
                 <div class="card-name">
-                    <strong>{{ $i->product->name }}</strong>
-                    <small>{{ $i->product->sku }} @if($i->product->brand) · {{ $i->product->brand }} @endif</small>
+                    <strong>{{ $i->name }}</strong>
+                    <small>{{ $i->sku }} @if($i->brand) · {{ $i->brand }} @endif</small>
                 </div>
             </div>
 
@@ -123,25 +132,25 @@
                     <span class="value">
                         @if($available == 0)
                             <span style="color:#dc2626;font-weight:600;">Out of Stock</span>
-                        @elseif($available <= $i->product->minimum_stock)
-                            <span style="color:#dc2626;font-weight:600;">{{ $available }}</span>
+                        @elseif($available <= $i->minimum_stock)
+                            <span style="color:#dc2626;font-weight:600;">{{ number_format($available, 3) }}</span>
                         @else
-                            {{ $available }}
+                            {{ number_format($available, 3) }}
                         @endif
                     </span>
                 </div>
                 <div class="detail">
                     <span class="label">Min</span>
-                    <span class="value">{{ $i->product->minimum_stock }}</span>
+                    <span class="value">{{ $i->minimum_stock }}</span>
                 </div>
                 <div class="detail">
                     <span class="label">Sell Price</span>
-                    <span class="value">Rs. {{ number_format($i->product->selling_price,2) }}</span>
+                    <span class="value">Rs. {{ number_format($i->selling_price,2) }}</span>
                 </div>
             </div>
 
             {{-- Add Stock on mobile --}}
-            <form method="post" action="{{ route('inventory.adjust',$i->product) }}" class="mobile-add-stock">
+            <form method="post" action="{{ route('inventory.adjust',$i) }}" class="mobile-add-stock">
                 @csrf
                 <input name="quantity" type="number" step="0.001" min="0" placeholder="Qty to add" required>
                 <input name="reason" type="text" placeholder="Reason (optional)">
@@ -149,8 +158,8 @@
             </form>
 
             <div class="card-actions">
-                <a href="{{ route('inventory.edit',$i->product) }}" class="btn-edit">Edit</a>
-                <button class="btn-delete" onclick="showDeleteModal('{{ $i->product->id }}')">Delete</button>
+                <a href="{{ route('inventory.edit',$i) }}" class="btn-edit">Edit</a>
+                <button class="btn-delete" onclick="showDeleteModal('{{ $i->id }}')">Delete</button>
             </div>
         </div>
         @empty

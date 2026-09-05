@@ -16,28 +16,38 @@ class InventoryController extends Controller
 
     public function index()
     {
-        $branch = auth()->user()->branch_id;
+        $user = auth()->user();
 
-        $items = Inventory::with('product')
-            ->where('branch_id', $branch)
-            ->whereHas('product', function ($query) {
-                $query->where('active', true);
-            })
+        $inventoryScope = function ($query) use ($user) {
+            if ($user->branch_id) {
+                $query->where('branch_id', $user->branch_id);
+            }
+        };
+
+        $products = Product::where('business_id', $user->business_id)
+            ->where('active', true)
+            ->with(['inventory' => $inventoryScope])
+            ->orderBy('name')
             ->paginate(20);
 
-        $allItems = Inventory::with('product')
-            ->where('branch_id', $branch)
-            ->whereHas('product', function ($query) {
-                $query->where('active', true);
-            })
+        $allProducts = Product::where('business_id', $user->business_id)
+            ->where('active', true)
+            ->with(['inventory' => $inventoryScope])
             ->get();
 
-        $lowStockItems = $allItems->filter(function ($item) {
-            $available = max(0, $item->quantity - ($item->reserved_quantity ?? 0));
-            return $available <= $item->product->minimum_stock;
+        $lowStockItems = $allProducts->filter(function ($product) {
+            $inventory = $product->inventory->first();
+            $quantity = $inventory ? (float) $inventory->quantity : 0;
+            $reserved = $inventory ? (float) ($inventory->reserved_quantity ?? 0) : 0;
+            $available = max(0, $quantity - $reserved);
+
+            return $available <= $product->minimum_stock;
         });
 
-        return view('inventory.index', compact('items', 'lowStockItems'));
+        return view('inventory.index', [
+            'items'         => $products,
+            'lowStockItems' => $lowStockItems,
+        ]);
     }
 
     public function create()

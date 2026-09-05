@@ -1184,38 +1184,119 @@ function confirmClose() {
     });
 }
 
-document.getElementById('statusForm').addEventListener('submit', function(e) {
+document.getElementById('statusForm').addEventListener('submit', async function(e) {
     e.preventDefault();
-    const formData = new FormData(this);
-    formData.append('send_whatsapp', document.getElementById('sendWhatsapp')?.checked ? '1' : '0');
-    
-    const whatsappInput = document.getElementById('customerWhatsappNumber');
-    if (whatsappInput && whatsappInput.value.trim() && whatsappInput.value.trim() !== '+94') {
-        formData.append('customer_whatsapp_number', whatsappInput.value.trim());
+
+    const form = this;
+    const formData = new FormData(form);
+
+    const whatsappCheckbox = document.getElementById('sendWhatsapp');
+
+    formData.append(
+        'send_whatsapp',
+        whatsappCheckbox?.checked ? '1' : '0'
+    );
+
+    const whatsappInput =
+        document.getElementById('customerWhatsappNumber');
+
+    if (
+        whatsappInput &&
+        whatsappInput.value.trim() &&
+        whatsappInput.value.trim() !== '+94'
+    ) {
+        formData.append(
+            'customer_whatsapp_number',
+            whatsappInput.value.trim()
+        );
     }
-    
-    const notesInput = document.getElementById('customNotes');
+
+    const notesInput =
+        document.getElementById('customNotes');
+
     if (notesInput && notesInput.value.trim()) {
-        formData.append('custom_notes', notesInput.value.trim());
+        formData.append(
+            'custom_notes',
+            notesInput.value.trim()
+        );
     }
-    
-    fetch(this.action, {
-        method: 'POST',
-        headers: {
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-            'Accept': 'application/json'
-        },
-        body: formData
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.success) {
-            if (data.whatsapp_url) window.open(data.whatsapp_url, '_blank');
-            setTimeout(() => window.location.reload(), 800);
-        } else {
-            alert(data.message || 'Error');
+
+    const confirmButton =
+        form.querySelector('button[type="submit"]');
+
+    if (confirmButton) {
+        confirmButton.disabled = true;
+        confirmButton.textContent = 'Processing...';
+    }
+
+    try {
+        const response = await fetch(form.action, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN':
+                    document.querySelector(
+                        'meta[name="csrf-token"]'
+                    ).content,
+
+                'Accept': 'application/json',
+
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: formData,
+            credentials: 'same-origin'
+        });
+
+        const contentType =
+            response.headers.get('content-type') || '';
+
+        if (!contentType.includes('application/json')) {
+            const text = await response.text();
+
+            console.error(
+                'Expected JSON but received:',
+                text
+            );
+
+            throw new Error(
+                `Server returned ${response.status} instead of JSON.`
+            );
         }
-    });
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            throw new Error(
+                data.message || 'Unable to change job status.'
+            );
+        }
+
+        if (data.whatsapp_url) {
+            window.open(
+                data.whatsapp_url,
+                '_blank'
+            );
+        }
+
+        closeStatusModal();
+
+        window.location.reload();
+
+    } catch (error) {
+        console.error(
+            'Status change failed:',
+            error
+        );
+
+        alert(
+            error.message ||
+            'Unable to change job status.'
+        );
+
+        if (confirmButton) {
+            confirmButton.disabled = false;
+            confirmButton.textContent = 'Confirm Change';
+        }
+    }
 });
 
 function updateSellingPrice() {
