@@ -89,15 +89,22 @@ class InventoryController extends Controller
 
         $p = Product::create($validated);
 
-        $this->service->adjust(
-            $p,
-            auth()->user()->branch_id,
-            (float) $r->input('opening_stock', 0),
-            'Opening stock',
-            InventoryMovementType::PURCHASE->value
-        );
+        $branchId = auth()->user()->branch_id;
+        $openingStock = (float) $r->input('opening_stock', 0);
 
-        return redirect()->route('inventory.index')->with('success', 'Product created.');
+        if ($branchId !== null && $openingStock != 0) {
+            $this->service->adjust(
+                $p,
+                (int) $branchId,
+                $openingStock,
+                'Opening stock',
+                InventoryMovementType::PURCHASE->value
+            );
+        }
+
+        return redirect()
+            ->route('inventory.index')
+            ->with('success', 'Product created.');
     }
 
     public function edit(Product $product)
