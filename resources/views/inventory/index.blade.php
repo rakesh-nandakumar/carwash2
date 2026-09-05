@@ -1,444 +1,295 @@
-@extends('layouts.app')
+<?php
 
-@section('content')
-<div class="page-head">
-    <div>
-        <h1>Item Master</h1>
-        <p>Stock, valuation and traceable movements.</p>
-    </div>
-    <a class="primary" href="{{ route('inventory.create') }}">+ New Product</a>
-</div>
+namespace App\Http\Controllers;
 
-@if($lowStockItems->count() > 0)
-<div class="alert alert-danger" style="background:#fee2e2;border:1px solid #fecaca;border-radius:8px;padding:16px;margin-bottom:20px;">
-    <div style="display:flex;align-items:center;gap:12px;">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"></circle>
-            <line x1="12" y1="8" x2="12" y2="12"></line>
-            <line x1="12" y1="16" x2="12.01" y2="16"></line>
-        </svg>
-        <div>
-            <strong style="color:#dc2626;">Low Stock Alert: {{ $lowStockItems->count() }} product(s) need attention</strong>
-            <p style="margin:4px 0 0 0;color:#991b1b;font-size:14px;">
-                @foreach($lowStockItems->take(3) as $item)
-                    @php
-                        $itemQty = (float) ($item->inventory->first()->quantity ?? 0);
-                    @endphp
-                    {{ $item->name }} ({{ number_format($itemQty, 3) }} / {{ $item->minimum_stock }}){{ !$loop->last ? ', ' : '' }}
-                @endforeach
-                @if($lowStockItems->count() > 3)
-                    and {{ $lowStockItems->count() - 3 }} more...
-                @endif
-            </p>
-        </div>
-    </div>
-</div>
-@endif
+use App\Models\{Product, Inventory, InventoryMovement};
+use App\Services\InventoryService;
+use App\Enums\InventoryMovementType;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
-<div class="panel">
-    <!-- Desktop Table -->
-    <table class="inventory-table">
-        <thead>
-            <tr>
-                <th>Image</th>
-                <th>SKU</th>
-                <th>Product</th>
-                <th>Brand</th>
-                <th>Stock</th>
-                <th>Min</th>
-                <th>Sell Price</th>
-                <th style="min-width:320px;">Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach($items as $i)
-            @php
-                $inv = $i->inventory->first();
-                $quantity = $inv ? (float) $inv->quantity : 0;
-                $reserved = $inv ? (float) ($inv->reserved_quantity ?? 0) : 0;
-                $available = max(0, $quantity - $reserved);
-            @endphp
-            <tr>
-                <td>
-                    @if($i->image && file_exists(storage_path('app/public/'.$i->image)))
-                        <img src="{{ asset('storage/'.$i->image) }}" alt="{{ $i->name }}" style="width:50px;height:50px;object-fit:cover;border-radius:4px;">
-                    @else
-                        <span style="color:#9ca3af;">No image</span>
-                    @endif
-                </td>
-                <td>{{ $i->sku }}</td>
-                <td><b>{{ $i->name }}</b></td>
-                <td>{{ $i->brand }}</td>
-                <td>
-                    @if($available == 0)
-                        <span style="color:#dc2626;font-weight:bold;">Out of Stock</span>
-                    @elseif($available <= $i->minimum_stock)
-                        <span style="color:#dc2626;font-weight:bold;">{{ number_format($available, 3) }}</span>
-                    @else
-                        {{ number_format($available, 3) }}
-                    @endif
-                </td>
-                <td>{{ $i->minimum_stock }}</td>
-                <td>Rs. {{ number_format($i->selling_price,2) }}</td>
-                <td>
-                    <div class="actions-row">
-                        <form method="post" action="{{ route('inventory.adjust',$i) }}" class="add-stock-form">
-                            @csrf
-                            <input 
-                                name="quantity" 
-                                type="number" 
-                                step="0.001" 
-                                min="0" 
-                                placeholder="Qty"
-                                required
-                            >
-                            <input 
-                                name="reason" 
-                                type="text" 
-                                placeholder="Reason"
-                            >
-                            <button type="submit" class="btn-add">+ Add</button>
-                        </form>
-
-                        <a href="{{ route('inventory.edit',$i) }}" class="btn-edit">Edit</a>
-                        <button type="button" class="btn-delete" onclick="showDeleteModal('{{ $i->id }}')">Delete</button>
-                    </div>
-                </td>
-            </tr>
-            @endforeach
-        </tbody>
-    </table>
-
-    <!-- Mobile Cards -->
-    <div class="inventory-cards">
-        @forelse($items as $i)
-        @php
-            $inv = $i->inventory->first();
-            $quantity = $inv ? (float) $inv->quantity : 0;
-            $reserved = $inv ? (float) ($inv->reserved_quantity ?? 0) : 0;
-            $available = max(0, $quantity - $reserved);
-        @endphp
-        <div class="inventory-card">
-            <div class="card-top">
-                <div class="card-name">
-                    <strong>{{ $i->name }}</strong>
-                    <small>{{ $i->sku }} @if($i->brand) · {{ $i->brand }} @endif</small>
-                </div>
-            </div>
-
-            <div class="card-details">
-                <div class="detail">
-                    <span class="label">Stock</span>
-                    <span class="value">
-                        @if($available == 0)
-                            <span style="color:#dc2626;font-weight:600;">Out of Stock</span>
-                        @elseif($available <= $i->minimum_stock)
-                            <span style="color:#dc2626;font-weight:600;">{{ number_format($available, 3) }}</span>
-                        @else
-                            {{ number_format($available, 3) }}
-                        @endif
-                    </span>
-                </div>
-                <div class="detail">
-                    <span class="label">Min</span>
-                    <span class="value">{{ $i->minimum_stock }}</span>
-                </div>
-                <div class="detail">
-                    <span class="label">Sell Price</span>
-                    <span class="value">Rs. {{ number_format($i->selling_price,2) }}</span>
-                </div>
-            </div>
-
-            {{-- Add Stock on mobile --}}
-            <form method="post" action="{{ route('inventory.adjust',$i) }}" class="mobile-add-stock">
-                @csrf
-                <input name="quantity" type="number" step="0.001" min="0" placeholder="Qty to add" required>
-                <input name="reason" type="text" placeholder="Reason (optional)">
-                <button type="submit">+ Add Stock</button>
-            </form>
-
-            <div class="card-actions">
-                <a href="{{ route('inventory.edit',$i) }}" class="btn-edit">Edit</a>
-                <button class="btn-delete" onclick="showDeleteModal('{{ $i->id }}')">Delete</button>
-            </div>
-        </div>
-        @empty
-        <div class="empty-state">No products found.</div>
-        @endforelse
-    </div>
-
-    {{ $items->links() }}
-</div>
-
-{{-- Delete Modal --}}
-<div id="deleteModal" class="modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);align-items:center;justify-content:center;z-index:1000;">
-    <div class="modal-content" style="background:white;border-radius:12px;width:90%;max-width:400px;padding:24px;">
-        <div class="modal-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-            <h3 style="margin:0;font-size:18px;">Confirm Delete</h3>
-            <button class="modal-close" onclick="closeDeleteModal()" style="background:none;border:none;font-size:24px;cursor:pointer;">✕</button>
-        </div>
-        <div class="modal-body" style="margin-bottom:20px;">
-            <p style="margin:0;color:#374151;">Are you sure you want to delete this product? This action cannot be undone.</p>
-        </div>
-        <div class="modal-footer" style="display:flex;justify-content:flex-end;gap:12px;">
-            <button type="button" onclick="closeDeleteModal()" style="padding:8px 16px;border-radius:6px;border:1px solid #d1d5db;background:white;color:#374151;cursor:pointer;font-size:14px;">No</button>
-            <button type="button" onclick="confirmDelete()" style="padding:8px 16px;border-radius:6px;border:none;background:#ef4444;color:white;cursor:pointer;font-size:14px;">Yes</button>
-        </div>
-    </div>
-</div>
-
-<form id="deleteForm" method="post" action="" style="display:none">
-    @method('DELETE')
-    @csrf
-</form>
-
-<script>
-let deleteProductId = null;
-
-function showDeleteModal(id) {
-    deleteProductId = id;
-    document.getElementById('deleteModal').style.display = 'flex';
-}
-
-function closeDeleteModal() {
-    deleteProductId = null;
-    document.getElementById('deleteModal').style.display = 'none';
-}
-
-function confirmDelete() {
-    if (deleteProductId) {
-        const form = document.getElementById('deleteForm');
-        form.action = '{{ route('inventory.destroy', ':id') }}'.replace(':id', deleteProductId);
-        form.submit();
-    }
-    closeDeleteModal();
-}
-</script>
-
-<style>
-/* ========== DESKTOP ========== */
-.inventory-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.inventory-cards {
-    display: none;
-}
-
-/* Single row for everything */
-.actions-row {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    flex-wrap: nowrap;
-}
-
-.add-stock-form {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin: 0;
-}
-
-.add-stock-form input[name="quantity"] {
-    width: 70px;
-    padding: 7px 10px;
-    border: 1px solid #d1d5db;
-    border-radius: 6px;
-    font-size: 13px;
-}
-
-.add-stock-form input[name="reason"] {
-    width: 100px;
-    padding: 7px 10px;
-    border: 1px solid #d1d5db;
-    border-radius: 6px;
-    font-size: 13px;
-}
-
-.btn-add {
-    padding: 7px 12px;
-    background: #16a34a;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    white-space: nowrap;
-}
-
-.btn-add:hover {
-    background: #15803d;
-}
-
-.btn-edit {
-    padding: 7px 12px;
-    background: #f3f4f6;
-    color: #374151;
-    border: 1px solid #e5e7eb;
-    border-radius: 6px;
-    text-decoration: none;
-    font-size: 13px;
-    font-weight: 500;
-    white-space: nowrap;
-}
-
-.btn-delete {
-    padding: 7px 12px;
-    background: #ef4444;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    white-space: nowrap;
-}
-
-/* ========== MOBILE ========== */
-@media (max-width: 768px) {
-    .page-head {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 12px;
+class InventoryController extends Controller
+{
+    public function __construct(private InventoryService $service)
+    {
     }
 
-    .page-head a.primary {
-        width: 100%;
-        text-align: center;
+    public function index()
+    {
+        $user = auth()->user();
+
+        /*
+         * Load active products for this business.
+         *
+         * If the logged-in user has a branch:
+         *     show stock for that branch.
+         *
+         * If branch_id is NULL:
+         *     show total stock across all branches.
+         */
+        $items = Inventory::with('product')
+            ->whereHas('product', function ($query) use ($user) {
+                $query->where('business_id', $user->business_id)
+                    ->where('active', true);
+            })
+            ->when(
+                $user->branch_id !== null,
+                function ($query) use ($user) {
+                    $query->where('branch_id', $user->branch_id);
+                }
+            )
+            ->paginate(20)
+            ->withQueryString();
+
+        /*
+         * Load all inventory rows for the low-stock calculation.
+         */
+        $allItems = Inventory::with('product')
+            ->whereHas('product', function ($query) use ($user) {
+                $query->where('business_id', $user->business_id)
+                    ->where('active', true);
+            })
+            ->when(
+                $user->branch_id !== null,
+                function ($query) use ($user) {
+                    $query->where('branch_id', $user->branch_id);
+                }
+            )
+            ->get();
+
+        /*
+         * Group inventory by product so that when branch_id is NULL
+         * stock from all branches is combined.
+         */
+        $stockByProduct = $allItems
+            ->groupBy('product_id')
+            ->map(function ($inventoryRows) {
+                return (float) $inventoryRows->sum('quantity');
+            });
+
+        /*
+         * Low-stock products.
+         */
+        $lowStockItems = $allItems
+            ->groupBy('product_id')
+            ->map(function ($inventoryRows) use ($stockByProduct) {
+
+                $product = $inventoryRows->first()->product;
+
+                if (!$product) {
+                    return null;
+                }
+
+                $currentStock = $stockByProduct->get(
+                    $product->id,
+                    0
+                );
+
+                if ($currentStock <= (float) $product->minimum_stock) {
+                    return [
+                        'product' => $product,
+                        'current' => $currentStock,
+                        'minimum' => (float) $product->minimum_stock,
+                        'shortage' => max(
+                            0,
+                            (float) $product->minimum_stock - $currentStock
+                        ),
+                    ];
+                }
+
+                return null;
+            })
+            ->filter()
+            ->values();
+
+        return view(
+            'inventory.index',
+            compact(
+                'items',
+                'allItems',
+                'lowStockItems',
+                'stockByProduct'
+            )
+        );
     }
 
-    .inventory-table {
-        display: none;
+    public function create()
+    {
+        return view('inventory.create', [
+            'mainCategories' => \App\Models\Category::where('business_id', auth()->user()->business_id)
+                ->whereNull('parent_id')
+                ->orderBy('name')
+                ->get(),
+            'subcategories' => \App\Models\Category::where('business_id', auth()->user()->business_id)
+                ->whereNotNull('parent_id')
+                ->orderBy('name')
+                ->get(),
+        ]);
     }
 
-    .inventory-cards {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-        gap: 12px;
+    public function store(Request $r)
+    {
+        $validated = $r->validate([
+            'name' => [
+                'required',
+                'unique:products,name,NULL,id,active,1',
+            ],
+            'sku'           => 'nullable',
+            'barcode'       => 'nullable|unique:products,barcode',
+            'category_id'   => 'required|exists:categories,id',
+            'brand'         => 'nullable',
+            'part_number'   => 'nullable',
+            'cost_price'    => 'nullable|numeric',
+            'selling_price' => 'required|numeric',
+            'minimum_stock' => 'required|integer',
+            'image'         => 'nullable|image|max:2048',
+        ]);
+
+        if (empty($validated['sku'])) {
+            $validated['sku'] = 'PRD-' . date('Y') . '-' . str_pad(
+                (string) (Product::max('id') + 1),
+                6,
+                '0',
+                STR_PAD_LEFT
+            );
+        }
+
+        $validated['business_id'] = auth()->user()->business_id;
+
+        if ($r->hasFile('image')) {
+            $validated['image'] = $r->file('image')->store('products', 'public');
+        }
+
+        $p = Product::create($validated);
+
+        $branchId = auth()->user()->branch_id;
+        $openingStock = (float) $r->input('opening_stock', 0);
+
+        if ($branchId !== null && $openingStock != 0) {
+            $this->service->adjust(
+                $p,
+                (int) $branchId,
+                $openingStock,
+                'Opening stock',
+                InventoryMovementType::PURCHASE->value
+            );
+        }
+
+        return redirect()
+            ->route('inventory.index')
+            ->with('success', 'Product created.');
     }
 
-    .inventory-card {
-        background: #ffffff;
-        border: 1px solid #e5e7eb;
-        border-radius: 12px;
-        padding: 14px 16px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    public function edit(Product $product)
+    {
+        return view('inventory.edit', [
+            'product'        => $product,
+            'mainCategories' => \App\Models\Category::where('business_id', auth()->user()->business_id)
+                ->whereNull('parent_id')
+                ->orderBy('name')
+                ->get(),
+            'subcategories'  => \App\Models\Category::where('business_id', auth()->user()->business_id)
+                ->whereNotNull('parent_id')
+                ->orderBy('name')
+                ->get(),
+        ]);
     }
 
-    .card-top {
-        margin-bottom: 12px;
+    public function update(Request $r, Product $product)
+    {
+        $validated = $r->validate([
+            'name'          => 'required',
+            'category_id'   => 'required|exists:categories,id',
+            'brand'         => 'nullable',
+            'part_number'   => 'nullable',
+            'cost_price'    => 'nullable|numeric',
+            'selling_price' => 'required|numeric',
+            'minimum_stock' => 'required|integer',
+            'image'         => 'nullable|image|max:2048',
+        ]);
+
+        if ($r->hasFile('image')) {
+            $validated['image'] = $r->file('image')->store('products', 'public');
+        }
+
+        $product->update($validated);
+
+        return redirect()->route('inventory.index')->with('success', 'Product updated.');
     }
 
-    .card-name strong {
-        display: block;
-        font-size: 15px;
-        font-weight: 600;
-        color: #111827;
-        margin-bottom: 2px;
+    public function destroy(Product $product)
+    {
+        try {
+            $product->update([
+                'active' => false,
+            ]);
+
+            return redirect()
+                ->route('inventory.index')
+                ->with('success', 'Product deleted.');
+        } catch (\Exception $e) {
+            return back()->with(
+                'error',
+                'Cannot delete product: ' . $e->getMessage()
+            );
+        }
     }
 
-    .card-name small {
-        font-size: 12px;
-        color: #6b7280;
+    public function adjust(Request $r, Product $product)
+    {
+        $reason = $r->input('reason') ?: 'Manual adjustment';
+
+        $quantity = (float) $r->validate([
+            'quantity' => 'required|numeric|gt:0'
+        ])['quantity'];
+
+        $this->service->adjust(
+            $product,
+            auth()->user()->branch_id,
+            $quantity,
+            $reason
+        );
+
+        return back()->with('success', 'Stock adjusted.');
     }
 
-    .card-details {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 10px 12px;
-        margin-bottom: 14px;
-    }
+    /**
+     * API endpoint used by the Stock Adjustment UI
+     * GET /inventory/{product}/stock
+     */
+    public function stock(Request $request, Product $product)
+    {
+        $user = auth()->user();
 
-    .detail {
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
-    }
+        if ($product->business_id !== $user->business_id) {
+            abort(403, 'Unauthorized.');
+        }
 
-    .detail .label {
-        font-size: 11px;
-        color: #6b7280;
-        text-transform: uppercase;
-        letter-spacing: 0.3px;
-    }
+        $branchId = (int) (
+            $request->input('branch_id', $user->branch_id)
+        );
 
-    .detail .value {
-        font-size: 13.5px;
-        font-weight: 500;
-        color: #1f2937;
-    }
+        if (!$user->hasPermissionTo('inventory.access') && $branchId !== $user->branch_id) {
+            abort(403, 'Unauthorized.');
+        }
 
-    /* Mobile Add Stock */
-    .mobile-add-stock {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        margin-bottom: 12px;
-        padding-bottom: 12px;
-        border-bottom: 1px solid #f3f4f6;
-    }
+        $inventory = Inventory::where('product_id', $product->id)
+            ->where('branch_id', $branchId)
+            ->first();
 
-    .mobile-add-stock input {
-        width: 100%;
-        padding: 9px 12px;
-        border: 1px solid #d1d5db;
-        border-radius: 8px;
-        font-size: 14px;
-        box-sizing: border-box;
-    }
-
-    .mobile-add-stock button {
-        width: 100%;
-        padding: 10px;
-        background: #16a34a;
-        color: white;
-        border: none;
-        border-radius: 8px;
-        font-size: 14px;
-        font-weight: 500;
-        cursor: pointer;
-    }
-
-    .card-actions {
-        display: flex;
-        gap: 8px;
-    }
-
-    .card-actions .btn-edit {
-        flex: 1;
-        text-align: center;
-        padding: 8px 12px;
-        border-radius: 8px;
-        background: #f3f4f6;
-        color: #374151;
-        text-decoration: none;
-        font-size: 13px;
-        font-weight: 500;
-        border: 1px solid #e5e7eb;
-    }
-
-    .card-actions .btn-delete {
-        flex: 1;
-        padding: 8px 12px;
-        border-radius: 8px;
-        background: #ef4444;
-        color: white;
-        border: none;
-        font-size: 13px;
-        font-weight: 500;
-        cursor: pointer;
-    }
-
-    .empty-state {
-        text-align: center;
-        padding: 30px 16px;
-        color: #9ca3af;
-        font-size: 14px;
-        grid-column: 1 / -1;
+        return response()->json([
+            'quantity' => $inventory
+                ? (float) $inventory->quantity
+                : 0,
+            'reserved_quantity' => $inventory
+                ? (float) $inventory->reserved_quantity
+                : 0,
+            'available_quantity' => $inventory
+                ? max(
+                    0,
+                    (float) $inventory->quantity - (float) $inventory->reserved_quantity
+                )
+                : 0,
+        ]);
     }
 }
-</style>
-@endsection

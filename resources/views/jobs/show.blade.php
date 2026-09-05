@@ -1270,15 +1270,12 @@ document.getElementById('statusForm').addEventListener('submit', async function(
             );
         }
 
-        if (data.whatsapp_url) {
-            window.open(
-                data.whatsapp_url,
-                '_blank'
-            );
+        // Only open WhatsApp if user actually checked the box
+        if (whatsappCheckbox?.checked && data.whatsapp_url) {
+            window.open(data.whatsapp_url, '_blank');
         }
 
         closeStatusModal();
-
         window.location.reload();
 
     } catch (error) {
