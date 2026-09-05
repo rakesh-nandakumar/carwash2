@@ -271,6 +271,10 @@ Route::prefix('{tenant}')
                 ->name('inventory.store')
                 ->middleware('permission:inventory.create');
 
+            Route::get('/inventory/{product}', [InventoryController::class, 'show'])
+                ->name('inventory.show')
+                ->middleware('permission:inventory.access');
+
             Route::get('/inventory/{product}/edit', [InventoryController::class, 'edit'])
                 ->name('inventory.edit')
                 ->middleware('permission:inventory.edit');
@@ -282,7 +286,14 @@ Route::prefix('{tenant}')
             Route::delete('/inventory/{product}', [InventoryController::class, 'destroy'])
                 ->name('inventory.destroy')
                 ->middleware('permission:inventory.delete');
-            // Note: inventory.adjust removed — stock adjustment is handled by /stock-adjustments
+
+            Route::post('/inventory/{product}/adjust', [InventoryController::class, 'adjust'])
+                ->name('inventory.adjust')
+                ->middleware('permission:inventory.adjust_stock');
+
+            Route::get('/inventory/{product}/stock', [InventoryController::class, 'stock'])
+                ->name('inventory.stock')
+                ->middleware('permission:inventory.access');
             // ==================== END INVENTORY ====================
 
             // ==================== CATEGORIES ====================

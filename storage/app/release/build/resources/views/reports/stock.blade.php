@@ -87,7 +87,6 @@
                 <strong>{{ $item->name }}</strong>
                 <span class="sku">{{ $item->sku ?? '-' }}</span>
             </div>
-
             <div class="card-body">
                 <div class="row">
                     <span class="label">Qty</span>
@@ -121,7 +120,7 @@
         {{ $stock->links() }}
     </div>
 
-    <!-- Back button (one row below, right aligned) -->
+    <!-- Back button -->
     <div class="report-back no-print">
         <a href="{{ route('reports') }}" class="back-button">← Back</a>
     </div>
@@ -177,6 +176,7 @@
     background: #eff6ff;
     border-color: #bfdbfe;
 }
+
 .stat-card.blue small { color: #1e40af; }
 .stat-card.blue h2 { color: #1e40af; }
 
@@ -184,6 +184,7 @@
     background: #ecfdf5;
     border-color: #a7f3d0;
 }
+
 .stat-card.green small { color: #065f46; }
 .stat-card.green h2 { color: #065f46; }
 
@@ -304,11 +305,99 @@
     font-size: 14px;
 }
 
+/* =========================================================
+   PAGINATION  (Beautiful modern style - same as Stock Movement)
+   ========================================================= */
+
 .pagination-wrap {
-    margin-top: 24px;
+    margin-top: 28px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
 }
 
-/* Back button - one row below, right aligned */
+.pagination-wrap > p,
+.pagination-wrap .text-sm {
+    color: #6b7280;
+    font-size: 13px;
+    margin: 0;
+}
+
+.pagination-wrap nav {
+    display: flex;
+    justify-content: center;
+}
+
+.pagination-wrap .pagination,
+.pagination-wrap nav > div {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.pagination-wrap a,
+.pagination-wrap span {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    min-width: 38px;
+    height: 38px;
+    padding: 0 12px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none !important;
+    color: #374151;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    transition: all 0.15s ease;
+    line-height: 1;
+}
+
+.pagination-wrap a:hover {
+    background: #f3f4f6;
+    border-color: #d1d5db;
+    color: #111827;
+}
+
+.pagination-wrap span[aria-current="page"],
+.pagination-wrap .active span,
+.pagination-wrap [aria-current="page"] span {
+    background: #111827 !important;
+    color: #fff !important;
+    border-color: #111827 !important;
+    font-weight: 600;
+}
+
+.pagination-wrap span[aria-disabled="true"],
+.pagination-wrap .disabled span {
+    color: #9ca3af !important;
+    background: #f9fafb !important;
+    border-color: #e5e7eb !important;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.pagination-wrap svg,
+.pagination-wrap .pagination svg,
+nav[role="navigation"] svg {
+    width: 16px !important;
+    height: 16px !important;
+    max-width: 16px !important;
+    max-height: 16px !important;
+}
+
+.pagination-wrap a[rel="prev"],
+.pagination-wrap a[rel="next"] {
+    font-weight: 500;
+    padding: 0 14px;
+}
+
+/* Back button */
 .report-back {
     margin-top: 24px;
     display: flex;
@@ -361,7 +450,6 @@
         font-size: 20px;
     }
 
-    /* Hide table, show 2-column cards */
     .table-wrap {
         display: none;
     }
@@ -378,23 +466,222 @@
 
 <script>
 function printThermal() {
-    const content = `
-STOCK REPORT
-================================
-Total Stock Value: Rs. {{ number_format($totalStockValue, 2) }}
-Total Retail Value: Rs. {{ number_format($totalRetailValue, 2) }}
-================================
-@foreach($stock as $item)
-{{ $item->name }} | Qty: {{ $item->quantity }} | Rs.{{ number_format($item->total_cost, 2) }}
-@endforeach
-================================
-Generated: {{ now()->format('Y-m-d H:i') }}
-    `;
-    
-    const printWindow = window.open('', '_blank');
-    printWindow.document.write('<pre style="font-family: monospace; font-size: 12px;">' + content + '</pre>');
+    const printWindow = window.open(
+        '',
+        '_blank',
+        'width=420,height=800'
+    );
+
+    if (!printWindow) {
+        alert('Please allow pop-ups in your browser to print the thermal report.');
+        return;
+    }
+
+    printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Stock Report</title>
+            <style>
+                @page {
+                    size: 80mm auto;
+                    margin: 0;
+                }
+
+                * {
+                    box-sizing: border-box;
+                }
+
+                html,
+                body {
+                    width: 80mm;
+                    margin: 0;
+                    padding: 0;
+                    background: #fff;
+                }
+
+                body {
+                    font-family:
+                        Arial,
+                        Helvetica,
+                        sans-serif;
+                    color: #000;
+                    font-size: 10px;
+                    line-height: 1.4;
+                }
+
+                .thermal {
+                    width: 72mm;
+                    margin: 0 auto;
+                    padding: 5mm 0 8mm;
+                }
+
+                .header {
+                    text-align: center;
+                    margin-bottom: 4mm;
+                }
+
+                .company {
+                    font-size: 17px;
+                    font-weight: 800;
+                    letter-spacing: .4px;
+                }
+
+                .title {
+                    font-size: 11px;
+                    font-weight: 700;
+                    margin-top: 2mm;
+                }
+
+                .period {
+                    font-size: 9px;
+                    margin-top: 1.5mm;
+                }
+
+                .divider {
+                    border-top: 1px dashed #000;
+                    margin: 3mm 0;
+                }
+
+                .summary-title {
+                    font-size: 10px;
+                    font-weight: 700;
+                    margin-bottom: 2mm;
+                }
+
+                .summary-row {
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 5px;
+                    margin: 1.5mm 0;
+                    font-size: 9px;
+                }
+
+                .summary-row strong {
+                    font-weight: 700;
+                }
+
+                .item {
+                    padding: 2mm 0;
+                    border-bottom: 1px dashed #aaa;
+                }
+
+                .item:last-child {
+                    border-bottom: 0;
+                }
+
+                .item-name {
+                    font-size: 10px;
+                    font-weight: 700;
+                    margin-bottom: 1mm;
+                    word-break: break-word;
+                }
+
+                .item-row {
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 5px;
+                    font-size: 9px;
+                }
+
+                .item-qty {
+                    color: #333;
+                }
+
+                .item-value {
+                    font-weight: 700;
+                    text-align: right;
+                    white-space: nowrap;
+                }
+
+                .footer {
+                    text-align: center;
+                    font-size: 8px;
+                    margin-top: 4mm;
+                }
+
+                .generated {
+                    text-align: center;
+                    font-size: 8px;
+                    margin-top: 2mm;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="thermal">
+                <div class="header">
+                    <div class="company">
+                        AUTOCARE PRO
+                    </div>
+                    <div class="title">
+                        STOCK REPORT
+                    </div>
+                    <div class="period">
+                        Inventory Summary
+                    </div>
+                </div>
+
+                <div class="divider"></div>
+
+                <div class="summary-title">
+                    STOCK SUMMARY
+                </div>
+
+                <div class="summary-row">
+                    <span>Total Stock Value</span>
+                    <strong>
+                        Rs. {{ number_format($totalStockValue, 2) }}
+                    </strong>
+                </div>
+
+                <div class="summary-row">
+                    <span>Total Retail Value</span>
+                    <strong>
+                        Rs. {{ number_format($totalRetailValue, 2) }}
+                    </strong>
+                </div>
+
+                <div class="divider"></div>
+
+                @foreach($stock as $item)
+                    <div class="item">
+                        <div class="item-name">
+                            {{ $item->name }}
+                        </div>
+                        <div class="item-row">
+                            <span class="item-qty">
+                                Qty: {{ number_format((float) $item->quantity, 3) }}
+                            </span>
+                            <span class="item-value">
+                                Rs. {{ number_format($item->total_cost, 2) }}
+                            </span>
+                        </div>
+                    </div>
+                @endforeach
+
+                <div class="divider"></div>
+
+                <div class="footer">
+                    AUTOCARE PRO
+                    <br>
+                    Stock Report
+                </div>
+
+                <div class="generated">
+                    Generated:
+                    {{ now()->format('d/m/Y H:i') }}
+                </div>
+            </div>
+        </body>
+        </html>
+    `);
+
     printWindow.document.close();
-    printWindow.print();
+
+    setTimeout(function () {
+        printWindow.focus();
+        printWindow.print();
+    }, 500);
 }
 </script>
 @endsection

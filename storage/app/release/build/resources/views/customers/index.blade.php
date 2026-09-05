@@ -38,8 +38,8 @@
                 </td>
                 <td>{{ $c->phone }}</td>
                 <td>{{ $c->vehicles->count() }}</td>
-                <td>{{ $c->total_visits }}</td>
-                <td>Rs. {{ number_format($c->total_spending,2) }}</td>
+                <td>{{ $c->jobs_count }}</td>
+                <td>Rs. {{ number_format($c->invoices_sum_total ?? 0, 2) }}</td>
                 <td>
                     <a href="{{ route('customers.show',$c) }}">View →</a>
                 </td>
@@ -74,11 +74,11 @@
                 </div>
                 <div class="detail">
                     <span class="label">Visits</span>
-                    <span class="value">{{ $c->total_visits }}</span>
+                    <span class="value">{{ $c->jobs_count }}</span>
                 </div>
                 <div class="detail">
                     <span class="label">Lifetime Spend</span>
-                    <span class="value">Rs. {{ number_format($c->total_spending,2) }}</span>
+                    <span class="value">Rs. {{ number_format($c->invoices_sum_total ?? 0, 2) }}</span>
                 </div>
             </div>
         </a>

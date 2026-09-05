@@ -111,17 +111,6 @@
                 <input type="text" id="categoryName" name="name" required>
             </label>
 
-            <label style="margin-top: 16px;">
-                Status
-                <div class="toggle-wrapper">
-                    <label class="toggle">
-                        <input type="checkbox" id="categoryActive" name="active" value="1" checked>
-                        <span class="slider"></span>
-                    </label>
-                    <span class="toggle-label">Active</span>
-                </div>
-            </label>
-
             <div class="modal-actions">
                 <button type="button" class="secondary" onclick="closeCategoryModal()">Cancel</button>
                 <button type="submit" class="primary">Add Category</button>
@@ -300,7 +289,6 @@ document.getElementById('categoryForm').addEventListener('submit', function(e) {
     e.preventDefault();
 
     const name = document.getElementById('categoryName').value;
-    const active = document.getElementById('categoryActive').checked;
 
     fetch('{{ route('service-categories.store') }}', {
         method: 'POST',
@@ -309,7 +297,7 @@ document.getElementById('categoryForm').addEventListener('submit', function(e) {
             'Accept': 'application/json',
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ name, active })
+        body: JSON.stringify({ name })
     })
     .then(res => res.json())
     .then(data => {

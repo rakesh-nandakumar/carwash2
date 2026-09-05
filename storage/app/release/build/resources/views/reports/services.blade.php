@@ -110,7 +110,7 @@
         <p>Generated on {{ now()->format('Y-m-d H:i:s') }}</p>
     </div>
 
-    <!-- Back button (one row below Generated text, right aligned) -->
+    <!-- Back button -->
     <div class="report-back no-print">
         <a href="{{ route('reports') }}" class="back-button">← Back</a>
     </div>
@@ -280,7 +280,7 @@
     font-size: 12px;
 }
 
-/* Back button - one row below Generated text, right aligned */
+/* Back button */
 .report-back {
     margin-top: 24px;
     display: flex;
@@ -333,7 +333,6 @@
         width: 100%;
     }
 
-    /* Hide table, show 2-column cards */
     .table-wrap {
         display: none;
     }
@@ -350,21 +349,163 @@
 
 <script>
 function printThermal() {
-    const content = `
-SERVICES REPORT
-Date: {{ $startDate }} to {{ $endDate }}
-================================
-@foreach($serviceStats as $serviceName => $stats)
-{{ $serviceName }} | {{ $stats['count'] }} | Rs.{{ number_format($stats['revenue'], 2) }}
-@endforeach
-================================
-Generated: {{ now()->format('Y-m-d H:i') }}
-    `;
-    
-    const printWindow = window.open('', '_blank');
-    printWindow.document.write('<pre style="font-family: monospace; font-size: 12px;">' + content + '</pre>');
+    const printWindow = window.open(
+        '',
+        '_blank',
+        'width=420,height=800'
+    );
+
+    if (!printWindow) {
+        alert('Please allow pop-ups in your browser to print the thermal report.');
+        return;
+    }
+
+    printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Services Report</title>
+            <style>
+                @page {
+                    size: 80mm auto;
+                    margin: 0;
+                }
+
+                * {
+                    box-sizing: border-box;
+                }
+
+                html,
+                body {
+                    width: 80mm;
+                    margin: 0;
+                    padding: 0;
+                    background: #fff;
+                }
+
+                body {
+                    font-family: Arial, Helvetica, sans-serif;
+                    color: #000;
+                    font-size: 10px;
+                    line-height: 1.4;
+                }
+
+                .thermal {
+                    width: 72mm;
+                    margin: 0 auto;
+                    padding: 5mm 0 8mm;
+                }
+
+                .header {
+                    text-align: center;
+                    margin-bottom: 4mm;
+                }
+
+                .company {
+                    font-size: 17px;
+                    font-weight: 800;
+                }
+
+                .title {
+                    font-size: 11px;
+                    font-weight: 700;
+                    margin-top: 2mm;
+                }
+
+                .period {
+                    font-size: 9px;
+                    margin-top: 1.5mm;
+                }
+
+                .divider {
+                    border-top: 1px dashed #000;
+                    margin: 3mm 0;
+                }
+
+                .service {
+                    padding: 2mm 0;
+                    border-bottom: 1px dashed #aaa;
+                }
+
+                .service-name {
+                    font-size: 10px;
+                    font-weight: 700;
+                    margin-bottom: 1mm;
+                    word-break: break-word;
+                }
+
+                .service-row {
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 5px;
+                    font-size: 9px;
+                }
+
+                .revenue {
+                    font-weight: 700;
+                    white-space: nowrap;
+                }
+
+                .footer {
+                    text-align: center;
+                    font-size: 8px;
+                    margin-top: 4mm;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="thermal">
+                <div class="header">
+                    <div class="company">
+                        AUTOCARE PRO
+                    </div>
+                    <div class="title">
+                        SERVICES REPORT
+                    </div>
+                    <div class="period">
+                        {{ \Carbon\Carbon::parse($startDate)->format('d/m/Y') }}
+                        -
+                        {{ \Carbon\Carbon::parse($endDate)->format('d/m/Y') }}
+                    </div>
+                </div>
+
+                <div class="divider"></div>
+
+                @foreach($serviceStats as $serviceName => $stats)
+                    <div class="service">
+                        <div class="service-name">
+                            {{ $serviceName }}
+                        </div>
+                        <div class="service-row">
+                            <span>
+                                Qty: {{ $stats['count'] }}
+                            </span>
+                            <span class="revenue">
+                                Rs. {{ number_format($stats['revenue'], 2) }}
+                            </span>
+                        </div>
+                    </div>
+                @endforeach
+
+                <div class="divider"></div>
+
+                <div class="footer">
+                    AUTOCARE PRO
+                    <br>
+                    Generated:
+                    {{ now()->format('d/m/Y H:i') }}
+                </div>
+            </div>
+        </body>
+        </html>
+    `);
+
     printWindow.document.close();
-    printWindow.print();
+
+    setTimeout(function () {
+        printWindow.focus();
+        printWindow.print();
+    }, 500);
 }
 </script>
 @endsection

@@ -53,13 +53,18 @@
             </div>
             <div class="form-group">
                 <label>Status</label>
-                <div style="display:flex;align-items:center;gap:10px;padding:12px 0;">
-                    <label style="position:relative;display:inline-block;width:44px;height:24px;">
-                        <input type="checkbox" name="active" checked style="opacity:0;width:0;height:0;">
-                        <span style="position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background-color:#10b981;transition:.4s;border-radius:24px;"></span>
-                        <span style="position:absolute;content:'';height:18px;width:18px;left:3px;bottom:3px;background-color:white;transition:.4s;border-radius:50%;transform:translateX(20px);"></span>
+                <div class="toggle-wrapper">
+                    <label class="toggle">
+                        <input
+                            type="checkbox"
+                            id="active"
+                            name="active"
+                            value="1"
+                            checked
+                        >
+                        <span class="slider"></span>
                     </label>
-                    <span style="font-size:14px;color:#6b7280;">Active</span>
+                    <span class="toggle-label">Active</span>
                 </div>
             </div>
         </div>
@@ -84,22 +89,24 @@
             @csrf
             <div class="form-group">
                 <label>Category Name *</label>
-                <input type="text" id="categoryName" name="name" required style="padding:12px;border:1px solid #e5e7eb;border-radius:8px;width:100%;">
+                <input type="text"
+                       id="categoryName"
+                       name="name"
+                       required
+                       style="padding:12px;border:1px solid #e5e7eb;border-radius:8px;width:100%;">
             </div>
-            <div class="form-group">
-                <label>Status</label>
-                <div style="display:flex;align-items:center;gap:10px;padding:12px 0;">
-                    <label style="position:relative;display:inline-block;width:44px;height:24px;">
-                        <input type="checkbox" id="categoryActive" name="active" checked style="opacity:0;width:0;height:0;">
-                        <span style="position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background-color:#10b981;transition:.4s;border-radius:24px;"></span>
-                        <span style="position:absolute;content:'';height:18px;width:18px;left:3px;bottom:3px;background-color:white;transition:.4s;border-radius:50%;transform:translateX(20px);"></span>
-                    </label>
-                    <span style="font-size:14px;color:#6b7280;">Active</span>
-                </div>
-            </div>
+
             <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px;">
-                <button type="button" onclick="closeCategoryModal()" style="background:#6b7280;color:white;padding:10px 20px;border-radius:8px;border:none;cursor:pointer;">Cancel</button>
-                <button type="submit" style="background:#10b981;color:white;padding:10px 20px;border-radius:8px;border:none;cursor:pointer;">Add Category</button>
+                <button type="button"
+                        onclick="closeCategoryModal()"
+                        style="background:#6b7280;color:white;padding:10px 20px;border-radius:8px;border:none;cursor:pointer;">
+                    Cancel
+                </button>
+
+                <button type="submit"
+                        style="background:#10b981;color:white;padding:10px 20px;border-radius:8px;border:none;cursor:pointer;">
+                    Add Category
+                </button>
             </div>
         </form>
     </div>
@@ -110,19 +117,22 @@ function openCategoryModal() {
     const modal = document.getElementById('categoryModal');
     if (modal) modal.style.display = 'flex';
 }
+
 function closeCategoryModal() {
     const modal = document.getElementById('categoryModal');
     const form = document.getElementById('categoryForm');
     if (modal) modal.style.display = 'none';
     if (form) form.reset();
 }
+
 document.addEventListener('DOMContentLoaded', function() {
     const categoryForm = document.getElementById('categoryForm');
     if (categoryForm) {
         categoryForm.addEventListener('submit', function(e) {
             e.preventDefault();
+
             const categoryName = document.getElementById('categoryName').value;
-            const categoryActive = document.getElementById('categoryActive').checked;
+
             fetch('{{ route('service-categories.store') }}', {
                 method: 'POST',
                 headers: {
@@ -130,24 +140,29 @@ document.addEventListener('DOMContentLoaded', function() {
                     'Accept': 'application/json',
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ name: categoryName, active: categoryActive })
+                body: JSON.stringify({
+                    name: categoryName
+                })
             })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
                     const select = document.getElementById('categorySelect');
                     const option = document.createElement('option');
+
                     option.value = data.category.id;
                     option.textContent = data.category.name;
                     option.selected = true;
+
                     select.appendChild(option);
                     closeCategoryModal();
                 } else {
-                    alert('Error creating category: ' + (data.error || 'Unknown error'));
+                    alert(data.error || 'Error creating category');
                 }
             })
             .catch(error => {
-                alert('Error creating category. Please try again.');
+                console.error(error);
+                alert('Error creating category');
             });
         });
     }
@@ -155,6 +170,61 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 <style>
+/* Toggle switch */
+.toggle-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 0;
+}
+
+.toggle {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+}
+
+.toggle input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: #ccc;
+    transition: .3s;
+    border-radius: 24px;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .3s;
+    border-radius: 50%;
+}
+
+.toggle input:checked + .slider {
+    background-color: #10b981;
+}
+
+.toggle input:checked + .slider:before {
+    transform: translateX(20px);
+}
+
+.toggle-label {
+    font-size: 14px;
+    color: #6b7280;
+}
+
 .form-actions {
     display: flex;
     justify-content: space-between;
