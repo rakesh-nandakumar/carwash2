@@ -251,6 +251,7 @@ class InventoryController extends Controller
                 'branch_id' => auth()->user()->branch_id ?? null,
                 'quantity' => $validated['opening_stock'],
                 'reserved_quantity' => 0,
+                'tenant_id' => auth()->user()->tenant_id,
             ]);
 
             // Create initial inventory movement
