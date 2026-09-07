@@ -19,7 +19,7 @@ class InventoryController extends Controller
         $user = auth()->user();
 
         /*
-         * Load active products for this business.
+         * Load active products for this tenant.
          *
          * If the logged-in user has a branch:
          *     show stock for that branch.
@@ -28,8 +28,9 @@ class InventoryController extends Controller
          *     show total stock across all branches.
          */
         $items = Inventory::with('product')
+            ->where('tenant_id', $user->tenant_id)
             ->whereHas('product', function ($query) use ($user) {
-                $query->where('business_id', $user->business_id)
+                $query->where('tenant_id', $user->tenant_id)
                     ->where('active', true);
             })
             ->when(
@@ -45,8 +46,9 @@ class InventoryController extends Controller
          * Load all inventory rows for the low-stock calculation.
          */
         $allItems = Inventory::with('product')
+            ->where('tenant_id', $user->tenant_id)
             ->whereHas('product', function ($query) use ($user) {
-                $query->where('business_id', $user->business_id)
+                $query->where('tenant_id', $user->tenant_id)
                     ->where('active', true);
             })
             ->when(
@@ -121,8 +123,9 @@ class InventoryController extends Controller
          * Load all inventory rows for real-time status calculation.
          */
         $allItems = Inventory::with('product')
+            ->where('tenant_id', $user->tenant_id)
             ->whereHas('product', function ($query) use ($user) {
-                $query->where('business_id', $user->business_id)
+                $query->where('tenant_id', $user->tenant_id)
                     ->where('active', true);
             })
             ->when(
@@ -194,15 +197,80 @@ class InventoryController extends Controller
     public function create()
     {
         return view('inventory.create', [
-            'mainCategories' => \App\Models\Category::where('business_id', auth()->user()->business_id)
+            'mainCategories' => \App\Models\Category::where('tenant_id', auth()->user()->tenant_id)
                 ->whereNull('parent_id')
                 ->orderBy('name')
                 ->get(),
-            'subcategories' => \App\Models\Category::where('business_id', auth()->user()->business_id)
+            'subcategories' => \App\Models\Category::where('tenant_id', auth()->user()->tenant_id)
                 ->whereNotNull('parent_id')
                 ->orderBy('name')
                 ->get(),
         ]);
+    }
+
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'sku' => 'required|string|max:100|unique:products,sku,NULL,id,tenant_id,' . auth()->user()->tenant_id,
+            'barcode' => 'nullable|string|max:100',
+            'main_category_id' => 'nullable|exists:categories,id',
+            'category_id' => 'nullable|exists:categories,id',
+            'brand' => 'nullable|string|max:255',
+            'part_number' => 'nullable|string|max:255',
+            'selling_price' => 'required|numeric|min:0',
+            'cost_price' => 'nullable|numeric|min:0',
+            'minimum_stock' => 'required|numeric|min:0',
+            'opening_stock' => 'required|numeric|min:0',
+            'image' => 'nullable|image|max:2048',
+        ]);
+
+        DB::transaction(function () use ($validated, $request) {
+            $product = Product::create([
+                'name' => $validated['name'],
+                'sku' => $validated['sku'],
+                'barcode' => $validated['barcode'] ?? null,
+                'category_id' => $validated['category_id'],
+                'brand' => $validated['brand'],
+                'part_number' => $validated['part_number'] ?? null,
+                'selling_price' => $validated['selling_price'],
+                'cost_price' => $validated['cost_price'] ?? 0,
+                'minimum_stock' => $validated['minimum_stock'],
+                'active' => true,
+            ]);
+
+            // Handle image upload if provided
+            if ($request->hasFile('image')) {
+                $imagePath = $request->file('image')->store('products', 'public');
+                $product->update(['image' => $imagePath]);
+            }
+
+            // Create inventory record
+            Inventory::create([
+                'product_id' => $product->id,
+                'branch_id' => auth()->user()->branch_id ?? null,
+                'quantity' => $validated['opening_stock'],
+                'reserved_quantity' => 0,
+            ]);
+
+            // Create initial inventory movement
+            if ($validated['opening_stock'] > 0) {
+                InventoryMovement::create([
+                    'product_id' => $product->id,
+                    'branch_id' => auth()->user()->branch_id ?? null,
+                    'type' => InventoryMovementType::RESTOCK,
+                    'quantity' => $validated['opening_stock'],
+                    'reference_type' => 'product_creation',
+                    'reference_id' => $product->id,
+                    'user_id' => auth()->id(),
+                    'notes' => 'Initial stock from product creation',
+                ]);
+            }
+        });
+
+        return redirect()
+            ->route('inventory.index')
+            ->with('success', 'Product created successfully.');
     }
 
     // ... rest of the methods remain the same

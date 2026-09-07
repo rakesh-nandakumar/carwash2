@@ -279,7 +279,7 @@ const subcategoriesData = @json($subcategories);
 
 @php
     $generatedSku = 'PRD-' . date('Y') . '-' . str_pad(
-        \App\Models\Product::max('id') + 1,
+        \App\Models\Product::where('tenant_id', auth()->user()->tenant_id)->max('id') + 1,
         6,
         '0',
         STR_PAD_LEFT
