@@ -21,11 +21,7 @@ class InventoryController extends Controller
         /*
          * Load active products for this tenant.
          *
-         * If the logged-in user has a branch:
-         *     show stock for that branch.
-         *
-         * If branch_id is NULL:
-         *     show total stock across all branches.
+         * Show stock for the user's assigned branch.
          */
         $items = Inventory::with('product')
             ->where('tenant_id', $user->tenant_id)
@@ -33,12 +29,7 @@ class InventoryController extends Controller
                 $query->where('tenant_id', $user->tenant_id)
                     ->where('active', true);
             })
-            ->when(
-                $user->branch_id !== null,
-                function ($query) use ($user) {
-                    $query->where('branch_id', $user->branch_id);
-                }
-            )
+            ->where('branch_id', $user->branch_id)
             ->paginate(20)
             ->withQueryString();
 
@@ -51,17 +42,11 @@ class InventoryController extends Controller
                 $query->where('tenant_id', $user->tenant_id)
                     ->where('active', true);
             })
-            ->when(
-                $user->branch_id !== null,
-                function ($query) use ($user) {
-                    $query->where('branch_id', $user->branch_id);
-                }
-            )
+            ->where('branch_id', $user->branch_id)
             ->get();
 
         /*
-         * Group inventory by product so that when branch_id is NULL
-         * stock from all branches is combined.
+         * Group inventory by product for the user's branch.
          */
         $stockByProduct = $allItems
             ->groupBy('product_id')
@@ -128,17 +113,11 @@ class InventoryController extends Controller
                 $query->where('tenant_id', $user->tenant_id)
                     ->where('active', true);
             })
-            ->when(
-                $user->branch_id !== null,
-                function ($query) use ($user) {
-                    $query->where('branch_id', $user->branch_id);
-                }
-            )
+            ->where('branch_id', $user->branch_id)
             ->get();
 
         /*
-         * Group inventory by product so that when branch_id is NULL
-         * stock from all branches is combined.
+         * Group inventory by product for the user's branch.
          */
         $stockByProduct = $allItems
             ->groupBy('product_id')
@@ -248,7 +227,7 @@ class InventoryController extends Controller
             // Create inventory record
             Inventory::create([
                 'product_id' => $product->id,
-                'branch_id' => auth()->user()->branch_id ?? null,
+                'branch_id' => auth()->user()->branch_id,
                 'quantity' => $validated['opening_stock'],
                 'reserved_quantity' => 0,
                 'tenant_id' => auth()->user()->tenant_id,
@@ -258,7 +237,7 @@ class InventoryController extends Controller
             if ($validated['opening_stock'] > 0) {
                 InventoryMovement::create([
                     'product_id' => $product->id,
-                    'branch_id' => auth()->user()->branch_id ?? null,
+                    'branch_id' => auth()->user()->branch_id,
                     'type' => InventoryMovementType::RESTOCK,
                     'quantity' => $validated['opening_stock'],
                     'reference_type' => 'product_creation',
@@ -370,7 +349,7 @@ class InventoryController extends Controller
     public function stock($id, Request $request)
     {
         $user = auth()->user();
-        $branchId = $request->query('branch_id');
+        $branchId = $request->query('branch_id') ?: $user->branch_id;
 
         $product = Product::where('tenant_id', $user->tenant_id)
             ->where('id', $id)
@@ -378,12 +357,7 @@ class InventoryController extends Controller
 
         $inventory = Inventory::where('tenant_id', $user->tenant_id)
             ->where('product_id', $product->id)
-            ->when($branchId, function ($query) use ($branchId) {
-                $query->where('branch_id', $branchId);
-            })
-            ->when(!$branchId && $user->branch_id, function ($query) use ($user) {
-                $query->where('branch_id', $user->branch_id);
-            })
+            ->where('branch_id', $branchId)
             ->first();
 
         $currentStock = $inventory ? (float) $inventory->quantity : 0;
@@ -413,7 +387,7 @@ class InventoryController extends Controller
             // Find or create inventory record for this product and branch
             $inventory = Inventory::where('tenant_id', $user->tenant_id)
                 ->where('product_id', $product->id)
-                ->where('branch_id', $user->branch_id ?? null)
+                ->where('branch_id', $user->branch_id)
                 ->first();
 
             if ($inventory) {
@@ -425,7 +399,7 @@ class InventoryController extends Controller
                 $oldQuantity = 0;
                 $inventory = Inventory::create([
                     'product_id' => $product->id,
-                    'branch_id' => $user->branch_id ?? null,
+                    'branch_id' => $user->branch_id,
                     'quantity' => $quantityToAdd,
                     'reserved_quantity' => 0,
                     'tenant_id' => $user->tenant_id,
@@ -435,7 +409,7 @@ class InventoryController extends Controller
             // Create inventory movement record
             InventoryMovement::create([
                 'product_id' => $product->id,
-                'branch_id' => $user->branch_id ?? null,
+                'branch_id' => $user->branch_id,
                 'type' => InventoryMovementType::ADJUSTMENT,
                 'quantity' => $quantityToAdd,
                 'reference_type' => 'manual_adjustment',
