@@ -110,6 +110,7 @@ class DatabaseSeeder extends Seeder
             ];
             foreach ($products as [$sku, $n, $cat, $brand, $cost, $sell, $min]) {
                 $p = Product::create([
+                    'tenant_id' => $tenant->id,
                     'business_id' => $b->id,
                     'sku' => $sku,
                     'name' => $n,
@@ -120,6 +121,8 @@ class DatabaseSeeder extends Seeder
                     'minimum_stock' => $min,
                 ]);
                 Inventory::create([
+                    'tenant_id' => $tenant->id,
+                    'business_id' => $b->id,
                     'product_id' => $p->id,
                     'branch_id' => $br->id,
                     'quantity' => 20,

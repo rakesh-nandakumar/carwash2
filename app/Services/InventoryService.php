@@ -40,6 +40,8 @@ class InventoryService
             if (!$i) {
                 $i = Inventory::create([
                     'product_id' => $product->id,
+                    'tenant_id' => auth()->user()->tenant_id,
+                    'business_id' => auth()->user()->business_id,
                     'branch_id' => $branchId,
                     'quantity' => 0,
                     'reserved_quantity' => 0,
@@ -60,6 +62,8 @@ class InventoryService
 
             InventoryMovement::create([
                 'product_id' => $product->id,
+                'tenant_id' => auth()->user()->tenant_id,
+                'business_id' => auth()->user()->business_id,
                 'branch_id' => $branchId,
                 'type' => $type,
                 'quantity' => $qty,
@@ -150,6 +154,8 @@ class InventoryService
 
             InventoryMovement::create([
                 'product_id' => $product->id,
+                'tenant_id' => auth()->user()->tenant_id,
+                'business_id' => auth()->user()->business_id,
                 'branch_id' => $branchId,
                 'type' => InventoryMovementType::SERVICE_USAGE->value,
                 'quantity' => -$qty,
@@ -263,6 +269,8 @@ class InventoryService
 
             InventoryMovement::create([
                 'product_id' => $product->id,
+                'tenant_id' => auth()->user()->tenant_id,
+                'business_id' => auth()->user()->business_id,
                 'branch_id' => $branchId,
                 'type' => InventoryMovementType::RESTOCK->value,
                 'quantity' => $qty,
@@ -482,6 +490,8 @@ class InventoryService
             if (!$inventory) {
                 $inventory = Inventory::create([
                     'product_id' => $product->id,
+                    'tenant_id' => auth()->user()->tenant_id,
+                    'business_id' => $businessId,
                     'branch_id' => $branchId,
                     'quantity' => 0,
                     'reserved_quantity' => 0,
@@ -525,6 +535,8 @@ class InventoryService
 
             InventoryMovement::create([
                 'product_id' => $product->id,
+                'tenant_id' => auth()->user()->tenant_id,
+                'business_id' => $businessId,
                 'branch_id' => $branchId,
                 'type' => InventoryMovementType::ADJUSTMENT->value,
                 'quantity' => $difference,
@@ -583,6 +595,8 @@ class InventoryService
 
             InventoryMovement::create([
                 'product_id' => $adjustment->product_id,
+                'tenant_id' => auth()->user()->tenant_id,
+                'business_id' => $adjustment->business_id,
                 'branch_id' => $adjustment->branch_id,
                 'type' => InventoryMovementType::ADJUSTMENT_REVERSAL->value,
                 'quantity' => $reverseQuantity,

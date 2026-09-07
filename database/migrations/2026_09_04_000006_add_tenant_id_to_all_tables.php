@@ -156,7 +156,6 @@ return new class extends Migration
      */
     private const FK_BACKED_UNIQUES = [
         'branches' => ['column' => 'business_id', 'index' => 'branches_business_id_code_unique', 'target' => 'businesses'],
-        'inventory' => ['column' => 'product_id', 'index' => 'inventory_product_id_branch_id_unique', 'target' => 'products'],
         'service_prices' => ['column' => 'service_id', 'index' => 'service_prices_service_id_vehicle_category_branch_id_unique', 'target' => 'services'],
         'service_vehicle_pricing' => ['column' => 'service_id', 'index' => 'svc_unique', 'target' => 'services'],
         'technician_skills' => ['column' => 'technician_id', 'index' => 'technician_skills_technician_id_skill_name_unique', 'target' => 'users'],
@@ -288,6 +287,18 @@ return new class extends Migration
         foreach (self::FK_BACKED_UNIQUES as $table => $spec) {
             $this->rewriteFkBackedUnique($table, $spec['column'], $spec['index']);
         }
+
+        // Handle inventory table separately - it has a composite unique with business_id
+        Schema::table('inventory', function (Blueprint $table) {
+            $table->dropForeign(['business_id']);
+            $table->dropUnique('inventory_business_id_product_id_branch_id_unique');
+        });
+
+        Schema::table('inventory', function (Blueprint $table) {
+            $table->unique(['tenant_id', 'business_id', 'product_id', 'branch_id']);
+            $table->index('business_id');
+            $table->foreign('business_id')->references('id')->on('businesses')->cascadeOnDelete();
+        });
 
         foreach (self::UNIQUE_REWRITES as $table => $rewrites) {
             foreach ($rewrites as $oldIndex => $columns) {

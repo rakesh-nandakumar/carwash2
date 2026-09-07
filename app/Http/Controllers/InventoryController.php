@@ -191,7 +191,7 @@ class InventoryController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'sku' => 'required|string|max:100|unique:products,sku,NULL,id,tenant_id,' . auth()->user()->tenant_id,
+            'sku' => 'required|string|max:100|unique:products,sku,NULL,id,tenant_id,' . auth()->user()->tenant_id . ',business_id,' . auth()->user()->business_id,
             'barcode' => 'nullable|string|max:100',
             'main_category_id' => 'nullable|exists:categories,id',
             'category_id' => 'nullable|exists:categories,id',
@@ -216,6 +216,8 @@ class InventoryController extends Controller
                 'cost_price' => $validated['cost_price'] ?? 0,
                 'minimum_stock' => $validated['minimum_stock'],
                 'active' => true,
+                'tenant_id' => auth()->user()->tenant_id,
+                'business_id' => auth()->user()->business_id,
             ]);
 
             // Handle image upload if provided
@@ -227,16 +229,19 @@ class InventoryController extends Controller
             // Create inventory record
             Inventory::create([
                 'product_id' => $product->id,
+                'tenant_id' => auth()->user()->tenant_id,
+                'business_id' => auth()->user()->business_id,
                 'branch_id' => auth()->user()->branch_id,
                 'quantity' => $validated['opening_stock'],
                 'reserved_quantity' => 0,
-                'tenant_id' => auth()->user()->tenant_id,
             ]);
 
             // Create initial inventory movement
             if ($validated['opening_stock'] > 0) {
                 InventoryMovement::create([
                     'product_id' => $product->id,
+                    'tenant_id' => auth()->user()->tenant_id,
+                    'business_id' => auth()->user()->business_id,
                     'branch_id' => auth()->user()->branch_id,
                     'type' => InventoryMovementType::RESTOCK,
                     'quantity' => $validated['opening_stock'],
@@ -244,7 +249,6 @@ class InventoryController extends Controller
                     'reference_id' => $product->id,
                     'user_id' => auth()->id(),
                     'notes' => 'Initial stock from product creation',
-                    'tenant_id' => auth()->user()->tenant_id,
                 ]);
             }
         });
@@ -257,7 +261,7 @@ class InventoryController extends Controller
     public function edit($id)
     {
         $user = auth()->user();
-        
+
         $product = Product::where('tenant_id', $user->tenant_id)
             ->where('id', $id)
             ->firstOrFail();
@@ -285,7 +289,7 @@ class InventoryController extends Controller
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'sku' => 'required|string|max:100|unique:products,sku,' . $id . ',id,tenant_id,' . $user->tenant_id,
+            'sku' => 'required|string|max:100|unique:products,sku,' . $id . ',id,tenant_id,' . $user->tenant_id . ',business_id,' . $user->business_id,
             'barcode' => 'nullable|string|max:100',
             'main_category_id' => 'nullable|exists:categories,id',
             'category_id' => 'nullable|exists:categories,id',
@@ -330,13 +334,33 @@ class InventoryController extends Controller
             ->where('id', $id)
             ->firstOrFail();
 
-        DB::transaction(function () use ($product) {
+        DB::transaction(function () use ($product, $user) {
             // Delete related inventory records
-            Inventory::where('product_id', $product->id)->delete();
-            
+            Inventory::where('tenant_id', $user->tenant_id)
+                ->where('product_id', $product->id)->delete();
+
             // Delete related inventory movements
-            InventoryMovement::where('product_id', $product->id)->delete();
-            
+            InventoryMovement::where('tenant_id', $user->tenant_id)
+                ->where('product_id', $product->id)->delete();
+
+            // Delete related job parts
+            \App\Models\JobPart::where('product_id', $product->id)->delete();
+
+            // Delete related customer supplied parts
+            \App\Models\CustomerSuppliedPart::where('product_id', $product->id)->delete();
+
+            // Delete related emergency purchases
+            \App\Models\EmergencyPurchase::where('product_id', $product->id)->delete();
+
+            // Delete related purchase order items
+            \App\Models\PurchaseOrderItem::where('product_id', $product->id)->delete();
+
+            // Delete related stock transfer items
+            \App\Models\StockTransferItem::where('product_id', $product->id)->delete();
+
+            // Delete related warranties
+            \App\Models\Warranty::where('product_id', $product->id)->delete();
+
             // Delete the product
             $product->delete();
         });
@@ -399,16 +423,19 @@ class InventoryController extends Controller
                 $oldQuantity = 0;
                 $inventory = Inventory::create([
                     'product_id' => $product->id,
+                    'tenant_id' => $user->tenant_id,
+                    'business_id' => $user->business_id,
                     'branch_id' => $user->branch_id,
                     'quantity' => $quantityToAdd,
                     'reserved_quantity' => 0,
-                    'tenant_id' => $user->tenant_id,
                 ]);
             }
 
             // Create inventory movement record
             InventoryMovement::create([
                 'product_id' => $product->id,
+                'tenant_id' => $user->tenant_id,
+                'business_id' => $user->business_id,
                 'branch_id' => $user->branch_id,
                 'type' => InventoryMovementType::ADJUSTMENT,
                 'quantity' => $quantityToAdd,
@@ -416,7 +443,6 @@ class InventoryController extends Controller
                 'reference_id' => $inventory->id,
                 'user_id' => auth()->id(),
                 'notes' => $reason,
-                'tenant_id' => $user->tenant_id,
             ]);
         });
 
