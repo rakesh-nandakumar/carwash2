@@ -88,7 +88,9 @@
         @endforelse
     </div>
 
-    {{ $jobs->links() }}
+    <div class="pagination-wrap">
+        {{ $jobs->links() }}
+    </div>
 </div>
 
 <style>
