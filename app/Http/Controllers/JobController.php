@@ -86,7 +86,7 @@ class JobController extends Controller
         unset($d['service_ids']);
 
         $d['business_id'] = auth()->user()->business_id;
-        $d['branch_id'] = auth()->user()->branch_id;
+        $d['branch_id'] = auth()->user()->branch_id ?? null;
         $d['status'] = JobStatus::WAITING_FOR_CHECKIN->value;
 
         $job = $this->jobs->create($d);
@@ -285,7 +285,7 @@ class JobController extends Controller
         ]);
 
         $product = Product::find($d['product_id']);
-        $availability = $this->inventory->checkAvailability($product, $job->branch_id, $d['quantity']);
+        $availability = $this->inventory->checkAvailability($product, $job->branch_id ?? null, $d['quantity']);
 
         if (!$availability['sufficient']) {
             return back()->with(
@@ -326,7 +326,7 @@ class JobController extends Controller
         try {
             $this->inventory->consume(
                 $part->product,
-                $job->branch_id,
+                $job->branch_id ?? null,
                 (float) $part->quantity,
                 $job->id
             );
@@ -350,7 +350,7 @@ class JobController extends Controller
     public function removePart(Request $r, Job $job, JobPart $part)
     {
         if ($part->applied) {
-            $this->inventory->restore($part->product, $job->branch_id, $part->quantity, $job->id);
+            $this->inventory->restore($part->product, $job->branch_id ?? null, $part->quantity, $job->id);
         }
 
         $part->delete();

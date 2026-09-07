@@ -22,7 +22,7 @@ class GoodsReceipt extends Model
 
     public function branch(): BelongsTo
     {
-        return $this->belongsTo(Branch::class);
+        return $this->belongsTo(Branch::class)->withDefault();
     }
 
     public function receivedBy(): BelongsTo

@@ -365,7 +365,7 @@ return new class extends Migration
             $table->id();
             $table->string('receipt_number')->unique();
             $table->foreignId('purchase_order_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('branch_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('branch_id')->nullable()->constrained()->nullOnDelete();
             $table->string('status')->default('received'); // received, partial, returned
             $table->foreignId('received_by')->constrained('users')->cascadeOnDelete();
             $table->timestamp('received_at');
@@ -379,7 +379,7 @@ return new class extends Migration
             $table->string('return_number')->unique();
             $table->foreignId('supplier_id')->constrained()->cascadeOnDelete();
             $table->foreignId('purchase_order_id')->nullable()->constrained()->nullOnDelete();
-            $table->foreignId('branch_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('branch_id')->nullable()->constrained()->nullOnDelete();
             $table->string('status')->default('pending'); // pending, approved, shipped, received, cancelled
             $table->decimal('total_amount', 14, 2)->default(0);
             $table->foreignId('created_by')->constrained('users')->cascadeOnDelete();
@@ -464,7 +464,7 @@ return new class extends Migration
         // Cash Registers / Shifts
         Schema::create('cash_registers', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('branch_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('branch_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->string('shift_number')->unique();
             $table->decimal('opening_balance', 14, 2)->default(0);
@@ -494,7 +494,7 @@ return new class extends Migration
         // Equipment
         Schema::create('equipment', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('branch_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('branch_id')->nullable()->constrained()->nullOnDelete();
             $table->string('name');
             $table->string('serial_number')->nullable()->unique();
             $table->string('type');

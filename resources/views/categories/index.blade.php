@@ -69,9 +69,11 @@
             <div class="empty-state">No categories found. Create main categories first.</div>
         @endforelse
     </div>
-</div>
 
-{{ $categories->links() }}
+    <div class="pagination-wrap">
+        {{ $categories->links() }}
+    </div>
+</div>
 
 <style>
 /* Desktop list stays normal */
@@ -81,6 +83,88 @@
 
 .categories-cards {
     display: none;
+}
+
+/* Pagination styling */
+.pagination-wrap {
+    margin-top: 28px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+
+.pagination-wrap nav {
+    display: flex;
+    justify-content: center;
+}
+
+.pagination-wrap .pagination,
+.pagination-wrap nav > div {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.pagination-wrap a,
+.pagination-wrap span {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    min-width: 38px;
+    height: 38px;
+    padding: 0 12px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none !important;
+    color: #374151;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    transition: all 0.15s ease;
+    line-height: 1;
+}
+
+.pagination-wrap a:hover {
+    background: #f3f4f6;
+    border-color: #d1d5db;
+    color: #111827;
+}
+
+.pagination-wrap span[aria-current="page"],
+.pagination-wrap .active span,
+.pagination-wrap [aria-current="page"] span {
+    background: #111827 !important;
+    color: #fff !important;
+    border-color: #111827 !important;
+    font-weight: 600;
+}
+
+.pagination-wrap span[aria-disabled="true"],
+.pagination-wrap .disabled span {
+    color: #9ca3af !important;
+    background: #f9fafb !important;
+    border-color: #e5e7eb !important;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.pagination-wrap svg,
+.pagination-wrap .pagination svg,
+nav[role="navigation"] svg {
+    width: 16px !important;
+    height: 16px !important;
+    max-width: 16px !important;
+    max-height: 16px !important;
+}
+
+.pagination-wrap a[rel="prev"],
+.pagination-wrap a[rel="next"] {
+    font-weight: 500;
+    padding: 0 14px;
 }
 
 /* ========== MOBILE ONLY ========== */

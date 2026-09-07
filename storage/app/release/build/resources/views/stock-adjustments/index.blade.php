@@ -145,6 +145,23 @@
             @csrf
             <div class="form-grid">
                 <label>
+                    Branch
+                    <select
+                        name="branch_id"
+                        id="branch_id"
+                    >
+                        <option value="">Select branch (optional)</option>
+                        @foreach($branches as $branch)
+                            <option
+                                value="{{ $branch->id }}"
+                                {{ auth()->user()->branch_id == $branch->id ? 'selected' : '' }}
+                            >
+                                {{ $branch->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </label>
+                <label>
                     Product
                     <select
                         name="product_id"
@@ -495,7 +512,7 @@ async function loadCurrentStock() {
         document.getElementById('branch_id');
 
     const branchId =
-        branchElement
+        branchElement && branchElement.value
             ? branchElement.value
             : '{{ auth()->user()->branch_id }}';
 
@@ -557,7 +574,7 @@ async function loadCurrentStock() {
         console.log('Stock API response:', data);
 
         const quantity =
-            Number(data.quantity);
+            Number(data.current_stock);
 
         if (Number.isNaN(quantity)) {
             throw new Error(

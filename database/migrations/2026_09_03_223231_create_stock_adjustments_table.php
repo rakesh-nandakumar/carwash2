@@ -16,8 +16,9 @@ return new class extends Migration
                 ->cascadeOnDelete();
 
             $table->foreignId('branch_id')
+                ->nullable()
                 ->constrained()
-                ->cascadeOnDelete();
+                ->nullOnDelete();
 
             $table->foreignId('product_id')
                 ->constrained()

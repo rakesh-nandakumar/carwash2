@@ -86,6 +86,12 @@ class ServiceController extends Controller
 
     public function destroy(Service $service)
     {
+        // Check if service is used in any jobs
+        if ($service->jobServices()->exists()) {
+            return redirect()->route('services.index')
+                ->with('error', 'Cannot delete service that is used in jobs. Please deactivate it instead.');
+        }
+
         $service->delete();
         return redirect()->route('services.index')->with('success', 'Service deleted successfully.');
     }

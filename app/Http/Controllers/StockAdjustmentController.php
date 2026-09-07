@@ -43,11 +43,6 @@ class StockAdjustmentController extends Controller
             ->orderBy('name')
             ->get();
 
-        $branches = Branch::where('business_id', $user->business_id)
-            ->where('active', true)
-            ->orderBy('name')
-            ->get();
-
         $reasons = StockAdjustmentReason::cases();
 
         return view(
@@ -55,7 +50,6 @@ class StockAdjustmentController extends Controller
             compact(
                 'adjustments',
                 'products',
-                'branches',
                 'reasons'
             )
         );
@@ -66,12 +60,6 @@ class StockAdjustmentController extends Controller
         $user = auth()->user();
 
         $validated = $request->validate([
-            'branch_id' => [
-                'required',
-                'integer',
-                'exists:branches,id',
-            ],
-
             'product_id' => [
                 'required',
                 'integer',
@@ -100,18 +88,6 @@ class StockAdjustmentController extends Controller
             ],
         ]);
 
-        $branch = Branch::where('id', $validated['branch_id'])
-            ->where('business_id', $user->business_id)
-            ->first();
-
-        if (!$branch) {
-            abort(403, 'Invalid branch.');
-        }
-
-        if (!$user->hasPermissionTo('stock_adjustments.create') && $branch->id !== $user->branch_id) {
-            abort(403, 'You do not have access to this branch.');
-        }
-
         $product = Product::where('id', $validated['product_id'])
             ->where('business_id', $user->business_id)
             ->first();
@@ -122,7 +98,7 @@ class StockAdjustmentController extends Controller
 
         $adjustment = $this->inventoryService->createStockAdjustment(
             $product,
-            $branch->id,
+            $user->branch_id ?? null,
             $user->business_id,
             (float) $validated['new_quantity'],
             $validated['reason'],
@@ -148,6 +124,7 @@ class StockAdjustmentController extends Controller
         }
 
         if (!$user->hasPermissionTo('stock_adjustments.reverse') &&
+            $stockAdjustment->branch_id !== null &&
             $stockAdjustment->branch_id !== $user->branch_id
         ) {
             abort(403, 'Unauthorized.');

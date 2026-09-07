@@ -37,7 +37,7 @@ class AppointmentController extends Controller
 
         $d += [
             'business_id' => auth()->user()->business_id,
-            'branch_id' => auth()->user()->branch_id,
+            'branch_id' => auth()->user()->branch_id ?? null,
             'status' => 'confirmed',
         ];
 

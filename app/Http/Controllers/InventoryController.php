@@ -265,6 +265,7 @@ class InventoryController extends Controller
                     'reference_id' => $product->id,
                     'user_id' => auth()->id(),
                     'notes' => 'Initial stock from product creation',
+                    'tenant_id' => auth()->user()->tenant_id,
                 ]);
             }
         });
@@ -272,6 +273,127 @@ class InventoryController extends Controller
         return redirect()
             ->route('inventory.index')
             ->with('success', 'Product created successfully.');
+    }
+
+    public function edit($id)
+    {
+        $user = auth()->user();
+        
+        $product = Product::where('tenant_id', $user->tenant_id)
+            ->where('id', $id)
+            ->firstOrFail();
+
+        return view('inventory.edit', [
+            'product' => $product,
+            'mainCategories' => \App\Models\Category::where('tenant_id', $user->tenant_id)
+                ->whereNull('parent_id')
+                ->orderBy('name')
+                ->get(),
+            'subcategories' => \App\Models\Category::where('tenant_id', $user->tenant_id)
+                ->whereNotNull('parent_id')
+                ->orderBy('name')
+                ->get(),
+        ]);
+    }
+
+    public function update(Request $request, $id)
+    {
+        $user = auth()->user();
+        
+        $product = Product::where('tenant_id', $user->tenant_id)
+            ->where('id', $id)
+            ->firstOrFail();
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'sku' => 'required|string|max:100|unique:products,sku,' . $id . ',id,tenant_id,' . $user->tenant_id,
+            'barcode' => 'nullable|string|max:100',
+            'main_category_id' => 'nullable|exists:categories,id',
+            'category_id' => 'nullable|exists:categories,id',
+            'brand' => 'nullable|string|max:255',
+            'part_number' => 'nullable|string|max:255',
+            'selling_price' => 'required|numeric|min:0',
+            'cost_price' => 'nullable|numeric|min:0',
+            'minimum_stock' => 'required|numeric|min:0',
+            'image' => 'nullable|image|max:2048',
+        ]);
+
+        DB::transaction(function () use ($validated, $request, $product) {
+            $product->update([
+                'name' => $validated['name'],
+                'sku' => $validated['sku'],
+                'barcode' => $validated['barcode'] ?? null,
+                'category_id' => $validated['category_id'],
+                'brand' => $validated['brand'],
+                'part_number' => $validated['part_number'] ?? null,
+                'selling_price' => $validated['selling_price'],
+                'cost_price' => $validated['cost_price'] ?? 0,
+                'minimum_stock' => $validated['minimum_stock'],
+            ]);
+
+            // Handle image upload if provided
+            if ($request->hasFile('image')) {
+                $imagePath = $request->file('image')->store('products', 'public');
+                $product->update(['image' => $imagePath]);
+            }
+        });
+
+        return redirect()
+            ->route('inventory.index')
+            ->with('success', 'Product updated successfully.');
+    }
+
+    public function destroy($id)
+    {
+        $user = auth()->user();
+        
+        $product = Product::where('tenant_id', $user->tenant_id)
+            ->where('id', $id)
+            ->firstOrFail();
+
+        DB::transaction(function () use ($product) {
+            // Delete related inventory records
+            Inventory::where('product_id', $product->id)->delete();
+            
+            // Delete related inventory movements
+            InventoryMovement::where('product_id', $product->id)->delete();
+            
+            // Delete the product
+            $product->delete();
+        });
+
+        return redirect()
+            ->route('inventory.index')
+            ->with('success', 'Product deleted successfully.');
+    }
+
+    public function stock($id, Request $request)
+    {
+        $user = auth()->user();
+        $branchId = $request->query('branch_id');
+
+        $product = Product::where('tenant_id', $user->tenant_id)
+            ->where('id', $id)
+            ->firstOrFail();
+
+        $inventory = Inventory::where('tenant_id', $user->tenant_id)
+            ->where('product_id', $product->id)
+            ->when($branchId, function ($query) use ($branchId) {
+                $query->where('branch_id', $branchId);
+            })
+            ->when(!$branchId && $user->branch_id, function ($query) use ($user) {
+                $query->where('branch_id', $user->branch_id);
+            })
+            ->first();
+
+        $currentStock = $inventory ? (float) $inventory->quantity : 0;
+
+        return response()->json([
+            'current_stock' => $currentStock,
+            'product_id' => $product->id,
+            'product_name' => $product->name,
+            'sku' => $product->sku,
+        ]);
     }
 
     // ... rest of the methods remain the same

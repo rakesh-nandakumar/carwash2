@@ -20,7 +20,7 @@ class InventoryService
 {
     public function adjust(
         Product $product,
-        int $branchId,
+        ?int $branchId,
         float $qty,
         string $reason,
         string $type = 'adjustment'
@@ -31,10 +31,11 @@ class InventoryService
         }
 
         return DB::transaction(function () use ($product, $branchId, $qty, $reason, $type) {
-            $i = Inventory::where('product_id', $product->id)
-                ->where('branch_id', $branchId)
-                ->lockForUpdate()
-                ->first();
+            $query = Inventory::where('product_id', $product->id);
+            if ($branchId) {
+                $query->where('branch_id', $branchId);
+            }
+            $i = $query->lockForUpdate()->first();
 
             if (!$i) {
                 $i = Inventory::create([
@@ -71,13 +72,14 @@ class InventoryService
         });
     }
 
-    public function reserve(Product $product, int $branchId, float $qty): void
+    public function reserve(Product $product, ?int $branchId, float $qty): void
     {
         DB::transaction(function () use ($product, $branchId, $qty) {
-            $i = Inventory::where('product_id', $product->id)
-                ->where('branch_id', $branchId)
-                ->lockForUpdate()
-                ->firstOrFail();
+            $query = Inventory::where('product_id', $product->id);
+            if ($branchId) {
+                $query->where('branch_id', $branchId);
+            }
+            $i = $query->lockForUpdate()->firstOrFail();
 
             if ($i->quantity - $i->reserved_quantity < $qty) {
                 abort(422, 'Insufficient available inventory.');
@@ -88,13 +90,14 @@ class InventoryService
         });
     }
 
-    public function releaseReservation(Product $product, int $branchId, float $qty): void
+    public function releaseReservation(Product $product, ?int $branchId, float $qty): void
     {
         DB::transaction(function () use ($product, $branchId, $qty) {
-            $i = Inventory::where('product_id', $product->id)
-                ->where('branch_id', $branchId)
-                ->lockForUpdate()
-                ->firstOrFail();
+            $query = Inventory::where('product_id', $product->id);
+            if ($branchId) {
+                $query->where('branch_id', $branchId);
+            }
+            $i = $query->lockForUpdate()->firstOrFail();
 
             $i->reserved_quantity = max(0, $i->reserved_quantity - $qty);
             $i->save();
@@ -103,7 +106,7 @@ class InventoryService
 
     public function consume(
         Product $product,
-        int $branchId,
+        ?int $branchId,
         float $qty,
         int $jobId,
         string $referenceType = 'job'
@@ -115,10 +118,11 @@ class InventoryService
             $jobId,
             $referenceType
         ) {
-            $inventory = Inventory::where('product_id', $product->id)
-                ->where('branch_id', $branchId)
-                ->lockForUpdate()
-                ->first();
+            $query = Inventory::where('product_id', $product->id);
+            if ($branchId) {
+                $query->where('branch_id', $branchId);
+            }
+            $inventory = $query->lockForUpdate()->first();
 
             if (!$inventory) {
                 throw new \RuntimeException(
@@ -188,10 +192,11 @@ class InventoryService
                     );
                 }
 
-                $inventory = Inventory::where('product_id', $part->product_id)
-                    ->where('branch_id', $job->branch_id)
-                    ->lockForUpdate()
-                    ->first();
+                $query = Inventory::where('product_id', $part->product_id);
+                if ($job->branch_id) {
+                    $query->where('branch_id', $job->branch_id);
+                }
+                $inventory = $query->lockForUpdate()->first();
 
                 if (!$inventory) {
                     throw new \RuntimeException(
@@ -239,15 +244,17 @@ class InventoryService
 
     public function restore(
         Product $product,
-        int $branchId,
+        ?int $branchId,
         float $qty,
         int $jobId,
         string $referenceType = 'job'
     ): void {
         DB::transaction(function () use ($product, $branchId, $qty, $jobId, $referenceType) {
-            $i = Inventory::where('product_id', $product->id)
-                ->where('branch_id', $branchId)
-                ->first();
+            $query = Inventory::where('product_id', $product->id);
+            if ($branchId) {
+                $query->where('branch_id', $branchId);
+            }
+            $i = $query->first();
 
             if ($i) {
                 $i->quantity += $qty;
@@ -268,11 +275,13 @@ class InventoryService
         });
     }
 
-    public function checkAvailability(Product $product, int $branchId, float $qty): array
+    public function checkAvailability(Product $product, ?int $branchId, float $qty): array
     {
-        $i = Inventory::where('product_id', $product->id)
-            ->where('branch_id', $branchId)
-            ->first();
+        $query = Inventory::where('product_id', $product->id);
+        if ($branchId) {
+            $query->where('branch_id', $branchId);
+        }
+        $i = $query->first();
 
         $available = $i ? $i->quantity - $i->reserved_quantity : 0;
 
@@ -446,7 +455,7 @@ class InventoryService
      */
     public function createStockAdjustment(
         Product $product,
-        int $branchId,
+        ?int $branchId,
         int $businessId,
         float $newQuantity,
         string $reason,
@@ -464,10 +473,11 @@ class InventoryService
                 abort(422, 'Stock quantity cannot be negative.');
             }
 
-            $inventory = Inventory::where('product_id', $product->id)
-                ->where('branch_id', $branchId)
-                ->lockForUpdate()
-                ->first();
+            $query = Inventory::where('product_id', $product->id);
+            if ($branchId) {
+                $query->where('branch_id', $branchId);
+            }
+            $inventory = $query->lockForUpdate()->first();
 
             if (!$inventory) {
                 $inventory = Inventory::create([

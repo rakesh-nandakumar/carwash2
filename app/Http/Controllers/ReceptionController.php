@@ -86,7 +86,7 @@ class ReceptionController extends Controller
     {
         try {
             $businessId = auth()->user()->business_id;
-            $branchId   = auth()->user()->branch_id;
+            $branchId   = auth()->user()->branch_id ?? null;
 
             $validated = $request->validate([
                 'customer_id' => [
@@ -183,9 +183,11 @@ class ReceptionController extends Controller
                 foreach ($productQuantities as $productId => $quantity) {
                     $product = Product::where('active', true)->findOrFail($productId);
 
-                    $inventory = Inventory::where('product_id', $product->id)
-                        ->where('branch_id', $branchId)
-                        ->first();
+                    $inventoryQuery = Inventory::where('product_id', $product->id);
+                    if ($branchId) {
+                        $inventoryQuery->where('branch_id', $branchId);
+                    }
+                    $inventory = $inventoryQuery->first();
 
                     $available = $inventory
                         ? (float) $inventory->quantity - (float) $inventory->reserved_quantity
@@ -284,16 +286,18 @@ class ReceptionController extends Controller
 
     public function getProducts()
     {
-        $branchId   = auth()->user()->branch_id;
+        $branchId   = auth()->user()->branch_id ?? null;
         $businessId = auth()->user()->business_id;
+
+        $inventoryQuery = function ($query) use ($branchId) {
+            if ($branchId) {
+                $query->where('branch_id', $branchId);
+            }
+        };
 
         $products = Product::query()
             ->where('active', true)
-            ->with([
-                'inventory' => function ($query) use ($branchId) {
-                    $query->where('branch_id', $branchId);
-                }
-            ])
+            ->with(['inventory' => $inventoryQuery])
             ->orderBy('name')
             ->get()
             ->map(function ($product) {
