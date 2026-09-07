@@ -3,25 +3,70 @@
 namespace App\Http\Controllers;
 
 use App\Models\Job;
+use App\Models\Payment;
 use App\Enums\JobStatus;
 use App\Services\PricingService;
+use App\Services\CashMovementService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class CashierController extends Controller
 {
     public function __construct(
-        private PricingService $pricing
+        private PricingService $pricing,
+        private CashMovementService $cashMovements
     ) {}
 
     public function index()
     {
-        $readyForPayment = Job::with(['customer', 'vehicle', 'invoice'])
-            ->where('status', JobStatus::READY_FOR_PAYMENT->value)
+        $readyForPayment = Job::with([
+            'customer',
+            'vehicle',
+            'invoice'
+        ])
+            ->where(
+                'status',
+                JobStatus::READY_FOR_PAYMENT->value
+            )
             ->orderBy('updated_at', 'desc')
             ->get();
 
-        return view('cashier.index', compact('readyForPayment'));
+        $till = $this->cashMovements->mainTill();
+
+        $movements = $till->cashMovements();
+
+        $cashSales = (float) (clone $movements)
+            ->where('type', 'in')
+            ->where('source', 'sale')
+            ->sum('amount');
+
+        $cashIn = (float) (clone $movements)
+            ->where('type', 'in')
+            ->where('source', 'manual')
+            ->sum('amount');
+
+        $cashOut = (float) (clone $movements)
+            ->where('type', 'out')
+            ->where('source', 'manual')
+            ->sum('amount');
+
+        $cashRefunds = (float) (clone $movements)
+            ->where('type', 'out')
+            ->where('source', 'refund')
+            ->sum('amount');
+
+        $expectedBalance =
+            $this->cashMovements->expectedBalance($till);
+
+        return view('cashier.index', compact(
+            'readyForPayment',
+            'till',
+            'cashSales',
+            'cashIn',
+            'cashOut',
+            'cashRefunds',
+            'expectedBalance',
+        ));
     }
 
     public function search(Request $request)
@@ -79,107 +124,59 @@ class CashierController extends Controller
             'coupon_code' => 'nullable|string',
         ]);
 
-        $job->load([
-            'services',
-            'parts',
-            'invoice.items',
-        ]);
+        return DB::transaction(function () use ($request, $job) {
 
-        if (!$job->invoice) {
-            return back()->with('error', 'No invoice found for this job.');
-        }
+            $job->load([
+                'services',
+                'parts',
+                'invoice.items',
+            ]);
 
-        $invoice = $job->invoice;
-
-        $amountReceived = (float) $request->amount_received;
-
-        $calculation = $this->pricing->calculateFinalInvoice($job->id);
-
-        $subtotal = (float) $calculation['subtotal'];
-        $tax = (float) $calculation['tax'];
-
-        $discountType =
-            $request->input('discount_type', 'none');
-
-        $discountApplyTo =
-            $request->input('discount_apply_to', 'total');
-
-        $discountValue =
-            (float) $request->input('discount_value', 0);
-
-        $discountAmount = 0;
-
-        /*
-        |--------------------------------------------------------------------------
-        | Invoice items
-        |--------------------------------------------------------------------------
-        */
-
-        $invoiceItems = $invoice->items;
-
-        /*
-        |--------------------------------------------------------------------------
-        | Restore the original invoice-item discounts first.
-        |
-        | This prevents a second payment attempt from applying the
-        | previous cashier discount again.
-        |--------------------------------------------------------------------------
-        */
-
-        $originalServiceDiscounts =
-            $job->services->keyBy('id');
-
-        foreach ($invoiceItems as $item) {
-
-            $originalDiscount = 0;
-
-            if ($item->item_type === 'service') {
-
-                $jobService =
-                    $originalServiceDiscounts->get($item->item_id);
-
-                if ($jobService) {
-                    $originalDiscount =
-                        (float) $jobService->discount;
-                }
+            if (!$job->invoice) {
+                return back()->with('error', 'No invoice found for this job.');
             }
 
-            $itemBase =
-                max(
-                    0,
-                    ((float) $item->unit_price * (float) $item->quantity)
-                    - $originalDiscount
-                );
+            $invoice = $job->invoice;
 
-            $item->update([
-                'discount' => $originalDiscount,
-                'line_total' =>
-                    $itemBase + (float) $item->tax,
-            ]);
-        }
+            $amountReceived = (float) $request->amount_received;
 
-        /*
-        |--------------------------------------------------------------------------
-        | NO DISCOUNT
-        |--------------------------------------------------------------------------
-        */
+            $calculation = $this->pricing->calculateFinalInvoice($job->id);
 
-        if ($discountType === 'none') {
+            $subtotal = (float) $calculation['subtotal'];
+            $tax = (float) $calculation['tax'];
+
+            $discountType =
+                $request->input('discount_type', 'none');
+
+            $discountApplyTo =
+                $request->input('discount_apply_to', 'total');
+
+            $discountValue =
+                (float) $request->input('discount_value', 0);
 
             $discountAmount = 0;
-        }
 
-        /*
-        |--------------------------------------------------------------------------
-        | TOTAL AMOUNT
-        |--------------------------------------------------------------------------
-        */
+            /*
+            |--------------------------------------------------------------------------
+            | Invoice items
+            |--------------------------------------------------------------------------
+            */
 
-        elseif ($discountApplyTo === 'total') {
+            $invoiceItems = $invoice->items;
 
-            $eligibleItems = $invoiceItems;
+            /*
+            |--------------------------------------------------------------------------
+            | Restore the original invoice-item discounts first.
+            |
+            | This prevents a second payment attempt from applying the
+            | previous cashier discount again.
+            |--------------------------------------------------------------------------
+            */
 
-            $eligibleBase = $eligibleItems->sum(function ($item) use ($originalServiceDiscounts) {
+            $originalServiceDiscounts =
+                $job->services->keyBy('id');
+
+            foreach ($invoiceItems as $item) {
 
                 $originalDiscount = 0;
 
@@ -194,36 +191,42 @@ class CashierController extends Controller
                     }
                 }
 
-                return max(
-                    0,
-                    ((float) $item->unit_price * (float) $item->quantity)
-                    - $originalDiscount
-                );
-            });
+                $itemBase =
+                    max(
+                        0,
+                        ((float) $item->unit_price * (float) $item->quantity)
+                        - $originalDiscount
+                    );
 
-            if ($discountType === 'amount') {
-
-                $discountAmount =
-                    min($discountValue, $eligibleBase);
-
-            } elseif ($discountType === 'percentage') {
-
-                $percentage =
-                    min($discountValue, 100);
-
-                $discountAmount =
-                    ($eligibleBase * $percentage) / 100;
+                $item->update([
+                    'discount' => $originalDiscount,
+                    'line_total' =>
+                        $itemBase + (float) $item->tax,
+                ]);
             }
 
             /*
             |--------------------------------------------------------------------------
-            | Distribute discount across every invoice item
+            | NO DISCOUNT
             |--------------------------------------------------------------------------
             */
 
-            if ($eligibleBase > 0 && $discountAmount > 0) {
+            if ($discountType === 'none') {
 
-                foreach ($eligibleItems as $item) {
+                $discountAmount = 0;
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | TOTAL AMOUNT
+            |--------------------------------------------------------------------------
+            */
+
+            elseif ($discountApplyTo === 'total') {
+
+                $eligibleItems = $invoiceItems;
+
+                $eligibleBase = $eligibleItems->sum(function ($item) use ($originalServiceDiscounts) {
 
                     $originalDiscount = 0;
 
@@ -238,64 +241,6 @@ class CashierController extends Controller
                         }
                     }
 
-                    $itemBase =
-                        max(
-                            0,
-                            ((float) $item->unit_price * (float) $item->quantity)
-                            - $originalDiscount
-                        );
-
-                    if ($discountType === 'percentage') {
-
-                        $itemDiscount =
-                            ($itemBase * min($discountValue, 100)) / 100;
-
-                    } else {
-
-                        $itemDiscount =
-                            $discountAmount *
-                            ($itemBase / $eligibleBase);
-                    }
-
-                    $itemDiscount =
-                        min($itemDiscount, $itemBase);
-
-                    $item->update([
-                        'discount' =>
-                            $originalDiscount + $itemDiscount,
-
-                        'line_total' =>
-                            $itemBase
-                            - $itemDiscount
-                            + (float) $item->tax,
-                    ]);
-                }
-            }
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | SERVICES ONLY
-        |--------------------------------------------------------------------------
-        */
-
-        elseif ($discountApplyTo === 'services') {
-
-            $serviceItems =
-                $invoiceItems
-                    ->where('item_type', 'service');
-
-            $serviceBase =
-                $serviceItems->sum(function ($item) use ($originalServiceDiscounts) {
-
-                    $jobService =
-                        $originalServiceDiscounts->get($item->item_id);
-
-                    $originalDiscount =
-                        $jobService
-                            ? (float) $jobService->discount
-                            : 0;
-
                     return max(
                         0,
                         ((float) $item->unit_price * (float) $item->quantity)
@@ -303,26 +248,262 @@ class CashierController extends Controller
                     );
                 });
 
-            if ($discountType === 'amount') {
+                if ($discountType === 'amount') {
 
-                $discountAmount =
-                    min($discountValue, $serviceBase);
+                    $discountAmount =
+                        min($discountValue, $eligibleBase);
 
-            } elseif ($discountType === 'percentage') {
+                } elseif ($discountType === 'percentage') {
 
-                $discountAmount =
-                    ($serviceBase * min($discountValue, 100)) / 100;
+                    $percentage =
+                        min($discountValue, 100);
+
+                    $discountAmount =
+                        ($eligibleBase * $percentage) / 100;
+                }
+
+                /*
+                |--------------------------------------------------------------------------
+                | Distribute discount across every invoice item
+                |--------------------------------------------------------------------------
+                */
+
+                if ($eligibleBase > 0 && $discountAmount > 0) {
+
+                    foreach ($eligibleItems as $item) {
+
+                        $originalDiscount = 0;
+
+                        if ($item->item_type === 'service') {
+
+                            $jobService =
+                                $originalServiceDiscounts->get($item->item_id);
+
+                            if ($jobService) {
+                                $originalDiscount =
+                                    (float) $jobService->discount;
+                            }
+                        }
+
+                        $itemBase =
+                            max(
+                                0,
+                                ((float) $item->unit_price * (float) $item->quantity)
+                                - $originalDiscount
+                            );
+
+                        if ($discountType === 'percentage') {
+
+                            $itemDiscount =
+                                ($itemBase * min($discountValue, 100)) / 100;
+
+                        } else {
+
+                            $itemDiscount =
+                                $discountAmount *
+                                ($itemBase / $eligibleBase);
+                        }
+
+                        $itemDiscount =
+                            min($itemDiscount, $itemBase);
+
+                        $item->update([
+                            'discount' =>
+                                $originalDiscount + $itemDiscount,
+
+                            'line_total' =>
+                                $itemBase
+                                - $itemDiscount
+                                + (float) $item->tax,
+                        ]);
+                    }
+                }
             }
 
             /*
             |--------------------------------------------------------------------------
-            | Put the service discount on each service line
+            | SERVICES ONLY
             |--------------------------------------------------------------------------
             */
 
-            if ($serviceBase > 0 && $discountAmount > 0) {
+            elseif ($discountApplyTo === 'services') {
 
-                foreach ($serviceItems as $item) {
+                $serviceItems =
+                    $invoiceItems
+                        ->where('item_type', 'service');
+
+                $serviceBase =
+                    $serviceItems->sum(function ($item) use ($originalServiceDiscounts) {
+
+                        $jobService =
+                            $originalServiceDiscounts->get($item->item_id);
+
+                        $originalDiscount =
+                            $jobService
+                                ? (float) $jobService->discount
+                                : 0;
+
+                        return max(
+                            0,
+                            ((float) $item->unit_price * (float) $item->quantity)
+                            - $originalDiscount
+                        );
+                    });
+
+                if ($discountType === 'amount') {
+
+                    $discountAmount =
+                        min($discountValue, $serviceBase);
+
+                } elseif ($discountType === 'percentage') {
+
+                    $discountAmount =
+                        ($serviceBase * min($discountValue, 100)) / 100;
+                }
+
+                /*
+                |--------------------------------------------------------------------------
+                | Put the service discount on each service line
+                |--------------------------------------------------------------------------
+                */
+
+                if ($serviceBase > 0 && $discountAmount > 0) {
+
+                    foreach ($serviceItems as $item) {
+
+                        $jobService =
+                            $originalServiceDiscounts->get($item->item_id);
+
+                        $originalDiscount =
+                            $jobService
+                                ? (float) $jobService->discount
+                                : 0;
+
+                        $itemBase =
+                            max(
+                                0,
+                                ((float) $item->unit_price * (float) $item->quantity)
+                                - $originalDiscount
+                            );
+
+                        if ($discountType === 'percentage') {
+
+                            $cashierDiscount =
+                                ($itemBase * min($discountValue, 100)) / 100;
+
+                        } else {
+
+                            $cashierDiscount =
+                                $discountAmount *
+                                ($itemBase / $serviceBase);
+                        }
+
+                        $cashierDiscount =
+                            min($cashierDiscount, $itemBase);
+
+                        $item->update([
+                            'discount' =>
+                                $originalDiscount + $cashierDiscount,
+
+                            'line_total' =>
+                                $itemBase
+                                - $cashierDiscount
+                                + (float) $item->tax,
+                        ]);
+                    }
+                }
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | PARTS ONLY
+            |--------------------------------------------------------------------------
+            */
+
+            elseif ($discountApplyTo === 'parts') {
+
+                $partItems =
+                    $invoiceItems
+                        ->where('item_type', 'part');
+
+                $partsBase =
+                    $partItems->sum(function ($item) {
+
+                        return max(
+                            0,
+                            (float) $item->unit_price *
+                            (float) $item->quantity
+                        );
+                    });
+
+                if ($discountType === 'amount') {
+
+                    $discountAmount =
+                        min($discountValue, $partsBase);
+
+                } elseif ($discountType === 'percentage') {
+
+                    $discountAmount =
+                        ($partsBase * min($discountValue, 100)) / 100;
+                }
+
+                /*
+                |--------------------------------------------------------------------------
+                | Put the parts discount on each part line
+                |--------------------------------------------------------------------------
+                */
+
+                if ($partsBase > 0 && $discountAmount > 0) {
+
+                    foreach ($partItems as $item) {
+
+                        $itemBase =
+                            (float) $item->unit_price *
+                            (float) $item->quantity;
+
+                        if ($discountType === 'percentage') {
+
+                            $cashierDiscount =
+                                ($itemBase * min($discountValue, 100)) / 100;
+
+                        } else {
+
+                            $cashierDiscount =
+                                $discountAmount *
+                                ($itemBase / $partsBase);
+                        }
+
+                        $cashierDiscount =
+                            min($cashierDiscount, $itemBase);
+
+                        $item->update([
+                            'discount' =>
+                                $cashierDiscount,
+
+                            'line_total' =>
+                                $itemBase
+                                - $cashierDiscount
+                                + (float) $item->tax,
+                        ]);
+                    }
+                }
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | INDIVIDUAL SERVICES
+            |--------------------------------------------------------------------------
+            */
+
+            elseif ($discountApplyTo === 'individual_services') {
+
+                $individualDiscounts =
+                    $request->input(
+                        'individual_service_discounts',
+                        []
+                    );
+
+                foreach ($invoiceItems->where('item_type', 'service') as $item) {
 
                     $jobService =
                         $originalServiceDiscounts->get($item->item_id);
@@ -339,20 +520,21 @@ class CashierController extends Controller
                             - $originalDiscount
                         );
 
+                    $value =
+                        (float) ($individualDiscounts[$item->item_id] ?? 0);
+
                     if ($discountType === 'percentage') {
 
                         $cashierDiscount =
-                            ($itemBase * min($discountValue, 100)) / 100;
+                            ($itemBase * min($value, 100)) / 100;
 
                     } else {
 
                         $cashierDiscount =
-                            $discountAmount *
-                            ($itemBase / $serviceBase);
+                            min($value, $itemBase);
                     }
 
-                    $cashierDiscount =
-                        min($cashierDiscount, $itemBase);
+                    $discountAmount += $cashierDiscount;
 
                     $item->update([
                         'discount' =>
@@ -365,69 +547,42 @@ class CashierController extends Controller
                     ]);
                 }
             }
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | PARTS ONLY
-        |--------------------------------------------------------------------------
-        */
-
-        elseif ($discountApplyTo === 'parts') {
-
-            $partItems =
-                $invoiceItems
-                    ->where('item_type', 'part');
-
-            $partsBase =
-                $partItems->sum(function ($item) {
-
-                    return max(
-                        0,
-                        (float) $item->unit_price *
-                        (float) $item->quantity
-                    );
-                });
-
-            if ($discountType === 'amount') {
-
-                $discountAmount =
-                    min($discountValue, $partsBase);
-
-            } elseif ($discountType === 'percentage') {
-
-                $discountAmount =
-                    ($partsBase * min($discountValue, 100)) / 100;
-            }
 
             /*
             |--------------------------------------------------------------------------
-            | Put the parts discount on each part line
+            | INDIVIDUAL PARTS
             |--------------------------------------------------------------------------
             */
 
-            if ($partsBase > 0 && $discountAmount > 0) {
+            elseif ($discountApplyTo === 'individual_parts') {
 
-                foreach ($partItems as $item) {
+                $individualDiscounts =
+                    $request->input(
+                        'individual_part_discounts',
+                        []
+                    );
+
+                foreach ($invoiceItems->where('item_type', 'part') as $item) {
 
                     $itemBase =
                         (float) $item->unit_price *
                         (float) $item->quantity;
 
+                    $value =
+                        (float) ($individualDiscounts[$item->item_id] ?? 0);
+
                     if ($discountType === 'percentage') {
 
                         $cashierDiscount =
-                            ($itemBase * min($discountValue, 100)) / 100;
+                            ($itemBase * min($value, 100)) / 100;
 
                     } else {
 
                         $cashierDiscount =
-                            $discountAmount *
-                            ($itemBase / $partsBase);
+                            min($value, $itemBase);
                     }
 
-                    $cashierDiscount =
-                        min($cashierDiscount, $itemBase);
+                    $discountAmount += $cashierDiscount;
 
                     $item->update([
                         'discount' =>
@@ -440,226 +595,154 @@ class CashierController extends Controller
                     ]);
                 }
             }
-        }
 
-        /*
-        |--------------------------------------------------------------------------
-        | INDIVIDUAL SERVICES
-        |--------------------------------------------------------------------------
-        */
+            /*
+            |--------------------------------------------------------------------------
+            | Final safety limit
+            |--------------------------------------------------------------------------
+            */
 
-        elseif ($discountApplyTo === 'individual_services') {
-
-            $individualDiscounts =
-                $request->input(
-                    'individual_service_discounts',
-                    []
+            $discountAmount =
+                min(
+                    max(0, $discountAmount),
+                    $subtotal
                 );
 
-            foreach ($invoiceItems->where('item_type', 'service') as $item) {
+            /*
+            |--------------------------------------------------------------------------
+            | Final invoice total
+            |--------------------------------------------------------------------------
+            */
 
-                $jobService =
-                    $originalServiceDiscounts->get($item->item_id);
-
-                $originalDiscount =
-                    $jobService
-                        ? (float) $jobService->discount
-                        : 0;
-
-                $itemBase =
-                    max(
-                        0,
-                        ((float) $item->unit_price * (float) $item->quantity)
-                        - $originalDiscount
-                    );
-
-                $value =
-                    (float) ($individualDiscounts[$item->item_id] ?? 0);
-
-                if ($discountType === 'percentage') {
-
-                    $cashierDiscount =
-                        ($itemBase * min($value, 100)) / 100;
-
-                } else {
-
-                    $cashierDiscount =
-                        min($value, $itemBase);
-                }
-
-                $discountAmount += $cashierDiscount;
-
-                $item->update([
-                    'discount' =>
-                        $originalDiscount + $cashierDiscount,
-
-                    'line_total' =>
-                        $itemBase
-                        - $cashierDiscount
-                        + (float) $item->tax,
-                ]);
-            }
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | INDIVIDUAL PARTS
-        |--------------------------------------------------------------------------
-        */
-
-        elseif ($discountApplyTo === 'individual_parts') {
-
-            $individualDiscounts =
-                $request->input(
-                    'individual_part_discounts',
-                    []
+            $finalTotal =
+                max(
+                    0,
+                    ($subtotal - $discountAmount) + $tax
                 );
 
-            foreach ($invoiceItems->where('item_type', 'part') as $item) {
+            /*
+            |--------------------------------------------------------------------------
+            | Payment / balance
+            |--------------------------------------------------------------------------
+            */
 
-                $itemBase =
-                    (float) $item->unit_price *
-                    (float) $item->quantity;
+            $previousPaid = (float) $invoice->getOriginal('paid');
 
-                $value =
-                    (float) ($individualDiscounts[$item->item_id] ?? 0);
+            $amountApplied = min(
+                $amountReceived,
+                max(0, $finalTotal - $previousPaid)
+            );
 
-                if ($discountType === 'percentage') {
+            $totalPaid =
+                (float) $invoice->paid +
+                $amountApplied;
 
-                    $cashierDiscount =
-                        ($itemBase * min($value, 100)) / 100;
+            $invoiceBalance =
+                $finalTotal -
+                $totalPaid;
 
-                } else {
+            /*
+            |--------------------------------------------------------------------------
+            | Update invoice
+            |--------------------------------------------------------------------------
+            */
 
-                    $cashierDiscount =
-                        min($value, $itemBase);
-                }
+            $invoice->update([
+                'discount' => $discountAmount,
+                'total' => $finalTotal,
+                'paid' => $totalPaid,
+                'balance' => $invoiceBalance,
+                'status' =>
+                    $invoiceBalance <= 0
+                        ? 'paid'
+                        : ($totalPaid > 0
+                            ? 'partially_paid'
+                            : 'issued'),
+            ]);
 
-                $discountAmount += $cashierDiscount;
+            $invoice->refresh();
 
-                $item->update([
-                    'discount' =>
-                        $cashierDiscount,
+            /*
+            |--------------------------------------------------------------------------
+            | Create Payment record
+            |--------------------------------------------------------------------------
+            */
 
-                    'line_total' =>
-                        $itemBase
-                        - $cashierDiscount
-                        + (float) $item->tax,
-                ]);
+            $payment = Payment::create([
+                'invoice_id' => $invoice->id,
+                'method' => $request->payment_method,
+                'amount' => $amountApplied,
+                'reference' => $request->input('reference'),
+                'received_by' => auth()->id(),
+            ]);
+
+            /*
+            |--------------------------------------------------------------------------
+            | Create CashMovement only for cash payments
+            |--------------------------------------------------------------------------
+            */
+
+            if ($request->payment_method === 'cash' && $amountApplied > 0) {
+                $this->cashMovements->recordSale(
+                    amount: $amountApplied,
+                    reference: $payment,
+                    userId: auth()->id(),
+                );
             }
-        }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Final safety limit
-        |--------------------------------------------------------------------------
-        */
+            /*
+            |--------------------------------------------------------------------------
+            | Balance message
+            |--------------------------------------------------------------------------
+            */
 
-        $discountAmount =
-            min(
-                max(0, $discountAmount),
-                $subtotal
-            );
+            if ($invoiceBalance > 0) {
 
-        /*
-        |--------------------------------------------------------------------------
-        | Final invoice total
-        |--------------------------------------------------------------------------
-        */
+                $balanceMessage =
+                    'Balance due: Rs. ' .
+                    number_format($invoiceBalance, 2);
 
-        $finalTotal =
-            max(
-                0,
-                ($subtotal - $discountAmount) + $tax
-            );
+            } elseif ($invoiceBalance < 0) {
 
-        /*
-        |--------------------------------------------------------------------------
-        | Payment / balance
-        |--------------------------------------------------------------------------
-        */
+                $balanceMessage =
+                    'Change to return: Rs. ' .
+                    number_format(abs($invoiceBalance), 2);
 
-        $totalPaid =
-            (float) $invoice->paid +
-            $amountReceived;
+            } else {
 
-        $invoiceBalance =
-            $finalTotal -
-            $totalPaid;
+                $balanceMessage =
+                    'Fully paid';
+            }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Update invoice
-        |--------------------------------------------------------------------------
-        */
+            /*
+            |--------------------------------------------------------------------------
+            | Job status
+            |--------------------------------------------------------------------------
+            */
 
-        $invoice->update([
-            'discount' => $discountAmount,
-            'total' => $finalTotal,
-            'paid' => $totalPaid,
-            'balance' => $invoiceBalance,
-            'status' =>
+            if (
+                $job->status !== JobStatus::PAID &&
                 $invoiceBalance <= 0
-                    ? 'paid'
-                    : ($totalPaid > 0
-                        ? 'partially_paid'
-                        : 'issued'),
-        ]);
+            ) {
 
-        $invoice->refresh();
+                $job->transitionTo(
+                    JobStatus::PAID,
+                    auth()->user(),
+                    "Payment processed via {$request->payment_method}. " .
+                    "Amount received: Rs. {$amountReceived}, " .
+                    "Discount: Rs. {$discountAmount}, " .
+                    "{$balanceMessage}"
+                );
+            }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Balance message
-        |--------------------------------------------------------------------------
-        */
-
-        if ($invoiceBalance > 0) {
-
-            $balanceMessage =
-                'Balance due: Rs. ' .
-                number_format($invoiceBalance, 2);
-
-        } elseif ($invoiceBalance < 0) {
-
-            $balanceMessage =
-                'Change to return: Rs. ' .
-                number_format(abs($invoiceBalance), 2);
-
-        } else {
-
-            $balanceMessage =
-                'Fully paid';
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Job status
-        |--------------------------------------------------------------------------
-        */
-
-        if (
-            $job->status !== JobStatus::PAID &&
-            $invoiceBalance <= 0
-        ) {
-
-            $job->transitionTo(
-                JobStatus::PAID,
-                auth()->user(),
-                "Payment processed via {$request->payment_method}. " .
-                "Amount received: Rs. {$amountReceived}, " .
-                "Discount: Rs. {$discountAmount}, " .
-                "{$balanceMessage}"
-            );
-        }
-
-        return redirect()
-            ->route('cashier.print-options', $job)
-            ->with(
-                'success',
-                'Payment processed successfully. ' .
-                $balanceMessage
-            );
+            return redirect()
+                ->route('cashier.print-options', $job)
+                ->with(
+                    'success',
+                    'Payment processed successfully. ' .
+                    $balanceMessage
+                );
+        });
     }
 
     public function printOptions(Job $job)
@@ -706,5 +789,67 @@ class CashierController extends Controller
         }
 
         return view('cashier.print-options', compact('job', 'currentPaymentAmount', 'currentBalance'));
+    }
+
+    public function cashIn(Request $request)
+    {
+        $data = $request->validate([
+            'amount' => ['required', 'numeric', 'min:0.01'],
+            'reason' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $this->cashMovements->recordCashIn(
+            amount: (float) $data['amount'],
+            reason: $data['reason'],
+            description: $data['description'] ?? null,
+            userId: auth()->id(),
+        );
+
+        return back()->with('success', 'Cash added to Till successfully.');
+    }
+
+    public function cashOut(Request $request)
+    {
+        $data = $request->validate([
+            'amount' => ['required', 'numeric', 'min:0.01'],
+            'reason' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        try {
+            $this->cashMovements->recordCashOut(
+                amount: (float) $data['amount'],
+                reason: $data['reason'],
+                description: $data['description'] ?? null,
+                userId: auth()->id(),
+            );
+        } catch (\RuntimeException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        return back()->with('success', 'Cash removed from Till successfully.');
+    }
+
+    public function cashDrop(Request $request)
+    {
+        $data = $request->validate([
+            'amount' => ['required', 'numeric', 'min:0.01'],
+            'reason' => ['nullable', 'string', 'max:255'],
+            'description' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        try {
+            $this->cashMovements->recordCashDrop(
+                amount: (float) $data['amount'],
+                reason: $data['reason'] ?? 'Cash Drop',
+                description: $data['description'] ?? null,
+                userId: auth()->id(),
+            );
+        } catch (\RuntimeException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        return back()->with('success', 'Cash drop recorded successfully.');
     }
 }

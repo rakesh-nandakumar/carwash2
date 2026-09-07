@@ -19,6 +19,7 @@ use App\Http\Controllers\ServiceCategoryController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VehicleController;
+use App\Http\Controllers\TillController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\StockAdjustmentController;
 
@@ -391,6 +392,18 @@ Route::prefix('{tenant}')
             Route::get('/cashier/print-options/{job}', [CashierController::class, 'printOptions'])
                 ->name('cashier.print-options')
                 ->middleware('permission:cashier.print_options');
+
+            Route::post('/cashier/cash-in', [CashierController::class, 'cashIn'])
+                ->name('cashier.cash-in')
+                ->middleware('permission:cashier.cash_in');
+
+            Route::post('/cashier/cash-out', [CashierController::class, 'cashOut'])
+                ->name('cashier.cash-out')
+                ->middleware('permission:cashier.cash_out');
+
+            Route::post('/cashier/cash-drop', [CashierController::class, 'cashDrop'])
+                ->name('cashier.cash-drop')
+                ->middleware('permission:cashier.cash_drop');
             // ==================== END CASHIER ====================
 
             // ==================== REPORTS (UPDATED) ====================
@@ -417,6 +430,10 @@ Route::prefix('{tenant}')
             Route::get('/reports/customers', [ReportController::class, 'customerReport'])
                 ->name('reports.customers')
                 ->middleware('permission:reports.customers');
+
+            Route::get('/reports/cash-movements', [ReportController::class, 'cashMovementsReport'])
+                ->name('reports.cash-movements')
+                ->middleware('permission:cash_movements.access');
             // ==================== END REPORTS ====================
 
             // ==================== USERS ====================
@@ -498,5 +515,15 @@ Route::prefix('{tenant}')
                 ->name('stock-adjustments.reverse')
                 ->middleware('permission:stock_adjustments.reverse');
             // ==================== END STOCK ADJUSTMENTS ====================
+
+            // ==================== SETTINGS ====================
+            Route::get('/settings/till', [TillController::class, 'edit'])
+                ->name('settings.till')
+                ->middleware('permission:settings.access');
+
+            Route::put('/settings/till', [TillController::class, 'update'])
+                ->name('settings.till.update')
+                ->middleware('permission:settings.access');
+            // ==================== END SETTINGS ====================
         });
     });

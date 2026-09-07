@@ -142,6 +142,10 @@ class RoleSeeder extends Seeder
                     'cashier.open_shift',
                     'cashier.close_shift',
                     'cashier.cash_drop',
+                    'cashier.cash_in',
+                    'cashier.cash_out',
+
+                    'cash_movements.access',
 
                     'reports.access',
                     'reports.sales',
@@ -242,6 +246,10 @@ class RoleSeeder extends Seeder
                     'cashier.open_shift',
                     'cashier.close_shift',
                     'cashier.cash_drop',
+                    'cashier.cash_in',
+                    'cashier.cash_out',
+
+                    'cash_movements.access',
                 ],
             ],
 

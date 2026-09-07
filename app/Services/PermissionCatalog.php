@@ -144,6 +144,15 @@ class PermissionCatalog
                     'open_shift',
                     'close_shift',
                     'cash_drop',
+                    'cash_in',
+                    'cash_out',
+                ],
+            ],
+
+            'cash_movements' => [
+                'label' => 'Cash Movements',
+                'actions' => [
+                    'access',
                 ],
             ],
 

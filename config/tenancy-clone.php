@@ -2,30 +2,30 @@
 
 /*
 |--------------------------------------------------------------------------
-| Tenant clone topology (Test Instances)
-|--------------------------------------------------------------------------
-|
-| The schema map used by App\Services\Tenancy\TestInstanceService to copy every
-| tenant-scoped row of a live tenant into its isolated test instance, remapping
-| primary keys so both environments coexist in the same tables.
-|
-| Rules encoded here:
-|  - Only columns listed as `fks` are remapped; everything else (global
-|    references like permission ids / central_admins.id) is copied verbatim
-|    on purpose.
-|  - Tables listed in `excluded` are operational, audit- or security-related
-|    rows that must NOT leak into a test environment (audit trails are
-|    per-environment history; impersonation tokens are security credentials
-|    whose duplication would defeat their one-time nature; notifications,
-|    cache/sessions/queue rows are transient).
-|  - `pivots` are tables without tenant_id whose isolation is inherited from
-|    their tenant-scoped parents; rows are copied/erased by membership in the
-|    mapped id sets; keys listed in `skip_remap` reference global tables
-|    (permissions) and are copied verbatim.
-|  - `polymorphic` maps morph-type columns whose `*_id` may reference one of
-|    several cloned tables; `polymorphic_aliases` maps the STRING literals the
-|    type columns hold ('service'/'part') to tables, since carwash never uses
-|    Relation::morphMap().
+| Tenant clone topology (Test Instances)                                        |
+| ----------------------------------------------------------------------------- |
+|                                                                               |
+| The schema map used by App\Services\Tenancy\TestInstanceService to copy every |
+| tenant-scoped row of a live tenant into its isolated test instance, remapping |
+| primary keys so both environments coexist in the same tables.                 |
+|                                                                               |
+| Rules encoded here:                                                           |
+| - Only columns listed as `fks` are remapped; everything else (global          |
+| references like permission ids / central_admins.id) is copied verbatim        |
+| on purpose.                                                                   |
+| - Tables listed in `excluded` are operational, audit- or security-related     |
+| rows that must NOT leak into a test environment (audit trails are             |
+| per-environment history; impersonation tokens are security credentials        |
+| whose duplication would defeat their one-time nature; notifications,          |
+| cache/sessions/queue rows are transient).                                     |
+| - `pivots` are tables without tenant_id whose isolation is inherited from     |
+| their tenant-scoped parents; rows are copied/erased by membership in the      |
+| mapped id sets; keys listed in `skip_remap` reference global tables           |
+| (permissions) and are copied verbatim.                                        |
+| - `polymorphic` maps morph-type columns whose `*_id` may reference one of     |
+| several cloned tables; `polymorphic_aliases` maps the STRING literals the     |
+| type columns hold ('service'/'part') to tables, since carwash never uses      |
+| Relation::morphMap().                                                         |
 */
 
 return [
@@ -102,6 +102,17 @@ return [
         'refunds' => ['fks' => ['invoice_id' => 'invoices', 'payment_id' => 'payments', 'requested_by' => 'users', 'approved_by' => 'users', 'processed_by' => 'users']],
         'credit_notes' => ['fks' => ['invoice_id' => 'invoices', 'customer_id' => 'customers', 'created_by' => 'users']],
         'discounts' => ['fks' => ['business_id' => 'businesses']],
+
+        // --- Tills & cash movements ---
+        'tills' => [
+            'fks' => [],
+        ],
+        'cash_movements' => [
+            'fks' => [
+                'till_id' => 'tills',
+                'user_id' => 'users',
+            ],
+        ],
 
         // --- Loyalty / memberships ---
         'loyalty_accounts' => ['fks' => ['customer_id' => 'customers']],

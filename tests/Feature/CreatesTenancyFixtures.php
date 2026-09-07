@@ -25,10 +25,6 @@ trait CreatesTenancyFixtures
 
     protected function setUpTenancy(): void
     {
-        app(CurrentContext::class)->runWithoutTenant(function () {
-            app(PermissionService::class)->syncDefaultPermissions();
-        });
-
         $this->tenantA = Tenant::create(['name' => 'Alpha Wash', 'slug' => 'alpha', 'status' => 'active']);
         $this->tenantB = Tenant::create(['name' => 'Beta Wash', 'slug' => 'beta', 'status' => 'active']);
 

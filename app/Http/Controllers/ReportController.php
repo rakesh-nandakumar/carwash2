@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\{Invoice, Job, Customer, Vehicle, Product, Service, InventoryMovement};
+use App\Models\{Invoice, Job, Customer, Vehicle, Product, Service, InventoryMovement, CashMovement};
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
@@ -291,5 +291,113 @@ class ReportController extends Controller
             ->withQueryString();
 
         return view('reports.customers', compact('customers', 'startDate', 'endDate'));
+    }
+
+    public function cashMovementsReport(Request $request)
+    {
+        abort_unless(
+            auth()->user()->hasPermissionTo('cash_movements.access'),
+            403
+        );
+
+        $startDate = Carbon::parse(
+            $request->input(
+                'start_date',
+                now()->startOfMonth()->toDateString()
+            )
+        )->startOfDay();
+
+        $endDate = Carbon::parse(
+            $request->input(
+                'end_date',
+                now()->toDateString()
+            )
+        )->endOfDay();
+
+        $query = CashMovement::query()
+            ->with([
+                'till',
+                'user',
+                'reference',
+            ])
+            ->whereBetween('created_at', [
+                $startDate,
+                $endDate,
+            ])
+            ->latest('created_at');
+
+        if ($request->filled('type')) {
+            $query->where('type', $request->type);
+        }
+
+        if ($request->filled('source')) {
+            $query->where('source', $request->source);
+        }
+
+        if ($request->filled('user_id')) {
+            $query->where('user_id', $request->user_id);
+        }
+
+        if ($request->filled('reason')) {
+            $query->where('reason', 'like', '%' . $request->reason . '%');
+        }
+
+        $movements = $query
+            ->paginate(30)
+            ->withQueryString();
+
+        $totalsQuery = clone $query;
+
+        $cashIn = (float) (clone $totalsQuery)
+            ->where('type', 'in')
+            ->sum('amount');
+
+        $cashOut = (float) (clone $totalsQuery)
+            ->where('type', 'out')
+            ->sum('amount');
+
+        $sales = (float) (clone $totalsQuery)
+            ->where('type', 'in')
+            ->where('source', 'sale')
+            ->sum('amount');
+
+        $refunds = (float) (clone $totalsQuery)
+            ->where('type', 'out')
+            ->where('source', 'refund')
+            ->sum('amount');
+
+        $manualIn = (float) (clone $totalsQuery)
+            ->where('type', 'in')
+            ->where('source', 'manual')
+            ->sum('amount');
+
+        $manualOut = (float) (clone $totalsQuery)
+            ->where('type', 'out')
+            ->where('source', 'manual')
+            ->sum('amount');
+
+        $drops = (float) (clone $totalsQuery)
+            ->where('source', 'drop')
+            ->sum('amount');
+
+        $till = app(\App\Services\CashMovementService::class)
+            ->mainTill();
+
+        return view(
+            'reports.cash_movements',
+            compact(
+                'movements',
+                'startDate',
+                'endDate',
+                'till',
+                'cashIn',
+                'cashOut',
+                'sales',
+                'refunds',
+                'manualIn',
+                'manualOut',
+                'drops',
+            )
+        );
     }
 }

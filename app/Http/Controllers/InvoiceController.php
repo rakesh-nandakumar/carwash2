@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\{Invoice, Payment};
+use App\Services\CashMovementService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -61,21 +62,29 @@ class InvoiceController extends Controller
         ));
     }
 
-    public function pay(Request $r, Invoice $invoice)
+    public function pay(Request $r, Invoice $invoice, CashMovementService $cashMovements)
     {
         $d = $r->validate(['amount' => 'required|numeric|min:.01', 'method' => 'required']);
 
-        DB::transaction(function () use ($invoice, $d) {
+        DB::transaction(function () use ($invoice, $d, $cashMovements) {
             if ($d['amount'] > $invoice->balance) {
                 abort(422, 'Payment exceeds balance.');
             }
 
-            Payment::create([
+            $payment = Payment::create([
                 'invoice_id' => $invoice->id,
                 'method' => $d['method'],
                 'amount' => $d['amount'],
                 'received_by' => auth()->id(),
             ]);
+
+            if ($d['method'] === 'cash') {
+                $cashMovements->recordSale(
+                    amount: (float) $d['amount'],
+                    reference: $payment,
+                    userId: auth()->id(),
+                );
+            }
 
             $invoice->paid += $d['amount'];
             $invoice->balance = $invoice->total - $invoice->paid;

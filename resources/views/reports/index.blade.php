@@ -68,6 +68,35 @@
             <h3>Customer Report</h3>
             <p>Customer activity and job history by date range.</p>
         </div>
+
+        {{-- Cash Movements Report --}}
+        @if(auth()->user()->hasPermissionTo('cash_movements.access'))
+            <div
+                class="report-card report-card-blue"
+                onclick="window.location.href='{{ route('reports.cash-movements') }}'"
+            >
+                <div class="report-icon">
+                    <svg
+                        width="48"
+                        height="48"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="white"
+                        stroke-width="2"
+                    >
+                        <rect x="2" y="5" width="20" height="14" rx="2"/>
+                        <circle cx="12" cy="12" r="3"/>
+                        <path d="M6 9h.01M18 15h.01"/>
+                    </svg>
+                </div>
+
+                <h3>Cash Movements</h3>
+
+                <p>
+                    Cash sales, refunds, cash in, cash out and cash drops.
+                </p>
+            </div>
+        @endif
     </div>
 </div>
 

@@ -7,6 +7,7 @@ use App\Models\Business;
 use App\Models\Role;
 use App\Models\Tenant;
 use App\Models\TenantModule;
+use App\Models\Till;
 use App\Models\User;
 use App\Support\ModuleCatalog;
 use Database\Seeders\RoleSeeder;
@@ -57,6 +58,14 @@ class TenantProvisioning
             'business_id' => $business->id,
             'name' => 'Main Branch',
             'code' => 'MAIN',
+        ]);
+
+        Till::create([
+            'name' => 'Main Till',
+            'code' => 'MAIN',
+            'description' => 'Main cashier till',
+            'opening_balance' => 0,
+            'is_active' => true,
         ]);
 
         return $business;

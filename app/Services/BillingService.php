@@ -9,13 +9,16 @@ use App\Models\Payment;
 use App\Models\Job;
 use App\Models\Refund;
 use App\Models\CreditNote;
+use App\Models\CashMovement;
 use App\Services\PricingService;
+use App\Services\CashMovementService;
 use Illuminate\Support\Facades\DB;
 
 class BillingService
 {
     public function __construct(
-        private PricingService $pricingService
+        private PricingService $pricingService,
+        private CashMovementService $cashMovements
     ) {}
 
     public function createInvoice(int $jobId): Invoice
@@ -213,6 +216,21 @@ class BillingService
             $invoice->paid -= $refund->amount;
             $invoice->balance += $refund->amount;
             $invoice->save();
+
+            // Prevent duplicate refund cash movements
+            $alreadyRecorded = CashMovement::query()
+                ->where('reference_type', $refund->getMorphClass())
+                ->where('reference_id', $refund->id)
+                ->where('source', 'refund')
+                ->exists();
+
+            if (!$alreadyRecorded && $refund->method === 'cash') {
+                $this->cashMovements->recordRefund(
+                    amount: (float) $refund->amount,
+                    reference: $refund,
+                    userId: $approvedBy,
+                );
+            }
 
             return $refund;
         });
