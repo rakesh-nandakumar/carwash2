@@ -12,6 +12,7 @@
         <a class="active" href="{{ route('central.tenants.show', $tenant) }}">Overview</a>
         <a href="{{ route('central.tenants.settings', $tenant) }}">Settings</a>
         <a href="{{ route('central.tenants.modules', $tenant) }}">Modules</a>
+        <a href="{{ route('central.tenants.tills', $tenant) }}">Tills</a>
         <a href="{{ route('central.tenants.audit', $tenant) }}">Audit</a>
     </div>
 

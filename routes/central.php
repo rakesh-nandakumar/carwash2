@@ -50,6 +50,9 @@ Route::middleware(['auth:central'])->group(function () {
         Route::get('/tenants/{tenant}/modules', [TenantModuleController::class, 'index'])->name('tenants.modules');
         Route::post('/tenants/{tenant}/modules/{moduleKey}', [TenantModuleController::class, 'update'])->name('tenants.modules.update');
 
+        Route::get('/tenants/{tenant}/tills', [TenantController::class, 'tills'])->name('tenants.tills');
+        Route::post('/tenants/{tenant}/tills', [TenantController::class, 'createTill'])->name('tenants.tills.create');
+
         Route::post('/tenants/{tenant}/impersonate', [ImpersonationController::class, 'store'])->name('tenants.impersonate');
 
         Route::post('/tenants/{tenant}/test-instance', [TestInstanceController::class, 'create'])->name('tenants.test-instance.create');

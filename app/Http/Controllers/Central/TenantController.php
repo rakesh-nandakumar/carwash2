@@ -43,6 +43,10 @@ class TenantController extends Controller
             'trial_ends_at' => ['nullable', 'date'],
             'admin_email' => ['required', 'string', 'email', 'max:255'],
             'admin_name' => ['nullable', 'string', 'max:150'],
+            'till_name' => ['required', 'string', 'max:255'],
+            'till_code' => ['required', 'string', 'max:50'],
+            'till_opening_balance' => ['required', 'numeric', 'min:0'],
+            'till_description' => ['nullable', 'string', 'max:1000'],
         ]);
 
         $tenant = Tenant::create([
@@ -53,7 +57,14 @@ class TenantController extends Controller
             'created_by' => $request->user('central')->id,
         ]);
 
-        app(\App\Services\TenantProvisioning::class)->provision($tenant, $data['admin_email'], $data['admin_name'] ?? null);
+        $tillConfig = [
+            'name' => $data['till_name'],
+            'code' => $data['till_code'],
+            'opening_balance' => $data['till_opening_balance'],
+            'description' => $data['till_description'] ?? null,
+        ];
+
+        app(\App\Services\TenantProvisioning::class)->provision($tenant, $data['admin_email'], $data['admin_name'] ?? null, $tillConfig);
 
         return redirect()->route('central.tenants.show', $tenant)
             ->with('success', 'Tenant provisioned. It is now reachable at /'.$tenant->slug.'/login (access via impersonation).');
@@ -68,6 +79,41 @@ class TenantController extends Controller
         $settingsStats = collect(SettingsSeeder::definitions())->count();
 
         return view('central.tenants.show', compact('tenant', 'modules', 'owner', 'settingsStats'));
+    }
+
+    public function tills(Tenant $tenant)
+    {
+        $tills = app(CurrentContext::class)->runForTenant($tenant->id, function () use ($tenant) {
+            return \App\Models\Till::with('currentUser')
+                ->orderBy('name')
+                ->get();
+        });
+
+        return view('central.tenants.tills', compact('tenant', 'tills'));
+    }
+
+    public function createTill(Request $request, Tenant $tenant)
+    {
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'code' => ['required', 'string', 'max:50'],
+            'description' => ['nullable', 'string', 'max:1000'],
+            'location' => ['nullable', 'string', 'max:255'],
+            'opening_balance' => ['required', 'numeric', 'min:0'],
+        ]);
+
+        app(CurrentContext::class)->runForTenant($tenant->id, function () use ($data) {
+            \App\Models\Till::create([
+                'name' => $data['name'],
+                'code' => $data['code'],
+                'description' => $data['description'] ?? null,
+                'location' => $data['location'] ?? null,
+                'opening_balance' => $data['opening_balance'],
+                'is_active' => true,
+            ]);
+        });
+
+        return back()->with('success', 'Till created successfully.');
     }
 
     public function update(Request $request, Tenant $tenant)

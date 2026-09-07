@@ -27,11 +27,11 @@ use Illuminate\Support\Str;
  */
 class TenantProvisioning
 {
-    public function provision(Tenant $tenant, string $adminEmail, ?string $adminName = null): User
+    public function provision(Tenant $tenant, string $adminEmail, ?string $adminName = null, ?array $tillConfig = null): User
     {
-        return DB::transaction(function () use ($tenant, $adminEmail, $adminName) {
-            return app(CurrentContext::class)->runForTenant($tenant->id, function () use ($tenant, $adminEmail, $adminName) {
-                $business = $this->createDefaultBusiness($tenant);
+        return DB::transaction(function () use ($tenant, $adminEmail, $adminName, $tillConfig) {
+            return app(CurrentContext::class)->runForTenant($tenant->id, function () use ($tenant, $adminEmail, $adminName, $tillConfig) {
+                $business = $this->createDefaultBusiness($tenant, $tillConfig);
 
                 app(RoleSeeder::class)->seedRolesForBusiness($business);
 
@@ -47,7 +47,7 @@ class TenantProvisioning
         });
     }
 
-    private function createDefaultBusiness(Tenant $tenant): Business
+    private function createDefaultBusiness(Tenant $tenant, ?array $tillConfig = null): Business
     {
         $business = Business::create([
             'name' => $tenant->name,
@@ -60,11 +60,19 @@ class TenantProvisioning
             'code' => 'MAIN',
         ]);
 
-        Till::create([
+        // Use provided till config or fall back to defaults
+        $tillConfig = $tillConfig ?? [
             'name' => 'Main Till',
             'code' => 'MAIN',
             'description' => 'Main cashier till',
             'opening_balance' => 0,
+        ];
+
+        Till::create([
+            'name' => $tillConfig['name'],
+            'code' => $tillConfig['code'],
+            'description' => $tillConfig['description'] ?? null,
+            'opening_balance' => $tillConfig['opening_balance'],
             'is_active' => true,
         ]);
 

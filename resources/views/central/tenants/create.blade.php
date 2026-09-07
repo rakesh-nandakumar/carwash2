@@ -37,6 +37,25 @@
                     <input type="text" name="admin_name">
                 </label>
             </div>
+
+            <h3 style="margin-top: 24px; margin-bottom: 12px; font-size: 16px; font-weight: 600;">Default Till Configuration</h3>
+            <div class="form-grid">
+                <label>Till name
+                    <input type="text" name="till_name" value="Main Till" required>
+                </label>
+                <label>Till code
+                    <input type="text" name="till_code" value="MAIN" required>
+                </label>
+            </div>
+            <div class="form-grid">
+                <label>Opening balance
+                    <input type="number" name="till_opening_balance" value="0" min="0" step="0.01" required>
+                </label>
+                <label>Description
+                    <input type="text" name="till_description" value="Main cashier till">
+                </label>
+            </div>
+
             <p style="font-size:12.5px;color:#64748b;margin-bottom:14px;">The admin account gets a random, never-communicated password — access it via impersonation from this panel.</p>
             <button class="btn btn-primary" type="submit">Provision</button>
         </form>
