@@ -21,7 +21,7 @@
             <strong style="color:#dc2626;">Low Stock Alert: {{ $lowStockItems->count() }} product(s) need attention</strong>
             <p style="margin:4px 0 0 0;color:#991b1b;font-size:14px;">
                 @foreach($lowStockItems->take(3) as $item)
-                    {{ $item->product->name }} ({{ $item->quantity }} / {{ $item->product->minimum_stock }}){{ !$loop->last ? ', ' : '' }}
+                    {{ $item['product']->name }} ({{ number_format($item['current'], 3) }} / {{ number_format($item['minimum'], 3) }}){{ !$loop->last ? ', ' : '' }}
                 @endforeach
                 @if($lowStockItems->count() > 3)
                     and {{ $lowStockItems->count() - 3 }} more...
@@ -49,6 +49,11 @@
         </thead>
         <tbody>
             @foreach($items as $i)
+            @php
+                $quantity = (float) $i->quantity;
+                $reserved = (float) ($i->reserved_quantity ?? 0);
+                $available = max(0, $quantity - $reserved);
+            @endphp
             <tr>
                 <td>
                     @if($i->product->image && file_exists(storage_path('app/public/'.$i->product->image)))
@@ -61,15 +66,12 @@
                 <td><b>{{ $i->product->name }}</b></td>
                 <td>{{ $i->product->brand }}</td>
                 <td>
-                    @php
-                        $available = max(0, $i->quantity - ($i->reserved_quantity ?? 0));
-                    @endphp
                     @if($available == 0)
                         <span style="color:#dc2626;font-weight:bold;">Out of Stock</span>
                     @elseif($available <= $i->product->minimum_stock)
-                        <span style="color:#dc2626;font-weight:bold;">{{ $available }}</span>
+                        <span style="color:#dc2626;font-weight:bold;">{{ number_format($available, 3) }}</span>
                     @else
-                        {{ $available }}
+                        {{ number_format($available, 3) }}
                     @endif
                 </td>
                 <td>{{ $i->product->minimum_stock }}</td>
@@ -107,7 +109,9 @@
     <div class="inventory-cards">
         @forelse($items as $i)
         @php
-            $available = max(0, $i->quantity - ($i->reserved_quantity ?? 0));
+            $quantity = (float) $i->quantity;
+            $reserved = (float) ($i->reserved_quantity ?? 0);
+            $available = max(0, $quantity - $reserved);
         @endphp
         <div class="inventory-card">
             <div class="card-top">
@@ -124,9 +128,9 @@
                         @if($available == 0)
                             <span style="color:#dc2626;font-weight:600;">Out of Stock</span>
                         @elseif($available <= $i->product->minimum_stock)
-                            <span style="color:#dc2626;font-weight:600;">{{ $available }}</span>
+                            <span style="color:#dc2626;font-weight:600;">{{ number_format($available, 3) }}</span>
                         @else
-                            {{ $available }}
+                            {{ number_format($available, 3) }}
                         @endif
                     </span>
                 </div>

@@ -371,7 +371,6 @@
             font-size: 13px;
         }
 
-        /* Make New Job + TV Mode sit on the same row */
         .page-head > div:last-child {
             width: 100%;
             display: flex;
@@ -380,7 +379,6 @@
         }
 
         .page-head a.primary {
-            /* Keep original width - do not stretch */
             flex-shrink: 0;
             width: auto;
             padding: 11px 18px;
@@ -390,7 +388,7 @@
         }
 
         .tv-toggle-btn {
-            flex: 1;                 /* fills remaining space */
+            flex: 1;
             margin-top: 0;
             margin-bottom: 0;
             width: auto;
@@ -457,6 +455,36 @@
         }
     }
 </style>
+
+<!-- TV Mode Exit Button -->
+<button
+    type="button"
+    id="exitTvModeBtn"
+    onclick="exitTvMode()"
+    title="Exit TV Mode"
+    style="
+        position: fixed;
+        top: 16px;
+        right: 16px;
+        z-index: 99999;
+        display: none;
+        align-items: center;
+        gap: 8px;
+        padding: 9px 14px;
+        border: 1px solid rgba(255,255,255,0.25);
+        border-radius: 8px;
+        background: rgba(15,23,42,0.90);
+        color: white;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.25);
+        backdrop-filter: blur(8px);
+    "
+>
+    <span style="font-size: 16px;">↙</span>
+    Exit TV Mode
+</button>
 
 <div class="page-head">
     <div>
@@ -636,31 +664,67 @@ document.querySelectorAll('.mobile-tab').forEach(tab => {
 });
 
 // TV Mode
-let sidebarStateBeforeTV = null;
 const tvToggle = document.getElementById('tvToggle');
 
 tvToggle.addEventListener('click', () => {
+    if (!document.body.classList.contains('tv-mode')) {
+        // Enter TV Mode
+        document.body.classList.add('tv-mode');
+        tvToggle.textContent = '❌ Exit TV Mode';
+        document.documentElement.requestFullscreen?.().catch(() => {});
+    } else {
+        // Exit TV Mode via the main button
+        exitTvMode();
+    }
+});
+
+// Exit TV Mode (used by both the fixed button and the toggle button)
+function exitTvMode() {
+    // Exit fullscreen
+    if (document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {});
+    }
+
+    // Remove TV mode class
+    document.body.classList.remove('tv-mode');
+
+    // Always open the sidebar when exiting TV Mode
     const sidebar = document.getElementById('sidebar');
     const main = document.querySelector('.main');
 
-    if (!document.body.classList.contains('tv-mode')) {
-        sidebarStateBeforeTV = {
-            sidebarCollapsed: sidebar?.classList.contains('collapsed'),
-            mainExpanded: main?.classList.contains('expanded')
-        };
+    if (sidebar) {
+        sidebar.classList.remove('collapsed');
+    }
+    if (main) {
+        main.classList.remove('expanded');
     }
 
-    document.body.classList.toggle('tv-mode');
+    // Reset button text
+    const tvToggleBtn = document.getElementById('tvToggle');
+    if (tvToggleBtn) {
+        tvToggleBtn.textContent = '📺 TV Mode';
+    }
 
-    if (document.body.classList.contains('tv-mode')) {
-        tvToggle.textContent = '❌ Exit TV Mode';
-        document.documentElement.requestFullscreen?.();
+    // Hide the fixed exit button
+    const exitBtn = document.getElementById('exitTvModeBtn');
+    if (exitBtn) {
+        exitBtn.style.display = 'none';
+    }
+}
+
+// Show / hide the fixed Exit button based on fullscreen state
+document.addEventListener('fullscreenchange', function () {
+    const button = document.getElementById('exitTvModeBtn');
+    if (!button) return;
+
+    if (document.fullscreenElement) {
+        button.style.display = 'flex';
     } else {
-        tvToggle.textContent = '📺 TV Mode';
-        document.exitFullscreen?.();
-        if (sidebarStateBeforeTV) {
-            sidebar?.classList.toggle('collapsed', sidebarStateBeforeTV.sidebarCollapsed);
-            main?.classList.toggle('expanded', sidebarStateBeforeTV.mainExpanded);
+        // If user presses ESC, also fully exit TV mode
+        if (document.body.classList.contains('tv-mode')) {
+            exitTvMode();
+        } else {
+            button.style.display = 'none';
         }
     }
 });

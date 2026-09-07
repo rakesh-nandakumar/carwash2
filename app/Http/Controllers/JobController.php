@@ -172,7 +172,11 @@ class JobController extends Controller
         if ($newStatus === JobStatus::READY_FOR_PAYMENT) {
             try {
                 DB::transaction(function () use ($job, $newStatus, $r) {
-                    $this->inventory->consumeUnappliedJobParts($job);
+
+                    // Consume unapplied parts only when the job has a branch.
+                    if ($job->branch_id !== null) {
+                        $this->inventory->consumeUnappliedJobParts($job);
+                    }
 
                     $job->transitionTo(
                         $newStatus,
@@ -182,7 +186,16 @@ class JobController extends Controller
 
                     $this->invoicing->generate($job->id);
                 });
+
             } catch (\Throwable $e) {
+
+                if ($r->expectsJson()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => $e->getMessage(),
+                    ], 500);
+                }
+
                 return back()->with(
                     'error',
                     $e->getMessage()
