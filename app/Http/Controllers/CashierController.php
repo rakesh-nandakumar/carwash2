@@ -7,6 +7,7 @@ use App\Models\Payment;
 use App\Enums\JobStatus;
 use App\Services\PricingService;
 use App\Services\CashMovementService;
+use App\Services\CommunicationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -14,7 +15,8 @@ class CashierController extends Controller
 {
     public function __construct(
         private PricingService $pricing,
-        private CashMovementService $cashMovements
+        private CashMovementService $cashMovements,
+        private CommunicationService $communication
     ) {}
 
     public function index()
@@ -754,13 +756,40 @@ class CashierController extends Controller
                 );
             }
 
+            /*
+            |--------------------------------------------------------------------------
+            | Generate WhatsApp Web URL for invoice notification (no API required)
+            |--------------------------------------------------------------------------
+            |
+            | This uses the same approach as the job feature - creates a WhatsApp Web URL
+            | that opens WhatsApp with a pre-filled message. No API configuration needed!
+            |
+            */
+
+            $whatsappUrl = null;
+            try {
+                // Generate WhatsApp Web URL for boss notification
+                // Use international format for Sri Lanka: +94 followed by number without leading 0
+                $bossNumber = '94753643227';
+                $whatsappUrl = $this->communication->generateWhatsAppWebUrl(
+                    phoneNumber: $bossNumber,
+                    job: $job,
+                    amount: $amountReceived,
+                    paymentMethod: $request->payment_method
+                );
+            } catch (\Throwable $e) {
+                // Log error but don't fail the payment process
+                \Log::error('Failed to generate WhatsApp URL', [
+                    'error' => $e->getMessage(),
+                    'job_id' => $job->id,
+                    'amount' => $amountReceived
+                ]);
+            }
+
             return redirect()
                 ->route('cashier.print-options', $job)
-                ->with(
-                    'success',
-                    'Payment processed successfully. ' .
-                    $balanceMessage
-                );
+                ->with('success', 'Payment processed successfully. ' . $balanceMessage)
+                ->with('whatsapp_url', $whatsappUrl);
         });
     }
 

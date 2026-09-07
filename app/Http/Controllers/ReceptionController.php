@@ -29,7 +29,7 @@ class ReceptionController extends Controller
         }
 
         $vehicles = Vehicle::where('registration_number', 'like', "%{$query}%")
-            ->with(['customer:id,full_name'])
+            ->with(['customer:id,full_name,phone,whatsapp_number'])
             ->limit(10)
             ->get()
             ->map(function ($vehicle) {
@@ -42,6 +42,8 @@ class ReceptionController extends Controller
                     'category'            => $vehicle->category,
                     'customer_id'         => $vehicle->customer_id,
                     'customer_name'       => $vehicle->customer->full_name ?? 'Unknown',
+                    'customer_phone'      => $vehicle->customer->phone ?? '',
+                    'customer_whatsapp_number' => $vehicle->customer->whatsapp_number ?? '',
 
                     'image' => $vehicle->image,
 
@@ -215,11 +217,47 @@ class ReceptionController extends Controller
                 Storage::disk('public')->delete($oldImagePath);
             }
 
+            // Generate WhatsApp URL for job creation notification
+            $whatsappUrl = null;
+            try {
+                // Use WhatsApp number from customer creation if available, otherwise phone
+                $phoneNumber = $job->customer->whatsapp_number ?: $job->customer->phone;
+                if ($phoneNumber) {
+                    $message = "🚗 *New Job Created*\n\n";
+                    $message .= "Dear {$job->customer->full_name},\n\n";
+                    $message .= "Job Number: {$job->job_number}\n";
+                    $message .= "Vehicle: {$job->vehicle->registration_number}\n";
+                    $message .= "Customer: {$job->customer->full_name}\n\n";
+                    $message .= "Your vehicle has been checked in. Our team has documented the current condition of your vehicle upon arrival. Photos documenting our observations will be sent to you via WhatsApp for your reference. We will update you on the progress and notify you once the inspection is complete.";
+                    
+                    // Add custom notes if provided
+                    $customNotes = $request->input('whatsapp_notes');
+                    if ($customNotes) {
+                        $message .= "\n\n📝 *Additional Notes:*\n" . $customNotes;
+                    }
+                    
+                    // Convert phone number to international format for wa.me
+                    // Remove + and leading 0 for Sri Lanka numbers
+                    $formattedPhone = preg_replace('/[^0-9]/', '', $phoneNumber);
+                    if (str_starts_with($formattedPhone, '0')) {
+                        $formattedPhone = '94' . substr($formattedPhone, 1);
+                    }
+                    $whatsappUrl = "https://wa.me/{$formattedPhone}?text=" . urlencode($message);
+                }
+            } catch (\Throwable $e) {
+                // Log error but don't fail the job creation
+                \Log::error('Failed to generate WhatsApp URL', [
+                    'error' => $e->getMessage(),
+                    'job_id' => $job->id,
+                ]);
+            }
+
             return response()->json([
                 'success'    => true,
                 'job_id'     => $job->id,
                 'job_number' => $job->job_number,
                 'redirect'   => route('jobs.show', $job),
+                'whatsapp_url' => $whatsappUrl,
             ]);
         } catch (ValidationException $e) {
             throw $e;

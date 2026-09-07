@@ -321,6 +321,39 @@
             </div>
         </div>
     </div>
+
+    <!-- WhatsApp Modal -->
+    <div id="whatsappModal" class="modal whatsapp-modal">
+        <div class="modal-content whatsapp-modal-content">
+            <div class="modal-header">
+                <h3>Send WhatsApp Notification</h3>
+                <button class="modal-close" onclick="closeWhatsappModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Job created successfully! Would you like to send a WhatsApp notification to the customer?</p>
+
+                <div class="custom-notes-section">
+                    <label>Additional Notes (Optional)</label>
+                    <textarea id="whatsappNotes" rows="3" placeholder="Add any additional notes for the customer"></textarea>
+                    <small>This will be included in the WhatsApp message</small>
+                </div>
+
+                <div class="whatsapp-section">
+                    <div id="whatsappCustomerInfo">
+                        <label class="whatsapp-toggle">
+                            <input type="checkbox" id="sendWhatsapp" checked>
+                            <span class="toggle-label" id="whatsappLabel">Send WhatsApp to customer</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" id="closeModalBtn">Cancel</button>
+                    <button type="button" class="btn-primary" id="sendWhatsappBtn">Send WhatsApp & Open Job</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- Live Camera Modal -->
@@ -353,7 +386,6 @@ let searchTimeout = null;
 let receptionWhatsappManuallyEdited = false;
 
 function formatReceptionSriLankaWhatsApp(phone) {
-
     phone = phone.trim();
 
     if (phone.startsWith('+94')) {
@@ -374,22 +406,19 @@ function formatReceptionSriLankaWhatsApp(phone) {
 document
     .getElementById('modalCustomerWhatsapp')
     ?.addEventListener('input', function () {
-
         receptionWhatsappManuallyEdited = true;
-
     });
 
 document
     .getElementById('modalCustomerPhone')
     ?.addEventListener('input', function () {
-
-        if (!receptionWhatsappManuallyEdited) {
-
-            document.getElementById('modalCustomerWhatsapp').value =
-                formatReceptionSriLankaWhatsApp(this.value);
-
+        // Only auto-fill if whatsapp field hasn't been manually edited and is still just "+94"
+        if (!receptionWhatsappManuallyEdited && document.getElementById('modalCustomerWhatsapp').value === '+94') {
+            const formattedPhone = formatReceptionSriLankaWhatsApp(this.value);
+            if (formattedPhone !== this.value) {
+                document.getElementById('modalCustomerWhatsapp').value = formattedPhone;
+            }
         }
-
     });
 
 // Cache of full service objects (id + base_price) loaded from /reception/services,
@@ -706,7 +735,20 @@ function displaySearchResults(data) {
                 <p><strong>Registration:</strong> ${vehicle.registration_number}</p>
                 <p><strong>Make/Model:</strong> ${vehicle.make} ${vehicle.model}</p>
                 <p><strong>Customer:</strong> ${vehicle.customer_name}</p>
-                <button class="btn-primary" onclick='selectVehicleDirect(${JSON.stringify(vehicle)})'>Proceed to Job Creation</button>
+                <button class="btn-primary" onclick='selectVehicleDirect(${JSON.stringify({
+                    vehicle_id: vehicle.vehicle_id,
+                    id: vehicle.vehicle_id,
+                    registration_number: vehicle.registration_number,
+                    make: vehicle.make,
+                    model: vehicle.model,
+                    category: vehicle.category,
+                    customer_id: vehicle.customer_id,
+                    customer_name: vehicle.customer_name,
+                    customer_phone: vehicle.customer_phone,
+                    customer_whatsapp_number: vehicle.customer_whatsapp_number,
+                    image: vehicle.image,
+                    image_url: vehicle.image_url
+                })})'>Proceed to Job Creation</button>
             </div>
         `;
     });
@@ -803,7 +845,8 @@ async function loadCustomersForModal() {
         
         if (Array.isArray(customers)) {
             customers.forEach(customer => {
-                select.innerHTML += `<option value="${customer.id}">${customer.full_name} - ${customer.phone}</option>`;
+                const displayPhone = customer.whatsapp_number || customer.phone;
+                select.innerHTML += `<option value="${customer.id}" data-name="${customer.full_name}" data-phone="${customer.phone}" data-whatsapp="${customer.whatsapp_number || ''}">${customer.full_name} - ${displayPhone}</option>`;
             });
         }
     } catch (error) {
@@ -860,7 +903,10 @@ async function createVehicleFromModal() {
                 null;
 
             const customerSelect = document.getElementById('modalVehicleCustomer');
-            const customerName = customerSelect?.selectedOptions?.[0]?.text?.split(' - ')[0] || '';
+            const selectedOption = customerSelect?.selectedOptions?.[0];
+            const customerName = selectedOption?.dataset?.name || selectedOption?.text?.split(' - ')[0] || '';
+            const customerPhone = selectedOption?.dataset?.phone || '';
+            const customerWhatsapp = selectedOption?.dataset?.whatsapp || '';
 
             selectedVehicle = {
                 vehicle_id: data.id,
@@ -872,7 +918,12 @@ async function createVehicleFromModal() {
                 customer_id: data.customer_id,
                 image: imageForJob
             };
-            selectedCustomer = { id: customerId, name: customerName };
+            selectedCustomer = { 
+                id: customerId, 
+                full_name: customerName,
+                phone: customerPhone,
+                whatsapp_number: customerWhatsapp
+            };
 
             closeVehicleModal(true);
 
@@ -894,12 +945,17 @@ async function createVehicleFromModal() {
 async function createCustomerFromModal() {
     const name = document.getElementById('modalCustomerName').value.trim();
     const phone = document.getElementById('modalCustomerPhone').value.trim();
-    const whatsapp = document.getElementById('modalCustomerWhatsapp').value.trim();
+    let whatsapp = document.getElementById('modalCustomerWhatsapp').value.trim();
     const email = document.getElementById('modalCustomerEmail').value.trim();
 
     if (!name || !phone) {
         showToast('Name and phone are required', 'error');
         return;
+    }
+
+    // If WhatsApp is still just "+94", format it from phone number
+    if (whatsapp === '+94' || whatsapp === '') {
+        whatsapp = formatReceptionSriLankaWhatsApp(phone);
     }
 
     try {
@@ -938,7 +994,9 @@ async function createCustomerFromModal() {
 function selectVehicleDirect(vehicle) {
     selectedCustomer = {
         id: vehicle.customer_id,
-        name: vehicle.customer_name
+        full_name: vehicle.customer_name,
+        phone: vehicle.customer_phone || '',
+        whatsapp_number: vehicle.customer_whatsapp_number || ''
     };
 
     selectedVehicle = {
@@ -961,7 +1019,12 @@ function selectVehicleDirect(vehicle) {
 }
 
 function selectCustomerDirect(customer) {
-    selectedCustomer = { id: customer.customer_id, name: customer.name };
+    selectedCustomer = { 
+        id: customer.customer_id, 
+        full_name: customer.name,
+        phone: customer.phone || '',
+        whatsapp_number: customer.whatsapp_number || ''
+    };
     document.getElementById('searchResults').innerHTML = '';
     document.getElementById('searchInput').value = customer.name;
     
@@ -1022,7 +1085,7 @@ function showJobForm() {
     document.getElementById('customerDetails').innerHTML = `
         <p>
             <strong>Name:</strong>
-            ${selectedCustomer?.name ?? ''}
+            ${selectedCustomer?.full_name ?? ''}
         </p>
     `;
 
@@ -1432,6 +1495,8 @@ function calculateReceptionDiscount() {
     calculateReceptionTotals();
 }
 
+let createdJobData = null;
+
 async function createJob() {
     // Final rule: at least one service OR one product
     if (selectedServices.length === 0 && selectedProducts.length === 0) {
@@ -1456,6 +1521,7 @@ async function createJob() {
         });
 
         formData.append('notes', document.getElementById('jobNotes').value);
+        formData.append('whatsapp_notes', document.getElementById('whatsappNotes').value);
 
         if (jobImageFile) {
             formData.append('vehicle_image', jobImageFile);
@@ -1472,10 +1538,17 @@ async function createJob() {
         const data = await response.json();
         
         if (data.success) {
+            createdJobData = data;
             showToast(`Job ${data.job_number} created successfully!`, 'success');
-            setTimeout(() => {
-                window.location.href = data.redirect;
-            }, 1500);
+            
+            // Setup WhatsApp modal
+            setupWhatsappModal();
+            
+            // Show WhatsApp modal
+            document.getElementById('whatsappModal').classList.add('active');
+            
+            // Close job modal
+            closeJobModal();
         } else {
             showToast('Error: ' + (data.message || 'Unknown error creating job'), 'error');
             createBtn.disabled = false;
@@ -1487,6 +1560,122 @@ async function createJob() {
         createBtn.textContent = 'Create Job Card';
     }
 }
+
+function setupWhatsappModal() {
+    const whatsappLabel = document.getElementById('whatsappLabel');
+    const whatsappCheckbox = document.getElementById('sendWhatsapp');
+    
+    // Use WhatsApp number from customer creation if available, otherwise phone
+    const phoneNumber = selectedCustomer.whatsapp_number || selectedCustomer.phone;
+    
+    if (phoneNumber) {
+        whatsappLabel.textContent = `Send WhatsApp to customer (${phoneNumber})`;
+        whatsappCheckbox.checked = true;
+        whatsappCheckbox.disabled = false;
+    } else {
+        whatsappLabel.textContent = 'Send WhatsApp to customer';
+        whatsappCheckbox.checked = false;
+        whatsappCheckbox.disabled = true;
+    }
+    
+    // Setup button event listeners
+    const sendWhatsappBtn = document.getElementById('sendWhatsappBtn');
+    const closeModalBtn = document.getElementById('closeModalBtn');
+    
+    // Remove existing listeners to prevent duplicates
+    const newSendBtn = sendWhatsappBtn.cloneNode(true);
+    const newCloseBtn = closeModalBtn.cloneNode(true);
+    sendWhatsappBtn.parentNode.replaceChild(newSendBtn, sendWhatsappBtn);
+    closeModalBtn.parentNode.replaceChild(newCloseBtn, closeModalBtn);
+    
+    // Add fresh listeners
+    newSendBtn.addEventListener('click', function() {
+        const whatsappCheckbox = document.getElementById('sendWhatsapp');
+
+        if (whatsappCheckbox.checked && createdJobData) {
+            // Use server-generated URL if available, otherwise generate client-side
+            let whatsappUrl = createdJobData.whatsapp_url;
+
+            if (!whatsappUrl) {
+                const customerPhone = selectedCustomer.whatsapp_number || selectedCustomer.phone;
+                if (customerPhone) {
+                    let message = `🚗 *New Job Created*\n\nDear ${selectedCustomer.full_name},\n\nJob Number: ${createdJobData.job_number}\nVehicle: ${selectedVehicle.registration_number}\nCustomer: ${selectedCustomer.full_name}\n\nYour vehicle has been checked in. Our team has documented the current condition of your vehicle upon arrival. Photos documenting our observations will be sent to you via WhatsApp following this message for your reference. We will update you on the progress and notify you once the inspection is complete.`;
+
+                    // Add custom notes if provided
+                    const customNotes = document.getElementById('whatsappNotes')?.value?.trim();
+                    if (customNotes) {
+                        message += `\n\n📝 *Additional Notes:*\n${customNotes}`;
+                    }
+
+                    // Format phone number for wa.me (remove + and handle Sri Lanka format)
+                    let formattedPhone = customerPhone.replace(/[^0-9]/g, '');
+                    if (formattedPhone.startsWith('0')) {
+                        formattedPhone = '94' + formattedPhone.substring(1);
+                    }
+
+                    whatsappUrl = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`;
+                }
+            } else {
+                // If server generated URL, add custom notes to it
+                const customNotes = document.getElementById('whatsappNotes')?.value?.trim();
+                if (customNotes) {
+                    try {
+                        const url = new URL(whatsappUrl);
+                        const existingMessage = url.searchParams.get('text') || '';
+                        const newMessage = existingMessage + `\n\n📝 *Additional Notes:*\n${customNotes}`;
+                        url.searchParams.set('text', newMessage);
+                        whatsappUrl = url.toString();
+                    } catch (e) {
+                        console.error('Error adding notes to URL:', e);
+                    }
+                }
+            }
+
+            if (whatsappUrl) {
+                window.open(whatsappUrl, '_blank');
+            }
+        }
+
+        // Open job page
+        window.location.href = createdJobData.redirect;
+    });
+    
+    newCloseBtn.addEventListener('click', function() {
+        // Just open job page without WhatsApp (Cancel button)
+        if (createdJobData) {
+            window.location.href = createdJobData.redirect;
+        }
+    });
+}
+
+function closeWhatsappModal() {
+    document.getElementById('whatsappModal').classList.remove('active');
+}
+
+function toggleWhatsappCheckbox() {
+    const whatsappInput = document.getElementById('customerWhatsappNumber');
+    const whatsappCheckbox = document.getElementById('sendWhatsapp');
+
+    if (whatsappInput && whatsappCheckbox) {
+        if (whatsappInput.value.trim().length > 5) {
+            whatsappCheckbox.disabled = false;
+            whatsappCheckbox.checked = true;
+        } else {
+            whatsappCheckbox.disabled = true;
+            whatsappCheckbox.checked = false;
+        }
+    }
+}
+
+// WhatsApp modal button handlers
+
+
+document.getElementById('closeModalBtn').addEventListener('click', function() {
+    // Just open job page without WhatsApp
+    if (createdJobData) {
+        window.location.href = createdJobData.redirect;
+    }
+});
 
 function toggleNav() {
     document.getElementById('navMenu').classList.toggle('active');
@@ -2460,6 +2649,141 @@ document.addEventListener('click', (e) => {
     font-weight: 600;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
     box-shadow: 0 4px 15px rgba(37, 99, 235, 0.35);
+}
+
+.whatsapp-section {
+    margin: 16px 0;
+    padding: 12px;
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 8px;
+}
+
+.whatsapp-toggle {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+}
+
+.whatsapp-toggle input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: #22c55e;
+}
+
+.whatsapp-toggle .toggle-label {
+    font-size: 14px;
+    color: #1f2937;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+}
+
+/* WhatsApp Modal specific styling to match job status modal */
+.whatsapp-modal .modal-content {
+    background: #9ca3af;
+    border-radius: 16px;
+    padding: 24px;
+    max-width: 400px;
+    width: 90%;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+
+.whatsapp-modal .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.whatsapp-modal .modal-header h3 {
+    margin: 0;
+    font-size: 18px;
+    color: #1f2937;
+}
+
+.whatsapp-modal .modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #9ca3af;
+}
+
+.whatsapp-modal .modal-close:hover {
+    color: #1f2937;
+}
+
+.whatsapp-modal .modal-body p {
+    color: #1f2937;
+    font-size: 14px;
+    margin-bottom: 16px;
+    line-height: 1.5;
+}
+
+.whatsapp-modal .custom-notes-section {
+    margin: 16px 0;
+}
+
+.whatsapp-modal .custom-notes-section label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #1f2937;
+}
+
+.whatsapp-modal .custom-notes-section textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 14px;
+    resize: vertical;
+    background: white;
+    color: #1f2937;
+}
+
+.whatsapp-modal .custom-notes-section small {
+    display: block;
+    margin-top: 6px;
+    font-size: 12px;
+    color: #4b5563;
+}
+
+.whatsapp-modal .modal-actions .btn-primary {
+    background: #3b82f6;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.whatsapp-modal .modal-actions .btn-primary:hover {
+    background: #2563eb;
+}
+
+.whatsapp-modal .modal-actions .btn-secondary {
+    background: white;
+    color: #1f2937;
+    border: 1px solid #d1d5db;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.whatsapp-modal .modal-actions .btn-secondary:hover {
+    background: #f3f4f6;
+    border-color: #9ca3af;
 }
 
 .btn-primary:hover {

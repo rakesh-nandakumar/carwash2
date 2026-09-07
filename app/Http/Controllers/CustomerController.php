@@ -31,7 +31,7 @@ class CustomerController extends Controller
     public function list()
     {
         return response()->json(
-            Customer::select('id', 'full_name', 'phone')
+            Customer::select('id', 'full_name', 'phone', 'whatsapp_number')
                 ->orderBy('full_name')
                 ->get()
         );

@@ -27,7 +27,7 @@
     </div>
     
     <h3 style="margin-bottom: 20px;">Print Invoice</h3>
-    
+
     <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
         <a href="{{ route('invoices.print', $job->invoice) }}" target="_blank" class="primary" style="padding: 15px 30px; font-size: 16px;">
             📄 Print A4
@@ -41,4 +41,11 @@
         <small>Click to open print dialog and select your printer</small>
     </p>
 </div>
+
+@if(session('whatsapp_url'))
+<script>
+// Automatically open WhatsApp in a new tab
+window.open('{{ session('whatsapp_url') }}', '_blank');
+</script>
+@endif
 @endsection
