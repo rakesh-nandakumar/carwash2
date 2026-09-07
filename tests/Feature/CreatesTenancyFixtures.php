@@ -6,7 +6,6 @@ use App\Models\Business;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Services\CurrentContext;
-use App\Services\PermissionService;
 use Illuminate\Support\Facades\Hash;
 
 /**
@@ -29,10 +28,12 @@ trait CreatesTenancyFixtures
         $this->tenantB = Tenant::create(['name' => 'Beta Wash', 'slug' => 'beta', 'status' => 'active']);
 
         app(CurrentContext::class)->runForTenant($this->tenantA->id, function () {
-            app(PermissionService::class)->syncDefaultRoles($this->tenantA->id);
+            app(\Database\Seeders\PermissionSeeder::class)->run();
+            app(\Database\Seeders\RoleSeeder::class)->run();
         });
         app(CurrentContext::class)->runForTenant($this->tenantB->id, function () {
-            app(PermissionService::class)->syncDefaultRoles($this->tenantB->id);
+            app(\Database\Seeders\PermissionSeeder::class)->run();
+            app(\Database\Seeders\RoleSeeder::class)->run();
         });
 
         app(\Database\Seeders\SettingsSeeder::class)->run($this->tenantA->id);
@@ -79,9 +80,14 @@ trait CreatesTenancyFixtures
             ]);
 
             $role = \App\Models\Role::query()->withoutTenantScope()
-                ->where('tenant_id', $tenant->id)->where('slug', 'owner')->first();
-            $user->roles()->attach($role->id);
-            $user->flushPermissionCache();
+                ->where('tenant_id', $tenant->id)
+                ->where('business_id', $business->id)
+                ->where('slug', 'owner')->first();
+
+            if ($role) {
+                $user->roles()->attach($role->id);
+                $user->flushPermissionCache();
+            }
 
             return $user;
         });

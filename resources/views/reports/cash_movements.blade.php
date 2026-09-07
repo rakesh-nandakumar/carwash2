@@ -766,62 +766,141 @@
                 </thead>
 
                 <tbody>
-                    @forelse($movements as $movement)
-                        @php
-                            $typeClass = $movement->type === 'in' ? 'badge-in' : 'badge-out';
-                            $sourceClass = match ($movement->source) {
-                                'sale' => 'badge-sale',
-                                'refund' => 'badge-refund',
-                                'manual' => 'badge-manual',
-                                'drop' => 'badge-drop',
-                                default => 'badge-manual',
-                            };
-                            $amountClass = $movement->type === 'in' ? 'amount-in' : 'amount-out';
-                        @endphp
+                    @forelse($paginatedCombined as $item)
+                        @if($item['type'] === 'movement')
+                            @php
+                                $movement = $item['data'];
+                                $typeClass = $movement->type === 'in' ? 'badge-in' : 'badge-out';
+                                $sourceClass = match ($movement->source) {
+                                    'sale' => 'badge-sale',
+                                    'refund' => 'badge-refund',
+                                    'manual' => 'badge-manual',
+                                    'drop' => 'badge-drop',
+                                    default => 'badge-manual',
+                                };
+                                $amountClass = $movement->type === 'in' ? 'amount-in' : 'amount-out';
+                            @endphp
 
-                        <tr>
-                            <td class="date-cell">
-                                {{ $movement->created_at->format('Y-m-d H:i') }}
-                            </td>
+                            <tr>
+                                <td class="date-cell">
+                                    {{ $movement->created_at->format('Y-m-d H:i') }}
+                                </td>
 
-                            <td>
-                                {{ $movement->user?->name ?? '-' }}
-                            </td>
+                                <td>
+                                    {{ $movement->user?->name ?? '-' }}
+                                </td>
 
-                            <td>
-                                <span class="movement-badge {{ $typeClass }}">
-                                    {{ ucfirst($movement->type) }}
-                                </span>
-                            </td>
+                                <td>
+                                    <span class="movement-badge {{ $typeClass }}">
+                                        {{ ucfirst($movement->type) }}
+                                    </span>
+                                </td>
 
-                            <td>
-                                <span class="movement-badge {{ $sourceClass }}">
-                                    {{ ucfirst(str_replace('_', ' ', $movement->source)) }}
-                                </span>
-                            </td>
+                                <td>
+                                    <span class="movement-badge {{ $sourceClass }}">
+                                        {{ ucfirst(str_replace('_', ' ', $movement->source)) }}
+                                    </span>
+                                </td>
 
-                            <td>
-                                {{ $movement->reason ?? '-' }}
-                            </td>
+                                <td>
+                                    {{ $movement->reason ?? '-' }}
+                                </td>
 
-                            <td class="reference">
-                                @if($movement->reference)
-                                    {{ class_basename($movement->reference_type) }}
-                                    #{{ $movement->reference_id }}
-                                @else
-                                    -
-                                @endif
-                            </td>
+                                <td class="reference">
+                                    @if($movement->reference)
+                                        {{ class_basename($movement->reference_type) }}
+                                        #{{ $movement->reference_id }}
+                                    @else
+                                        -
+                                    @endif
+                                </td>
 
-                            <td class="text-right {{ $amountClass }}">
-                                {{ $movement->type === 'in' ? '+' : '-' }}
-                                Rs. {{ number_format($movement->amount, 2) }}
-                            </td>
-                        </tr>
+                                <td class="text-right {{ $amountClass }}">
+                                    {{ $movement->type === 'in' ? '+' : '-' }}
+                                    Rs. {{ number_format($movement->amount, 2) }}
+                                </td>
+                            </tr>
+                        @elseif($item['type'] === 'closure_open')
+                            @php
+                                $closure = $item['data'];
+                            @endphp
+
+                            <tr style="background: #f0fdf4;">
+                                <td class="date-cell">
+                                    {{ $closure->opened_at->format('Y-m-d H:i') }}
+                                </td>
+
+                                <td>
+                                    {{ $closure->user?->name ?? '-' }}
+                                </td>
+
+                                <td>
+                                    <span class="movement-badge badge-in">
+                                        Opening
+                                    </span>
+                                </td>
+
+                                <td>
+                                    <span class="movement-badge badge-manual">
+                                        Till Open
+                                    </span>
+                                </td>
+
+                                <td>
+                                    Till opening balance
+                                </td>
+
+                                <td class="reference">
+                                    TillClosure #{{ $closure->id }}
+                                </td>
+
+                                <td class="text-right amount-in">
+                                    + Rs. {{ number_format($closure->opening_balance, 2) }}
+                                </td>
+                            </tr>
+                        @elseif($item['type'] === 'closure_close')
+                            @php
+                                $closure = $item['data'];
+                            @endphp
+
+                            <tr style="background: #fef2f2;">
+                                <td class="date-cell">
+                                    {{ $closure->closed_at->format('Y-m-d H:i') }}
+                                </td>
+
+                                <td>
+                                    {{ $closure->user?->name ?? '-' }}
+                                </td>
+
+                                <td>
+                                    <span class="movement-badge badge-out">
+                                        Closing
+                                    </span>
+                                </td>
+
+                                <td>
+                                    <span class="movement-badge badge-manual">
+                                        Till Close
+                                    </span>
+                                </td>
+
+                                <td>
+                                    Till closing balance
+                                </td>
+
+                                <td class="reference">
+                                    TillClosure #{{ $closure->id }}
+                                </td>
+
+                                <td class="text-right amount-out">
+                                    - Rs. {{ number_format($closure->counted_balance, 2) }}
+                                </td>
+                            </tr>
+                        @endif
                     @empty
                         <tr>
                             <td colspan="7" class="empty">
-                                No cash movements found for this period.
+                                No cash movements or closures found for this period.
                             </td>
                         </tr>
                     @endforelse
@@ -832,73 +911,172 @@
 
         <!-- MOBILE CARDS -->
         <div class="report-cards">
-            @forelse($movements as $movement)
-                @php
-                    $typeClass = $movement->type === 'in' ? 'badge-in' : 'badge-out';
-                    $sourceClass = match ($movement->source) {
-                        'sale' => 'badge-sale',
-                        'refund' => 'badge-refund',
-                        'manual' => 'badge-manual',
-                        'drop' => 'badge-drop',
-                        default => 'badge-manual',
-                    };
-                    $amountClass = $movement->type === 'in' ? 'amount-in' : 'amount-out';
-                @endphp
+            @forelse($paginatedCombined as $item)
+                @if($item['type'] === 'movement')
+                    @php
+                        $movement = $item['data'];
+                        $typeClass = $movement->type === 'in' ? 'badge-in' : 'badge-out';
+                        $sourceClass = match ($movement->source) {
+                            'sale' => 'badge-sale',
+                            'refund' => 'badge-refund',
+                            'manual' => 'badge-manual',
+                            'drop' => 'badge-drop',
+                            default => 'badge-manual',
+                        };
+                        $amountClass = $movement->type === 'in' ? 'amount-in' : 'amount-out';
+                    @endphp
 
-                <div class="report-card">
-                    <div class="card-top">
-                        <strong>
-                            {{ $movement->type === 'in' ? '+' : '-' }}
-                            Rs. {{ number_format($movement->amount, 2) }}
-                        </strong>
-                        <span class="date">
-                            {{ $movement->created_at->format('Y-m-d H:i') }}
-                        </span>
-                    </div>
-
-                    <div class="row">
-                        <span class="label">Cashier</span>
-                        <span class="value">{{ $movement->user?->name ?? '-' }}</span>
-                    </div>
-
-                    <div class="row">
-                        <span class="label">Type</span>
-                        <span class="value">
-                            <span class="movement-badge {{ $typeClass }}">
-                                {{ ucfirst($movement->type) }}
+                    <div class="report-card">
+                        <div class="card-top">
+                            <strong>
+                                {{ $movement->type === 'in' ? '+' : '-' }}
+                                Rs. {{ number_format($movement->amount, 2) }}
+                            </strong>
+                            <span class="date">
+                                {{ $movement->created_at->format('Y-m-d H:i') }}
                             </span>
-                        </span>
-                    </div>
+                        </div>
 
-                    <div class="row">
-                        <span class="label">Source</span>
-                        <span class="value">
-                            <span class="movement-badge {{ $sourceClass }}">
-                                {{ ucfirst(str_replace('_', ' ', $movement->source)) }}
+                        <div class="row">
+                            <span class="label">Cashier</span>
+                            <span class="value">{{ $movement->user?->name ?? '-' }}</span>
+                        </div>
+
+                        <div class="row">
+                            <span class="label">Type</span>
+                            <span class="value">
+                                <span class="movement-badge {{ $typeClass }}">
+                                    {{ ucfirst($movement->type) }}
+                                </span>
                             </span>
-                        </span>
-                    </div>
+                        </div>
 
-                    <div class="row">
-                        <span class="label">Reason</span>
-                        <span class="value">{{ $movement->reason ?? '-' }}</span>
-                    </div>
+                        <div class="row">
+                            <span class="label">Source</span>
+                            <span class="value">
+                                <span class="movement-badge {{ $sourceClass }}">
+                                    {{ ucfirst(str_replace('_', ' ', $movement->source)) }}
+                                </span>
+                            </span>
+                        </div>
 
-                    <div class="row">
-                        <span class="label">Reference</span>
-                        <span class="value">
-                            @if($movement->reference)
-                                {{ class_basename($movement->reference_type) }}
-                                #{{ $movement->reference_id }}
-                            @else
-                                -
-                            @endif
-                        </span>
+                        <div class="row">
+                            <span class="label">Reason</span>
+                            <span class="value">{{ $movement->reason ?? '-' }}</span>
+                        </div>
+
+                        <div class="row">
+                            <span class="label">Reference</span>
+                            <span class="value">
+                                @if($movement->reference)
+                                    {{ class_basename($movement->reference_type) }}
+                                    #{{ $movement->reference_id }}
+                                @else
+                                    -
+                                @endif
+                            </span>
+                        </div>
                     </div>
-                </div>
+                @elseif($item['type'] === 'closure_open')
+                    @php
+                        $closure = $item['data'];
+                    @endphp
+
+                    <div class="report-card" style="background: #f0fdf4;">
+                        <div class="card-top">
+                            <strong>
+                                + Rs. {{ number_format($closure->opening_balance, 2) }}
+                            </strong>
+                            <span class="date">
+                                {{ $closure->opened_at->format('Y-m-d H:i') }}
+                            </span>
+                        </div>
+
+                        <div class="row">
+                            <span class="label">Cashier</span>
+                            <span class="value">{{ $closure->user?->name ?? '-' }}</span>
+                        </div>
+
+                        <div class="row">
+                            <span class="label">Type</span>
+                            <span class="value">
+                                <span class="movement-badge badge-in">
+                                    Opening
+                                </span>
+                            </span>
+                        </div>
+
+                        <div class="row">
+                            <span class="label">Source</span>
+                            <span class="value">
+                                <span class="movement-badge badge-manual">
+                                    Till Open
+                                </span>
+                            </span>
+                        </div>
+
+                        <div class="row">
+                            <span class="label">Reason</span>
+                            <span class="value">Till opening balance</span>
+                        </div>
+
+                        <div class="row">
+                            <span class="label">Reference</span>
+                            <span class="value">TillClosure #{{ $closure->id }}</span>
+                        </div>
+                    </div>
+                @elseif($item['type'] === 'closure_close')
+                    @php
+                        $closure = $item['data'];
+                    @endphp
+
+                    <div class="report-card" style="background: #fef2f2;">
+                        <div class="card-top">
+                            <strong>
+                                - Rs. {{ number_format($closure->counted_balance, 2) }}
+                            </strong>
+                            <span class="date">
+                                {{ $closure->closed_at->format('Y-m-d H:i') }}
+                            </span>
+                        </div>
+
+                        <div class="row">
+                            <span class="label">Cashier</span>
+                            <span class="value">{{ $closure->user?->name ?? '-' }}</span>
+                        </div>
+
+                        <div class="row">
+                            <span class="label">Type</span>
+                            <span class="value">
+                                <span class="movement-badge badge-out">
+                                    Closing
+                                </span>
+                            </span>
+                        </div>
+
+                        <div class="row">
+                            <span class="label">Source</span>
+                            <span class="value">
+                                <span class="movement-badge badge-manual">
+                                    Till Close
+                                </span>
+                            </span>
+                        </div>
+
+                        <div class="row">
+                            <span class="label">Reason</span>
+                            <span class="value">Till closing balance</span>
+                        </div>
+
+                        <div class="row">
+                            <span class="label">Reference</span>
+                            <span class="value">TillClosure #{{ $closure->id }}</span>
+                        </div>
+                    </div>
+                @endif
             @empty
                 <div class="empty">
-                    No cash movements found for this period.
+                    No cash movements or closures found for this period.
                 </div>
             @endforelse
         </div>
@@ -906,7 +1084,7 @@
 
         <!-- Pagination -->
         <div class="pagination-wrap">
-            {{ $movements->links() }}
+            {{ $paginatedCombined->links() }}
         </div>
 
 
@@ -955,33 +1133,62 @@
             </thead>
 
             <tbody>
-                @forelse($movements as $movement)
-                    <tr>
-                        <td>{{ $movement->created_at->format('d/m/Y H:i') }}</td>
-                        <td>{{ $movement->user?->name ?? '-' }}</td>
-                        <td>{{ ucfirst($movement->type) }}</td>
-                        <td>{{ ucfirst(str_replace('_', ' ', $movement->source)) }}</td>
-                        <td>{{ $movement->reason ?? '-' }}</td>
-                        <td>
-                            @if($movement->reference)
-                                {{ class_basename($movement->reference_type) }}
-                                #{{ $movement->reference_id }}
-                            @else
-                                -
-                            @endif
-                        </td>
-                        <td class="right">
-                            {{ $movement->type === 'in' ? '+' : '-' }}
-                            Rs. {{ number_format($movement->amount, 2) }}
-                        </td>
-                    </tr>
-                @empty
-                    <tr>
-                        <td colspan="7" style="text-align:center;padding:20px;">
-                            No cash movements found for this period.
-                        </td>
-                    </tr>
-                @endforelse
+                @foreach($combined as $item)
+                    @if($item['type'] === 'movement')
+                        @php
+                            $movement = $item['data'];
+                        @endphp
+                        <tr>
+                            <td>{{ $movement->created_at->format('d/m/Y H:i') }}</td>
+                            <td>{{ $movement->user?->name ?? '-' }}</td>
+                            <td>{{ ucfirst($movement->type) }}</td>
+                            <td>{{ ucfirst(str_replace('_', ' ', $movement->source)) }}</td>
+                            <td>{{ $movement->reason ?? '-' }}</td>
+                            <td>
+                                @if($movement->reference)
+                                    {{ class_basename($movement->reference_type) }}
+                                    #{{ $movement->reference_id }}
+                                @else
+                                    -
+                                @endif
+                            </td>
+                            <td class="right">
+                                {{ $movement->type === 'in' ? '+' : '-' }}
+                                Rs. {{ number_format($movement->amount, 2) }}
+                            </td>
+                        </tr>
+                    @elseif($item['type'] === 'closure_open')
+                        @php
+                            $closure = $item['data'];
+                        @endphp
+                        <tr style="background: #f0fdf4;">
+                            <td>{{ $closure->opened_at->format('d/m/Y H:i') }}</td>
+                            <td>{{ $closure->user?->name ?? '-' }}</td>
+                            <td>Opening</td>
+                            <td>Till Open</td>
+                            <td>Till opening balance</td>
+                            <td>TillClosure #{{ $closure->id }}</td>
+                            <td class="right">
+                                + Rs. {{ number_format($closure->opening_balance, 2) }}
+                            </td>
+                        </tr>
+                    @elseif($item['type'] === 'closure_close')
+                        @php
+                            $closure = $item['data'];
+                        @endphp
+                        <tr style="background: #fef2f2;">
+                            <td>{{ $closure->closed_at->format('d/m/Y H:i') }}</td>
+                            <td>{{ $closure->user?->name ?? '-' }}</td>
+                            <td>Closing</td>
+                            <td>Till Close</td>
+                            <td>Till closing balance</td>
+                            <td>TillClosure #{{ $closure->id }}</td>
+                            <td class="right">
+                                - Rs. {{ number_format($closure->counted_balance, 2) }}
+                            </td>
+                        </tr>
+                    @endif
+                @endforeach
             </tbody>
         </table>
 

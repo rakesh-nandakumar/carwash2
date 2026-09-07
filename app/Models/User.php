@@ -23,6 +23,8 @@ class User extends Authenticatable
         'password',
         'role',
         'branch_id',
+        'session_till_id',
+        'permanent_till_id',
         'active',
     ];
 
@@ -43,6 +45,16 @@ class User extends Authenticatable
     public function branch(): BelongsTo
     {
         return $this->belongsTo(Branch::class);
+    }
+
+    public function sessionTill(): BelongsTo
+    {
+        return $this->belongsTo(Till::class, 'session_till_id');
+    }
+
+    public function permanentTill(): BelongsTo
+    {
+        return $this->belongsTo(Till::class, 'permanent_till_id');
     }
 
     public function business(): BelongsTo

@@ -19,14 +19,32 @@
     {{-- Till Summary Panel --}}
     <div class="till-panel">
         <div class="till-header">
-            <div>
-                <h2>{{ $till->name }}</h2>
-                <p>Current Till</p>
+            <div class="till-info-section">
+                <div>
+                    <h2>{{ $till->name }}</h2>
+                    <p>Current Till</p>
+                </div>
             </div>
 
-            <span class="till-status {{ $till->is_active ? 'active' : 'inactive' }}">
-                {{ $till->is_active ? 'Active' : 'Inactive' }}
-            </span>
+            <div class="header-badges">
+                <span class="till-status {{ $till->is_active ? 'active' : 'inactive' }}">
+                    {{ $till->is_active ? 'Active' : 'Inactive' }}
+                </span>
+                @if($till->isInUse())
+                    <span class="in-use-badge">
+                        In Use
+                    </span>
+                @endif
+                @if($isShiftOpen)
+                    <span class="shift-status open">
+                        Shift Open
+                    </span>
+                @else
+                    <span class="shift-status closed">
+                        Shift Closed
+                    </span>
+                @endif
+            </div>
         </div>
 
         <div class="till-stats">
@@ -74,6 +92,18 @@
         </div>
 
         <div class="till-actions">
+            @if(auth()->user()->hasPermissionTo('cashier.open_shift'))
+                @if($isShiftOpen)
+                    <a href="{{ route('cashier.till-action') }}" class="btn-shift-close">
+                        Close Till
+                    </a>
+                @else
+                    <a href="{{ route('cashier.till-action') }}" class="btn-shift-open">
+                        Open Till
+                    </a>
+                @endif
+            @endif
+
             @if(auth()->user()->hasPermissionTo('cashier.cash_in'))
                 <button type="button" onclick="openCashModal('cash-in')">
                     Cash In
@@ -89,6 +119,18 @@
             @if(auth()->user()->hasPermissionTo('cashier.cash_drop'))
                 <button type="button" onclick="openCashModal('cash-drop')">
                     Cash Drop
+                </button>
+            @endif
+
+            @if(auth()->user()->hasPermissionTo('cashier.access'))
+                <a href="{{ route('cashier.shift-history') }}" class="btn-history">
+                    History
+                </a>
+            @endif
+
+            @if(auth()->user()->hasPermissionTo('settings.access'))
+                <button type="button" onclick="openChangeTillModal()" class="btn-change-till">
+                    Change Till
                 </button>
             @endif
         </div>
@@ -192,6 +234,38 @@
     </div>
 </div>
 
+{{-- Change Till Modal --}}
+<div id="changeTillModal" class="cash-modal hidden">
+    <div class="cash-modal-content">
+        <div class="cash-modal-header">
+            <h2>Change Till</h2>
+            <button type="button" onclick="closeChangeTillModal()">×</button>
+        </div>
+
+        <form method="POST" action="{{ route('tills.select') }}" id="changeTillForm">
+            @csrf
+            <input type="hidden" name="redirect_to" value="{{ route('cashier.index') }}">
+
+            <div class="form-group">
+                <label>Select Till</label>
+                <select name="till_id" id="changeTillSelect" required>
+                    <option value="">-- Select a Till --</option>
+                </select>
+                <small>Select a different till to switch to. This will release your current till.</small>
+            </div>
+
+            <div class="cash-modal-actions">
+                <button type="button" class="btn-cancel" onclick="closeChangeTillModal()">
+                    Cancel
+                </button>
+                <button type="submit" class="btn-confirm">
+                    Change Till
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <style>
 .cashier-dashboard {
     padding: 0;
@@ -282,6 +356,17 @@
     border-bottom: 1px solid #f1f5f9;
 }
 
+.till-info-section {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.header-badges {
+    display: flex;
+    gap: 8px;
+}
+
 .till-header h2 {
     font-size: 18px;
     font-weight: 700;
@@ -310,6 +395,32 @@
 .till-status.inactive {
     background: #fee2e2;
     color: #991b1b;
+}
+
+.shift-status {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 999px;
+}
+
+.shift-status.open {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+.shift-status.closed {
+    background: #f1f5f9;
+    color: #64748b;
+}
+
+.in-use-badge {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: #dbeafe;
+    color: #1e40af;
 }
 
 .till-stats {
@@ -371,6 +482,70 @@
     background: #3b82f6;
     color: white;
     border-color: #3b82f6;
+}
+
+.till-actions a {
+    padding: 10px 18px;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+    background: #f8fafc;
+    color: #334155;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.till-actions a:hover {
+    background: #3b82f6;
+    color: white;
+    border-color: #3b82f6;
+}
+
+.btn-shift-open {
+    background: #10b981 !important;
+    color: white !important;
+    border-color: #10b981 !important;
+}
+
+.btn-shift-open:hover {
+    background: #059669 !important;
+    border-color: #059669 !important;
+}
+
+.btn-shift-close {
+    background: #f59e0b !important;
+    color: white !important;
+    border-color: #f59e0b !important;
+}
+
+.btn-shift-close:hover {
+    background: #d97706 !important;
+    border-color: #d97706 !important;
+}
+
+.btn-history {
+    background: #6366f1 !important;
+    color: white !important;
+    border-color: #6366f1 !important;
+}
+
+.btn-history:hover {
+    background: #4f46e5 !important;
+    border-color: #4f46e5 !important;
+}
+
+.btn-change-till {
+    background: #8b5cf6 !important;
+    color: white !important;
+    border-color: #8b5cf6 !important;
+}
+
+.btn-change-till:hover {
+    background: #7c3aed !important;
+    border-color: #7c3aed !important;
 }
 
 /* Vehicles Grid */
@@ -578,7 +753,8 @@
 }
 
 .form-group input,
-.form-group textarea {
+.form-group textarea,
+.form-group select {
     width: 100%;
     padding: 10px 12px;
     border: 1px solid #e5e7eb;
@@ -590,7 +766,8 @@
 }
 
 .form-group input:focus,
-.form-group textarea:focus {
+.form-group textarea:focus,
+.form-group select:focus {
     outline: none;
     border-color: #3b82f6;
     background: white;
@@ -634,13 +811,18 @@
     background: #2563eb;
 }
 
+.till-in-use {
+    color: #94a3b8;
+    background-color: #f1f5f9;
+}
+
 @media (max-width: 768px) {
     .cashier-header {
         flex-direction: column;
         gap: 16px;
         padding: 24px;
     }
-    
+
     .search-form {
         max-width: 100%;
     }
@@ -648,7 +830,21 @@
     .till-panel {
         margin: 16px 16px 0;
     }
-    
+
+    .till-header {
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .till-info-section {
+        width: 100%;
+    }
+
+    .header-badges {
+        width: 100%;
+        justify-content: center;
+    }
+
     .vehicles-grid {
         padding: 24px 16px;
         grid-template-columns: 1fr;
@@ -656,6 +852,19 @@
 
     .till-stats {
         grid-template-columns: 1fr 1fr;
+    }
+
+    .till-actions {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .till-actions button,
+    .till-actions a {
+        flex: 1 1 auto;
+        min-width: calc(50% - 4px);
+        padding: 10px 12px;
+        font-size: 12px;
     }
 }
 </style>
@@ -690,8 +899,48 @@ function closeCashModal() {
         .classList.add('hidden');
 }
 
-// setInterval(function() {
-//     location.reload();
-// }, 5000);
+// Make the function available globally for onclick handlers
+window.openCashModal = openCashModal;
+window.closeCashModal = closeCashModal;
+
+// Change Till Modal Functions
+function openChangeTillModal() {
+    const modal = document.getElementById('changeTillModal');
+    const select = document.getElementById('changeTillSelect');
+    
+    // Fetch available tills
+    fetch('{{ route('tills.status') }}')
+        .then(response => response.json())
+        .then(data => {
+            // Clear existing options
+            select.innerHTML = '<option value="">-- Select a Till --</option>';
+            
+            // Add tills to select
+            data.tills.forEach(till => {
+                const option = document.createElement('option');
+                option.value = till.id;
+                option.textContent = `${till.name} (${till.code})${till.location ? ' - ' + till.location : ''}`;
+                
+                // Don't show current till as an option
+                if (till.id !== {{ $till->id }}) {
+                    select.appendChild(option);
+                }
+            });
+            
+            modal.classList.remove('hidden');
+        })
+        .catch(error => {
+            console.error('Error fetching tills:', error);
+            alert('Failed to load available tills. Please try again.');
+        });
+}
+
+function closeChangeTillModal() {
+    document.getElementById('changeTillModal').classList.add('hidden');
+}
+
+// Make the function available globally
+window.openChangeTillModal = openChangeTillModal;
+window.closeChangeTillModal = closeChangeTillModal;
 </script>
 @endsection

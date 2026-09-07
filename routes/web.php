@@ -20,6 +20,8 @@ use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VehicleController;
 use App\Http\Controllers\TillController;
+use App\Http\Controllers\TillClosureController;
+use App\Http\Controllers\TillManagementController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\StockAdjustmentController;
 
@@ -295,6 +297,11 @@ Route::prefix('{tenant}')
             Route::get('/inventory/{product}/stock', [InventoryController::class, 'stock'])
                 ->name('inventory.stock')
                 ->middleware('permission:inventory.access');
+
+            // Live inventory status updates
+            Route::get('/inventory/status', [InventoryController::class, 'getStatus'])
+                ->name('inventory.status')
+                ->middleware('permission:inventory.access');
             // ==================== END INVENTORY ====================
 
             // ==================== CATEGORIES ====================
@@ -404,6 +411,22 @@ Route::prefix('{tenant}')
             Route::post('/cashier/cash-drop', [CashierController::class, 'cashDrop'])
                 ->name('cashier.cash-drop')
                 ->middleware('permission:cashier.cash_drop');
+
+            Route::get('/cashier/till-action', [TillClosureController::class, 'showTillAction'])
+                ->name('cashier.till-action')
+                ->middleware('permission:cashier.open_shift');
+
+            Route::post('/cashier/till-action', [TillClosureController::class, 'handleTillAction'])
+                ->name('cashier.till-action.post')
+                ->middleware('permission:cashier.open_shift');
+
+            Route::get('/cashier/shift/history', [TillClosureController::class, 'history'])
+                ->name('cashier.shift-history')
+                ->middleware('permission:cashier.access');
+
+            Route::get('/cashier/shift/{closure}', [TillClosureController::class, 'show'])
+                ->name('cashier.shift-show')
+                ->middleware('permission:cashier.access');
             // ==================== END CASHIER ====================
 
             // ==================== REPORTS (UPDATED) ====================
@@ -515,6 +538,61 @@ Route::prefix('{tenant}')
                 ->name('stock-adjustments.reverse')
                 ->middleware('permission:stock_adjustments.reverse');
             // ==================== END STOCK ADJUSTMENTS ====================
+
+            // ==================== TILL MANAGEMENT ====================
+            Route::get('/tills', [TillManagementController::class, 'index'])
+                ->name('tills.index')
+                ->middleware('permission:settings.access');
+
+            Route::get('/tills/create', [TillManagementController::class, 'create'])
+                ->name('tills.create')
+                ->middleware('permission:settings.access');
+
+            Route::post('/tills', [TillManagementController::class, 'store'])
+                ->name('tills.store')
+                ->middleware('permission:settings.access');
+
+            // Specific routes must come before dynamic routes
+            Route::get('/tills/status', [TillManagementController::class, 'getTillStatus'])
+                ->name('tills.status')
+                ->middleware('permission:cashier.access');
+
+            Route::post('/tills/select', [TillManagementController::class, 'selectTill'])
+                ->name('tills.select')
+                ->middleware('permission:cashier.access');
+
+            Route::post('/tills/clear', [TillManagementController::class, 'clearTillSelection'])
+                ->name('tills.clear')
+                ->middleware('permission:cashier.access');
+
+            Route::get('/tills/user-assignments', [TillManagementController::class, 'userTillAssignments'])
+                ->name('tills.user-assignments')
+                ->middleware('permission:settings.access');
+
+            Route::post('/tills/update-user-assignment', [TillManagementController::class, 'updateUserTillAssignment'])
+                ->name('tills.update-user-assignment')
+                ->middleware('permission:settings.access');
+
+            Route::post('/tills/clear-admin-permanent-tills', [TillManagementController::class, 'clearAdminPermanentTills'])
+                ->name('tills.clear-admin-permanent-tills')
+                ->middleware('permission:settings.access');
+
+            Route::get('/tills/{till}', [TillManagementController::class, 'show'])
+                ->name('tills.show')
+                ->middleware('permission:settings.access');
+
+            Route::get('/tills/{till}/edit', [TillManagementController::class, 'edit'])
+                ->name('tills.edit')
+                ->middleware('permission:settings.access');
+
+            Route::put('/tills/{till}', [TillManagementController::class, 'update'])
+                ->name('tills.update')
+                ->middleware('permission:settings.access');
+
+            Route::delete('/tills/{till}', [TillManagementController::class, 'destroy'])
+                ->name('tills.destroy')
+                ->middleware('permission:settings.access');
+            // ==================== END TILL MANAGEMENT ====================
 
             // ==================== SETTINGS ====================
             Route::get('/settings/till', [TillController::class, 'edit'])

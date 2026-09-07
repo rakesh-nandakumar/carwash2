@@ -314,7 +314,8 @@ class ReportController extends Controller
             )
         )->endOfDay();
 
-        $query = CashMovement::query()
+        // Get cash movements
+        $movementsQuery = CashMovement::query()
             ->with([
                 'till',
                 'user',
@@ -323,62 +324,95 @@ class ReportController extends Controller
             ->whereBetween('created_at', [
                 $startDate,
                 $endDate,
-            ])
-            ->latest('created_at');
+            ]);
 
         if ($request->filled('type')) {
-            $query->where('type', $request->type);
+            $movementsQuery->where('type', $request->type);
         }
 
         if ($request->filled('source')) {
-            $query->where('source', $request->source);
+            $movementsQuery->where('source', $request->source);
         }
 
         if ($request->filled('user_id')) {
-            $query->where('user_id', $request->user_id);
+            $movementsQuery->where('user_id', $request->user_id);
         }
 
         if ($request->filled('reason')) {
-            $query->where('reason', 'like', '%' . $request->reason . '%');
+            $movementsQuery->where('reason', 'like', '%' . $request->reason . '%');
         }
 
-        $movements = $query
-            ->paginate(30)
-            ->withQueryString();
+        // Get till closures within the date range
+        $closuresQuery = \App\Models\TillClosure::query()
+            ->with(['till', 'user'])
+            ->where(function($query) use ($startDate, $endDate) {
+                $query->whereBetween('opened_at', [$startDate, $endDate])
+                      ->orWhereBetween('closed_at', [$startDate, $endDate])
+                      ->orWhere(function($q) use ($startDate, $endDate) {
+                          $q->where('opened_at', '<=', $startDate)
+                            ->where('closed_at', '>=', $endDate);
+                      });
+            });
 
-        $totalsQuery = clone $query;
+        // Get collections
+        $movements = $movementsQuery->latest('created_at')->get();
+        $closures = $closuresQuery->latest('opened_at')->get();
 
-        $cashIn = (float) (clone $totalsQuery)
-            ->where('type', 'in')
-            ->sum('amount');
+        // Combine movements and closures into a single collection
+        $combined = collect();
 
-        $cashOut = (float) (clone $totalsQuery)
-            ->where('type', 'out')
-            ->sum('amount');
+        // Add cash movements
+        foreach ($movements as $movement) {
+            $combined->push([
+                'type' => 'movement',
+                'data' => $movement,
+                'date' => $movement->created_at,
+            ]);
+        }
 
-        $sales = (float) (clone $totalsQuery)
-            ->where('type', 'in')
-            ->where('source', 'sale')
-            ->sum('amount');
+        // Add closure events (both opening and closing)
+        foreach ($closures as $closure) {
+            // Opening event
+            if ($closure->opened_at->between($startDate, $endDate)) {
+                $combined->push([
+                    'type' => 'closure_open',
+                    'data' => $closure,
+                    'date' => $closure->opened_at,
+                ]);
+            }
 
-        $refunds = (float) (clone $totalsQuery)
-            ->where('type', 'out')
-            ->where('source', 'refund')
-            ->sum('amount');
+            // Closing event
+            if ($closure->closed_at && $closure->closed_at->between($startDate, $endDate)) {
+                $combined->push([
+                    'type' => 'closure_close',
+                    'data' => $closure,
+                    'date' => $closure->closed_at,
+                ]);
+            }
+        }
 
-        $manualIn = (float) (clone $totalsQuery)
-            ->where('type', 'in')
-            ->where('source', 'manual')
-            ->sum('amount');
+        // Sort by date descending
+        $combined = $combined->sortByDesc('date')->values();
 
-        $manualOut = (float) (clone $totalsQuery)
-            ->where('type', 'out')
-            ->where('source', 'manual')
-            ->sum('amount');
+        // Calculate totals (only from cash movements)
+        $cashIn = (float) $movements->where('type', 'in')->sum('amount');
+        $cashOut = (float) $movements->where('type', 'out')->sum('amount');
+        $sales = (float) $movements->where('type', 'in')->where('source', 'sale')->sum('amount');
+        $refunds = (float) $movements->where('type', 'out')->where('source', 'refund')->sum('amount');
+        $manualIn = (float) $movements->where('type', 'in')->where('source', 'manual')->sum('amount');
+        $manualOut = (float) $movements->where('type', 'out')->where('source', 'manual')->sum('amount');
+        $drops = (float) $movements->where('source', 'drop')->sum('amount');
 
-        $drops = (float) (clone $totalsQuery)
-            ->where('source', 'drop')
-            ->sum('amount');
+        // Paginate the combined results
+        $perPage = 30;
+        $page = request()->get('page', 1);
+        $paginatedCombined = new \Illuminate\Pagination\LengthAwarePaginator(
+            $combined->forPage($page, $perPage),
+            $combined->count(),
+            $perPage,
+            $page,
+            ['path' => request()->url(), 'query' => request()->query()]
+        );
 
         $till = app(\App\Services\CashMovementService::class)
             ->mainTill();
@@ -387,6 +421,9 @@ class ReportController extends Controller
             'reports.cash_movements',
             compact(
                 'movements',
+                'closures',
+                'combined',
+                'paginatedCombined',
                 'startDate',
                 'endDate',
                 'till',

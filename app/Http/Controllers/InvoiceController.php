@@ -67,9 +67,7 @@ class InvoiceController extends Controller
         $d = $r->validate(['amount' => 'required|numeric|min:.01', 'method' => 'required']);
 
         DB::transaction(function () use ($invoice, $d, $cashMovements) {
-            if ($d['amount'] > $invoice->balance) {
-                abort(422, 'Payment exceeds balance.');
-            }
+            // Allow overpayments - remove validation that prevented payments exceeding balance
 
             $payment = Payment::create([
                 'invoice_id' => $invoice->id,
@@ -78,18 +76,23 @@ class InvoiceController extends Controller
                 'received_by' => auth()->id(),
             ]);
 
-            if ($d['method'] === 'cash') {
-                $cashMovements->recordSale(
-                    amount: (float) $d['amount'],
-                    reference: $payment,
-                    userId: auth()->id(),
-                );
-            }
-
             $invoice->paid += $d['amount'];
             $invoice->balance = $invoice->total - $invoice->paid;
             $invoice->status = $invoice->balance <= 0 ? 'paid' : 'partially_paid';
             $invoice->save();
+
+            if ($d['method'] === 'cash') {
+                // Record only the net cash amount that stays in the till
+                // If customer overpaid (balance < 0), record the invoice total since change is given back
+                // Otherwise record the full payment amount
+                $netCashAmount = $invoice->balance < 0 ? $invoice->total : (float) $d['amount'];
+                
+                $cashMovements->recordSale(
+                    amount: $netCashAmount,
+                    reference: $payment,
+                    userId: auth()->id(),
+                );
+            }
         });
 
         return back()->with('success', 'Payment recorded.');

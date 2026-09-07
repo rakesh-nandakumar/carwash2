@@ -31,7 +31,15 @@ class CashierController extends Controller
             ->orderBy('updated_at', 'desc')
             ->get();
 
-        $till = $this->cashMovements->mainTill();
+        $till = $this->cashMovements->getSelectedTill();
+        
+        // Update last activity timestamp for the selected till
+        if ($till && $till->current_user_id == auth()->id()) {
+            $till->update(['last_activity_at' => now()]);
+        }
+        
+        $currentClosure = $this->cashMovements->lastClosure($till);
+        $isShiftOpen = $currentClosure && !$currentClosure->closed_at;
 
         $movements = $till->cashMovements();
 
@@ -61,6 +69,8 @@ class CashierController extends Controller
         return view('cashier.index', compact(
             'readyForPayment',
             'till',
+            'currentClosure',
+            'isShiftOpen',
             'cashSales',
             'cashIn',
             'cashOut',
@@ -628,14 +638,10 @@ class CashierController extends Controller
 
             $previousPaid = (float) $invoice->getOriginal('paid');
 
-            $amountApplied = min(
-                $amountReceived,
-                max(0, $finalTotal - $previousPaid)
-            );
-
+            // Apply the full amount received (allowing overpayments)
             $totalPaid =
                 (float) $invoice->paid +
-                $amountApplied;
+                $amountReceived;
 
             $invoiceBalance =
                 $finalTotal -
@@ -671,7 +677,7 @@ class CashierController extends Controller
             $payment = Payment::create([
                 'invoice_id' => $invoice->id,
                 'method' => $request->payment_method,
-                'amount' => $amountApplied,
+                'amount' => $amountReceived,
                 'reference' => $request->input('reference'),
                 'received_by' => auth()->id(),
             ]);
@@ -682,13 +688,26 @@ class CashierController extends Controller
             |--------------------------------------------------------------------------
             */
 
-            if ($request->payment_method === 'cash' && $amountApplied > 0) {
+            if ($request->payment_method === 'cash' && $amountReceived > 0) {
+                // Record only the net cash amount that stays in the till
+                // If customer overpaid (invoiceBalance < 0), record the invoice total since change is given back
+                // Otherwise record the full payment amount
+                $netCashAmount = $invoiceBalance < 0 ? $finalTotal : $amountReceived;
+                
                 $this->cashMovements->recordSale(
-                    amount: $amountApplied,
+                    amount: $netCashAmount,
                     reference: $payment,
                     userId: auth()->id(),
                 );
             }
+
+            /*
+            |--------------------------------------------------------------------------
+            | Note: All payment methods (cash, card, UPI, bank_transfer, etc.)
+            | are tracked through the Payment model and will be included in
+            | till closure calculations via the CashMovementService
+            |--------------------------------------------------------------------------
+            */
 
             /*
             |--------------------------------------------------------------------------

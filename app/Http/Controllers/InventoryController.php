@@ -113,6 +113,84 @@ class InventoryController extends Controller
         );
     }
 
+    public function getStatus(Request $request)
+    {
+        $user = auth()->user();
+
+        /*
+         * Load all inventory rows for real-time status calculation.
+         */
+        $allItems = Inventory::with('product')
+            ->whereHas('product', function ($query) use ($user) {
+                $query->where('business_id', $user->business_id)
+                    ->where('active', true);
+            })
+            ->when(
+                $user->branch_id !== null,
+                function ($query) use ($user) {
+                    $query->where('branch_id', $user->branch_id);
+                }
+            )
+            ->get();
+
+        /*
+         * Group inventory by product so that when branch_id is NULL
+         * stock from all branches is combined.
+         */
+        $stockByProduct = $allItems
+            ->groupBy('product_id')
+            ->map(function ($inventoryRows) {
+                return (float) $inventoryRows->sum('quantity');
+            });
+
+        /*
+         * Calculate current inventory status for each product
+         */
+        $inventoryStatus = $allItems
+            ->groupBy('product_id')
+            ->map(function ($inventoryRows) use ($stockByProduct) {
+                $product = $inventoryRows->first()->product;
+                
+                if (!$product) {
+                    return null;
+                }
+
+                $currentStock = $stockByProduct->get($product->id, 0);
+                $minimumStock = (float) $product->minimum_stock;
+                $reservedQuantity = (float) $inventoryRows->sum('reserved_quantity');
+                $available = max(0, $currentStock - $reservedQuantity);
+
+                return [
+                    'product_id' => $product->id,
+                    'name' => $product->name,
+                    'sku' => $product->sku,
+                    'brand' => $product->brand,
+                    'current_stock' => $currentStock,
+                    'reserved_quantity' => $reservedQuantity,
+                    'available' => $available,
+                    'minimum_stock' => $minimumStock,
+                    'selling_price' => (float) $product->selling_price,
+                    'is_low_stock' => $available <= $minimumStock,
+                    'is_out_of_stock' => $available == 0,
+                ];
+            })
+            ->filter()
+            ->values();
+
+        /*
+         * Calculate low stock items count
+         */
+        $lowStockCount = $inventoryStatus->filter(function ($item) {
+            return $item['is_low_stock'];
+        })->count();
+
+        return response()->json([
+            'inventory_status' => $inventoryStatus,
+            'low_stock_count' => $lowStockCount,
+            'total_products' => $inventoryStatus->count(),
+        ]);
+    }
+
     public function create()
     {
         return view('inventory.create', [

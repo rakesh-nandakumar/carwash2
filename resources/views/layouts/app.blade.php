@@ -544,6 +544,12 @@
                     <span>Users</span>
                 </a>
             @endif
+            @if(auth()->user()->hasPermissionTo('settings.access'))
+                <a href="{{ route('tills.index') }}" class="{{ request()->routeIs('tills.*') ? 'active' : '' }}">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><path d="M12 15h.01"/><path d="M16 15h.01"/><path d="M8 15h.01"/></svg>
+                    <span>Till Management</span>
+                </a>
+            @endif
         </nav>
         <a href="{{ route('logout') }}" class="logout">Sign out</a>
     </aside>

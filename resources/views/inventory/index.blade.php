@@ -54,7 +54,7 @@
                 $reserved = (float) ($i->reserved_quantity ?? 0);
                 $available = max(0, $quantity - $reserved);
             @endphp
-            <tr>
+            <tr data-product-id="{{ $i->product->id }}">
                 <td>
                     @if($i->product->image && file_exists(storage_path('app/public/'.$i->product->image)))
                         <img src="{{ asset('storage/'.$i->product->image) }}" alt="{{ $i->product->name }}" style="width:50px;height:50px;object-fit:cover;border-radius:4px;">
@@ -113,7 +113,7 @@
             $reserved = (float) ($i->reserved_quantity ?? 0);
             $available = max(0, $quantity - $reserved);
         @endphp
-        <div class="inventory-card">
+        <div class="inventory-card" data-product-id="{{ $i->product->id }}">
             <div class="card-top">
                 <div class="card-name">
                     <strong>{{ $i->product->name }}</strong>
@@ -208,6 +208,189 @@ function confirmDelete() {
     }
     closeDeleteModal();
 }
+
+// Real-time inventory status updates
+let inventoryStatusInterval = null;
+
+function startInventoryStatusPolling() {
+    if (inventoryStatusInterval) {
+        clearInterval(inventoryStatusInterval);
+    }
+    
+    console.log('Starting inventory status polling...');
+    // Poll every 5 seconds for inventory updates
+    inventoryStatusInterval = setInterval(updateInventoryStatus, 5000);
+}
+
+function stopInventoryStatusPolling() {
+    if (inventoryStatusInterval) {
+        clearInterval(inventoryStatusInterval);
+        inventoryStatusInterval = null;
+        console.log('Stopped inventory status polling');
+    }
+}
+
+async function updateInventoryStatus() {
+    console.log('Fetching inventory status...');
+    try {
+        // Build the URL manually to ensure it's correct
+        const currentPath = window.location.pathname;
+        const tenant = currentPath.split('/')[1];
+        const url = `/${tenant}/inventory/status`;
+        
+        console.log('Fetching from URL:', url);
+        console.log('Current path:', currentPath);
+        console.log('Tenant:', tenant);
+        
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'Content-Type': 'application/json'
+            },
+            credentials: 'same-origin'
+        });
+        
+        console.log('Response status:', response.status);
+        
+        if (!response.ok) {
+            console.error('Response not OK:', response.status, response.statusText);
+            const errorText = await response.text();
+            console.error('Error response:', errorText);
+            
+            // If we get a 500 error, stop polling to avoid spamming
+            if (response.status === 500) {
+                console.error('Server error, stopping polling');
+                stopInventoryStatusPolling();
+            }
+            return;
+        }
+        
+        const data = await response.json();
+        console.log('Inventory status data:', data);
+        
+        if (data.error) {
+            console.error('API returned error:', data.error);
+            stopInventoryStatusPolling();
+            return;
+        }
+        
+        if (data.inventory_status) {
+            updateInventoryDisplay(data.inventory_status, data.low_stock_count);
+        }
+    } catch (error) {
+        console.error('Error fetching inventory status:', error);
+        // Stop polling on network errors
+        stopInventoryStatusPolling();
+    }
+}
+
+function updateInventoryDisplay(inventoryStatus, lowStockCount) {
+    console.log('Updating inventory display with', inventoryStatus.length, 'items');
+    
+    // Create a map for quick lookup
+    const inventoryMap = {};
+    inventoryStatus.forEach(item => {
+        inventoryMap[item.product_id] = item;
+    });
+    
+    // Update desktop table rows
+    const tableRows = document.querySelectorAll('.inventory-table tbody tr');
+    tableRows.forEach(row => {
+        const productId = row.getAttribute('data-product-id');
+        if (!productId) return;
+        
+        const inventoryItem = inventoryMap[parseInt(productId)];
+        
+        if (inventoryItem) {
+            const stockCell = row.querySelector('td:nth-child(5)');
+            if (stockCell) {
+                const available = inventoryItem.available;
+                const minimum = inventoryItem.minimum_stock;
+                
+                if (available == 0) {
+                    stockCell.innerHTML = '<span style="color:#dc2626;font-weight:bold;">Out of Stock</span>';
+                } else if (available <= minimum) {
+                    stockCell.innerHTML = `<span style="color:#dc2626;font-weight:bold;">${number_format(available, 3)}</span>`;
+                } else {
+                    stockCell.textContent = number_format(available, 3);
+                }
+            }
+        }
+    });
+    
+    // Update mobile cards
+    const mobileCards = document.querySelectorAll('.inventory-card');
+    mobileCards.forEach(card => {
+        const productId = card.getAttribute('data-product-id');
+        if (!productId) return;
+        
+        const inventoryItem = inventoryMap[parseInt(productId)];
+        
+        if (inventoryItem) {
+            const stockValue = card.querySelector('.card-details .detail:nth-child(1) .value');
+            if (stockValue) {
+                const available = inventoryItem.available;
+                const minimum = inventoryItem.minimum_stock;
+                
+                if (available == 0) {
+                    stockValue.innerHTML = '<span style="color:#dc2626;font-weight:600;">Out of Stock</span>';
+                } else if (available <= minimum) {
+                    stockValue.innerHTML = `<span style="color:#dc2626;font-weight:600;">${number_format(available, 3)}</span>`;
+                } else {
+                    stockValue.textContent = number_format(available, 3);
+                }
+            }
+        }
+    });
+    
+    // Update low stock alert
+    const lowStockAlert = document.querySelector('.alert-danger');
+    if (lowStockAlert) {
+        if (lowStockCount > 0) {
+            lowStockAlert.style.display = 'flex';
+            const alertTitle = lowStockAlert.querySelector('strong');
+            if (alertTitle) {
+                alertTitle.textContent = `Low Stock Alert: ${lowStockCount} product(s) need attention`;
+            }
+            
+            const alertDetails = lowStockAlert.querySelector('p');
+            if (alertDetails) {
+                const lowStockItems = inventoryStatus.filter(item => item.is_low_stock).slice(0, 3);
+                alertDetails.innerHTML = lowStockItems.map(item => 
+                    `${item.name} (${number_format(item.available, 3)} / ${number_format(item.minimum_stock, 3)})`
+                ).join(', ') + (lowStockCount > 3 ? ` and ${lowStockCount - 3} more...` : '');
+            }
+        } else {
+            lowStockAlert.style.display = 'none';
+        }
+    }
+    
+    console.log('Inventory display updated');
+}
+
+// Helper function for number formatting
+function number_format(number, decimals) {
+    return parseFloat(number).toFixed(decimals);
+}
+
+// Start polling when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    startInventoryStatusPolling();
+    // Initial update
+    updateInventoryStatus();
+});
+
+// Stop polling when page is hidden
+document.addEventListener('visibilitychange', function() {
+    if (document.hidden) {
+        stopInventoryStatusPolling();
+    } else {
+        startInventoryStatusPolling();
+        updateInventoryStatus();
+    }
+});
 </script>
 
 <style>
