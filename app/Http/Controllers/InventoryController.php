@@ -396,5 +396,60 @@ class InventoryController extends Controller
         ]);
     }
 
+    public function adjust(Request $request, Product $product)
+    {
+        $user = auth()->user();
+
+        // Validate the request
+        $validated = $request->validate([
+            'quantity' => 'required|numeric|min:0',
+            'reason' => 'nullable|string|max:255',
+        ]);
+
+        $quantityToAdd = (float) $validated['quantity'];
+        $reason = $validated['reason'] ?? 'Manual stock adjustment';
+
+        DB::transaction(function () use ($user, $product, $quantityToAdd, $reason) {
+            // Find or create inventory record for this product and branch
+            $inventory = Inventory::where('tenant_id', $user->tenant_id)
+                ->where('product_id', $product->id)
+                ->where('branch_id', $user->branch_id ?? null)
+                ->first();
+
+            if ($inventory) {
+                // Update existing inventory
+                $oldQuantity = (float) $inventory->quantity;
+                $inventory->increment('quantity', $quantityToAdd);
+            } else {
+                // Create new inventory record
+                $oldQuantity = 0;
+                $inventory = Inventory::create([
+                    'product_id' => $product->id,
+                    'branch_id' => $user->branch_id ?? null,
+                    'quantity' => $quantityToAdd,
+                    'reserved_quantity' => 0,
+                    'tenant_id' => $user->tenant_id,
+                ]);
+            }
+
+            // Create inventory movement record
+            InventoryMovement::create([
+                'product_id' => $product->id,
+                'branch_id' => $user->branch_id ?? null,
+                'type' => InventoryMovementType::ADJUSTMENT,
+                'quantity' => $quantityToAdd,
+                'reference_type' => 'manual_adjustment',
+                'reference_id' => $inventory->id,
+                'user_id' => auth()->id(),
+                'notes' => $reason,
+                'tenant_id' => $user->tenant_id,
+            ]);
+        });
+
+        return redirect()
+            ->route('inventory.index')
+            ->with('success', 'Stock adjusted successfully.');
+    }
+
     // ... rest of the methods remain the same
 }
