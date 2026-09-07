@@ -521,11 +521,7 @@
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
                     <span>Cashier</span>
                     @php
-                        $readyForPaymentCount = \Illuminate\Support\Facades\Cache::remember(
-                            'tenant:'.auth()->user()->tenant_id.':ready_count',
-                            60,
-                            fn () => \App\Models\Job::where('status', \App\Enums\JobStatus::READY_FOR_PAYMENT->value)->count()
-                        );
+                        $readyForPaymentCount = \App\Models\Job::where('status', \App\Enums\JobStatus::READY_FOR_PAYMENT->value)->count();
                     @endphp
                     @if($readyForPaymentCount > 0)
                         <span class="notification-badge">{{ $readyForPaymentCount }}</span>

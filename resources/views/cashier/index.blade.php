@@ -44,6 +44,11 @@
                         Shift Closed
                     </span>
                 @endif
+                @if($readyForPayment->count() > 0)
+                    <span class="ready-count">
+                        {{ $readyForPayment->count() }} Ready
+                    </span>
+                @endif
             </div>
         </div>
 
@@ -138,7 +143,13 @@
 
     <div class="vehicles-grid">
         @forelse($readyForPayment as $job)
-            <div class="vehicle-card" onclick="window.location.href='{{ route('cashier.payment', $job) }}'">
+            <div class="vehicle-card {{ $isShiftOpen ? '' : 'till-closed' }}" 
+                 @if($isShiftOpen)
+                 onclick="window.location.href='{{ route('cashier.payment', $job) }}'"
+                 @else
+                 onclick="showTillNotOpenToast()"
+                 @endif
+            >
                 <div class="card-header">
                     <div class="vehicle-reg">{{ $job->vehicle->registration_number }}</div>
                     <div class="job-number">{{ $job->job_number }}</div>
@@ -421,6 +432,15 @@
     border-radius: 999px;
     background: #dbeafe;
     color: #1e40af;
+}
+
+.ready-count {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: #10b981;
+    color: white;
 }
 
 .till-stats {
@@ -816,6 +836,34 @@
     background-color: #f1f5f9;
 }
 
+/* Toast animations */
+@keyframes toastIn {
+    from { opacity: 0; transform: translateX(20px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes toastOut {
+    from { opacity: 1; transform: translateX(0); }
+    to { opacity: 0; transform: translateX(20px); }
+}
+
+/* Disabled state when till is closed */
+.vehicle-card.till-closed {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.vehicle-card.till-closed:hover {
+    transform: none;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    border-color: #e5e7eb;
+}
+
+.vehicle-card.till-closed .action-arrow {
+    color: #cbd5e1;
+    transform: none;
+}
+
 @media (max-width: 768px) {
     .cashier-header {
         flex-direction: column;
@@ -942,5 +990,36 @@ function closeChangeTillModal() {
 // Make the function available globally
 window.openChangeTillModal = openChangeTillModal;
 window.closeChangeTillModal = closeChangeTillModal;
+
+// Show toast when till is not open
+function showTillNotOpenToast() {
+    const toast = document.createElement('div');
+    toast.className = 'toast error';
+    toast.textContent = 'Please open the till before processing payments';
+    toast.style.position = 'fixed';
+    toast.style.top = '20px';
+    toast.style.right = '20px';
+    toast.style.zIndex = '100001';
+    toast.style.padding = '14px 20px';
+    toast.style.borderRadius = '10px';
+    toast.style.fontSize = '14px';
+    toast.style.fontWeight = '500';
+    toast.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.15)';
+    toast.style.maxWidth = '360px';
+    toast.style.background = '#fef2f2';
+    toast.style.color = '#991b1b';
+    toast.style.border = '1px solid #fecaca';
+    toast.style.animation = 'toastIn 0.3s ease';
+    
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.style.animation = 'toastOut 0.3s ease forwards';
+        setTimeout(() => toast.remove(), 300);
+    }, 3500);
+}
+
+// Make the function available globally
+window.showTillNotOpenToast = showTillNotOpenToast;
 </script>
 @endsection
