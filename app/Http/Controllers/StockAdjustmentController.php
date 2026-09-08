@@ -28,7 +28,6 @@ class StockAdjustmentController extends Controller
             'adjustedBy',
             'reversedBy',
         ])
-            ->where('tenant_id', $user->tenant_id)
             ->where('business_id', $user->business_id)
             ->orderByDesc('created_at');
 
@@ -47,8 +46,7 @@ class StockAdjustmentController extends Controller
             ->paginate(20)
             ->withQueryString();
 
-        $products = Product::where('tenant_id', $user->tenant_id)
-            ->where('business_id', $user->business_id)
+        $products = Product::where('business_id', $user->business_id)
             ->where('active', true)
             ->orderBy('name')
             ->get();
@@ -100,7 +98,6 @@ class StockAdjustmentController extends Controller
         ]);
 
         $product = Product::where('id', $validated['product_id'])
-            ->where('tenant_id', $user->tenant_id)
             ->where('business_id', $user->business_id)
             ->first();
 
