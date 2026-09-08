@@ -13,19 +13,27 @@ use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $this->authorize('viewAny', User::class);
 
         $businessId = auth()->user()->business_id;
+        $search = $request->get('search');
 
-        $users = User::with('roles')
+        $query = User::with('roles')
             ->where('tenant_id', auth()->user()->tenant_id)
-            ->where('business_id', $businessId)
-            ->latest()
-            ->paginate(20);
+            ->where('business_id', $businessId);
 
-        return view('users.index', compact('users'));
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        $users = $query->latest()->paginate(20);
+
+        return view('users.index', compact('users', 'search'));
     }
 
     public function create()

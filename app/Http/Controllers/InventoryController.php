@@ -14,36 +14,55 @@ class InventoryController extends Controller
     {
     }
 
-    public function index()
+    public function index(Request $request)
     {
         $user = auth()->user();
+        $search = $request->get('search');
 
         /*
          * Load active products for this tenant.
          *
          * Show stock for the user's assigned branch.
          */
-        $items = Inventory::with('product')
+        $query = Inventory::with('product')
             ->where('tenant_id', $user->tenant_id)
             ->whereHas('product', function ($query) use ($user) {
                 $query->where('tenant_id', $user->tenant_id)
                     ->where('active', true);
             })
-            ->where('branch_id', $user->branch_id)
-            ->paginate(20)
+            ->where('branch_id', $user->branch_id);
+
+        if ($search) {
+            $query->whereHas('product', function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('sku', 'like', "%{$search}%")
+                  ->orWhere('brand', 'like', "%{$search}%");
+            });
+        }
+
+        $items = $query->paginate(20)
             ->withQueryString();
 
         /*
          * Load all inventory rows for the low-stock calculation.
          */
-        $allItems = Inventory::with('product')
+        $allItemsQuery = Inventory::with('product')
             ->where('tenant_id', $user->tenant_id)
             ->whereHas('product', function ($query) use ($user) {
                 $query->where('tenant_id', $user->tenant_id)
                     ->where('active', true);
             })
-            ->where('branch_id', $user->branch_id)
-            ->get();
+            ->where('branch_id', $user->branch_id);
+
+        if ($search) {
+            $allItemsQuery->whereHas('product', function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('sku', 'like', "%{$search}%")
+                  ->orWhere('brand', 'like', "%{$search}%");
+            });
+        }
+
+        $allItems = $allItemsQuery->get();
 
         /*
          * Group inventory by product for the user's branch.
@@ -95,7 +114,8 @@ class InventoryController extends Controller
                 'items',
                 'allItems',
                 'lowStockItems',
-                'stockByProduct'
+                'stockByProduct',
+                'search'
             )
         );
     }

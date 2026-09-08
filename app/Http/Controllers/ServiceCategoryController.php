@@ -7,11 +7,24 @@ use Illuminate\Http\Request;
 
 class ServiceCategoryController extends Controller
 {
+    public function list()
+    {
+        $categories = ServiceCategory::select('id', 'name')
+            ->where('business_id', auth()->user()->business_id)
+            ->orderBy('name')
+            ->get();
+        
+        \Log::info('ServiceCategoryController::list - User business_id: ' . auth()->user()->business_id);
+        \Log::info('ServiceCategoryController::list - Categories found: ' . $categories->count());
+        
+        return response()->json($categories);
+    }
+
     public function store(Request $request)
     {
         try {
             $validated = $request->validate([
-                'name' => 'required|string|max:255|unique:service_categories,name',
+                'name' => 'required|string|max:255|unique:service_categories,name,NULL,id,business_id,' . auth()->user()->business_id,
             ]);
 
             $validated['business_id'] = auth()->user()->business_id;

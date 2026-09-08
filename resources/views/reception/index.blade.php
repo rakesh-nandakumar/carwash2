@@ -115,21 +115,20 @@
                 </div>
                 <div class="form-group">
                     <label>Category</label>
-                    <select id="modalVehicleCategory">
-                        <option value="Small Car">Small Car</option>
-                        <option value="Sedan">Sedan</option>
-                        <option value="SUV">SUV</option>
-                        <option value="Van">Van</option>
-                        <option value="Truck">Truck</option>
-                        <option value="Motorcycle">Motorcycle</option>
-                    </select>
+                    <div class="searchable-dropdown" id="vehicleCategoryDropdown">
+                        <input type="hidden" id="modalVehicleCategory" name="category" value="">
+                        <input type="text" class="searchable-dropdown-input" id="vehicleCategoryInput" placeholder="Search or select category...">
+                        <div class="searchable-dropdown-options"></div>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>Customer *</label>
                     <div class="customer-select-wrapper">
-                        <select id="modalVehicleCustomer">
-                            <option value="">Select existing customer...</option>
-                        </select>
+                        <div class="searchable-dropdown" id="customerDropdown">
+                            <input type="hidden" id="modalVehicleCustomer" name="customer_id" value="">
+                            <input type="text" class="searchable-dropdown-input" id="modalVehicleCustomerInput" placeholder="Search or select customer...">
+                            <div class="searchable-dropdown-options"></div>
+                        </div>
                         <button type="button" class="btn-add-customer" onclick="openCustomerModal()">+ New Customer</button>
                     </div>
                 </div>
@@ -381,6 +380,8 @@ let selectedVehicle = null;
 let selectedServices = [];
 let selectedProducts = [];
 let searchTimeout = null;
+let customerDropdown = null;
+let selectedCustomerData = null;
 
 // ---------- Customer WhatsApp auto-fill ----------
 let receptionWhatsappManuallyEdited = false;
@@ -840,13 +841,24 @@ async function loadCustomersForModal() {
     try {
         const response = await fetch('{{ route('customers.list') }}');
         const customers = await response.json();
-        const select = document.getElementById('modalVehicleCustomer');
-        select.innerHTML = '<option value="">Select existing customer...</option>';
-        
-        if (Array.isArray(customers)) {
-            customers.forEach(customer => {
-                const displayPhone = customer.whatsapp_number || customer.phone;
-                select.innerHTML += `<option value="${customer.id}" data-name="${customer.full_name}" data-phone="${customer.phone}" data-whatsapp="${customer.whatsapp_number || ''}">${customer.full_name} - ${displayPhone}</option>`;
+
+        // Initialize searchable dropdown with customer data
+        const dropdownContainer = document.getElementById('customerDropdown');
+        if (dropdownContainer) {
+            const customerData = Array.isArray(customers) ? customers.map(customer => ({
+                id: customer.id,
+                label: `${customer.full_name} — ${customer.whatsapp_number || customer.phone}`,
+                name: customer.full_name,
+                phone: customer.phone,
+                whatsapp: customer.whatsapp_number || ''
+            })) : [];
+
+            customerDropdown = new SearchableDropdown(dropdownContainer, {
+                data: customerData,
+                onSelect: function(item) {
+                    // Store selected customer data for later use
+                    selectedCustomerData = item;
+                }
             });
         }
     } catch (error) {
@@ -867,8 +879,8 @@ async function createVehicleFromModal() {
         return;
     }
 
-    if (!customerId) {
-        showToast('Please select a customer', 'error');
+    if (!customerId || isNaN(customerId)) {
+        showToast('Please select a customer from the list', 'error');
         return;
     }
 
@@ -902,11 +914,10 @@ async function createVehicleFromModal() {
                 vehicleImagePreviewDataUrl ||
                 null;
 
-            const customerSelect = document.getElementById('modalVehicleCustomer');
-            const selectedOption = customerSelect?.selectedOptions?.[0];
-            const customerName = selectedOption?.dataset?.name || selectedOption?.text?.split(' - ')[0] || '';
-            const customerPhone = selectedOption?.dataset?.phone || '';
-            const customerWhatsapp = selectedOption?.dataset?.whatsapp || '';
+            // Use selected customer data from dropdown
+            const customerName = selectedCustomerData?.name || '';
+            const customerPhone = selectedCustomerData?.phone || '';
+            const customerWhatsapp = selectedCustomerData?.whatsapp || '';
 
             selectedVehicle = {
                 vehicle_id: data.id,
@@ -918,8 +929,8 @@ async function createVehicleFromModal() {
                 customer_id: data.customer_id,
                 image: imageForJob
             };
-            selectedCustomer = { 
-                id: customerId, 
+            selectedCustomer = {
+                id: customerId,
                 full_name: customerName,
                 phone: customerPhone,
                 whatsapp_number: customerWhatsapp
@@ -980,7 +991,17 @@ async function createCustomerFromModal() {
             showToast('Customer created successfully!', 'success');
             closeCustomerModal();
             loadCustomersForModal().then(() => {
-                document.getElementById('modalVehicleCustomer').value = data.id;
+                // Update dropdown with new customer selected
+                if (customerDropdown) {
+                    customerDropdown.setValue(data.id, `${data.full_name} — ${data.whatsapp_number || data.phone}`);
+                    selectedCustomerData = {
+                        id: data.id,
+                        label: `${data.full_name} — ${data.whatsapp_number || data.phone}`,
+                        name: data.full_name,
+                        phone: data.phone,
+                        whatsapp: data.whatsapp_number || ''
+                    };
+                }
             });
         } else {
             const errorMsg = data.error || data.message || 'Error creating customer';

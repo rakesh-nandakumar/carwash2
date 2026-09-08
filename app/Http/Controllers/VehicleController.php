@@ -10,7 +10,17 @@ class VehicleController extends Controller
     public function index(Request $r)
     {
         $vehicles = Vehicle::with('customer')
-            ->when($r->q, fn($q, $v) => $q->where('registration_number', 'like', '%' . $v . '%'))
+            ->when($r->q, fn($q, $v) => 
+                $q->where(function ($query) use ($v) {
+                    $query->where('registration_number', 'like', '%' . $v . '%')
+                          ->orWhere('make', 'like', '%' . $v . '%')
+                          ->orWhere('model', 'like', '%' . $v . '%')
+                          ->orWhere('category', 'like', '%' . $v . '%')
+                          ->orWhereHas('customer', function ($customerQuery) use ($v) {
+                              $customerQuery->where('full_name', 'like', '%' . $v . '%');
+                          });
+                })
+            )
             ->latest()
             ->paginate(15);
 
@@ -19,15 +29,14 @@ class VehicleController extends Controller
 
     public function create(Request $r)
     {
-        $customers = Customer::orderBy('full_name')->get();
-        return view('vehicles.create', compact('customers'));
+        return view('vehicles.create');
     }
 
     public function store(Request $r)
     {
         try {
             $validated = $r->validate([
-                'customer_id' => 'required|exists:customers,id',
+                'customer_id' => 'required|integer|exists:customers,id',
                 'registration_number' => 'required',
                 'make' => 'nullable',
                 'model' => 'nullable',

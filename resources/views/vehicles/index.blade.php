@@ -10,7 +10,7 @@
 </div>
 
 <form class="search">
-    <input name="q" placeholder="Registration number" value="{{ request('q') }}">
+    <input name="q" placeholder="Search by customer name, registration, make, model, or category..." value="{{ request('q') }}">
     <button>Search</button>
 </form>
 

@@ -18,12 +18,11 @@
             <div class="form-group">
                 <label>Category</label>
                 <div style="display:flex;gap:10px;align-items:flex-start;">
-                    <select name="service_category_id" id="categorySelect" style="padding:12px;border:1px solid #e5e7eb;border-radius:8px;width:100%;">
-                        <option value="">Select Category</option>
-                        @foreach($categories as $category)
-                        <option value="{{ $category->id }}">{{ $category->name }}</option>
-                        @endforeach
-                    </select>
+                    <div class="searchable-dropdown" id="categoryDropdown" style="flex:1;">
+                        <input type="hidden" name="service_category_id" id="service_category_id" value="">
+                        <input type="text" class="searchable-dropdown-input" id="categoryInput" placeholder="Search or select category...">
+                        <div class="searchable-dropdown-options"></div>
+                    </div>
                     <button type="button" onclick="openCategoryModal()" style="background:#10b981;color:white;padding:12px 16px;border-radius:8px;border:none;cursor:pointer;font-weight:500;white-space:nowrap;">+ Add Category</button>
                 </div>
             </div>
@@ -126,6 +125,40 @@ function closeCategoryModal() {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('Service create page - loading categories via AJAX');
+    
+    // Declare categoryData in outer scope so it's accessible everywhere
+    let categoryData = [];
+    let categoryDropdown = null;
+    
+    // Load categories via AJAX like the reception page
+    async function loadCategories() {
+        try {
+            const response = await fetch('{{ route('service-categories.list') }}');
+            const categories = await response.json();
+
+            const dropdownContainer = document.getElementById('categoryDropdown');
+            if (dropdownContainer) {
+                categoryData = Array.isArray(categories) ? categories.map(category => ({
+                    id: category.id,
+                    label: category.name
+                })) : [];
+
+                console.log('Category data loaded:', categoryData);
+                console.log('Category data length:', categoryData.length);
+
+                categoryDropdown = new SearchableDropdown(dropdownContainer, {
+                    data: categoryData
+                });
+                console.log('SearchableDropdown initialized:', categoryDropdown);
+            }
+        } catch (error) {
+            console.error('Error loading categories:', error);
+        }
+    }
+    
+    loadCategories();
+    
     const categoryForm = document.getElementById('categoryForm');
     if (categoryForm) {
         categoryForm.addEventListener('submit', function(e) {
@@ -146,15 +179,17 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .then(response => response.json())
             .then(data => {
+                console.log('Category creation response:', data);
                 if (data.success) {
-                    const select = document.getElementById('categorySelect');
-                    const option = document.createElement('option');
+                    // Update dropdown with new category
+                    if (categoryDropdown) {
+                        const newCategory = { id: data.category.id, label: data.category.name };
+                        categoryData = [...categoryData, newCategory];
+                        categoryDropdown.updateData(categoryData);
+                        categoryDropdown.setValue(data.category.id, data.category.name);
+                        console.log('Dropdown updated with new category:', newCategory);
+                    }
 
-                    option.value = data.category.id;
-                    option.textContent = data.category.name;
-                    option.selected = true;
-
-                    select.appendChild(option);
                     closeCategoryModal();
                 } else {
                     alert(data.error || 'Error creating category');

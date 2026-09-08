@@ -6,6 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $title ?? 'AutoCare Pro' }}</title>
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/searchable-dropdown.css') }}">
     <script>
         // Runs before first paint: mark <html> with the saved sidebar state
         // so the sidebar renders already-collapsed on desktop with no flash/animation.
@@ -760,5 +761,6 @@
         }
         fitSidebarNav();
     </script>
+    <script src="{{ asset('js/searchable-dropdown.js') }}"></script>
 </body>
 </html>

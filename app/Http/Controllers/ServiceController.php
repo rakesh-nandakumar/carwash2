@@ -8,16 +8,27 @@ use Illuminate\Http\Request;
 
 class ServiceController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $services = Service::with('category')->orderBy('name')->get();
-        return view('services.index', compact('services'));
+        $user = auth()->user();
+        $search = $request->get('search');
+
+        $query = Service::with('category')
+            ->where('tenant_id', $user->tenant_id)
+            ->orderBy('name');
+
+        if ($search) {
+            $query->where('name', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%");
+        }
+
+        $services = $query->get();
+        return view('services.index', compact('services', 'search'));
     }
 
     public function create()
     {
-        $categories = ServiceCategory::orderBy('name')->get();
-        return view('services.create', compact('categories'));
+        return view('services.create');
     }
 
     public function store(Request $request)
@@ -28,12 +39,13 @@ class ServiceController extends Controller
             'base_price' => 'nullable|numeric|min:0',
             'labor_cost' => 'nullable|numeric|min:0',
             'tax_rate' => 'nullable|numeric|min:0|max:100',
-            'service_category_id' => 'nullable|exists:service_categories,id',
+            'service_category_id' => 'nullable|integer|exists:service_categories,id',
             'duration_minutes' => 'nullable|integer|min:1',
             'active' => 'nullable|boolean',
         ]);
 
-        $validated['business_id'] = auth()->user()->business_id ?? 1;
+        $validated['tenant_id'] = auth()->user()->tenant_id;
+        $validated['business_id'] = auth()->user()->business_id;
 
         $validated['active'] = $request->boolean('active');
 
@@ -67,7 +79,7 @@ class ServiceController extends Controller
             'base_price' => 'nullable|numeric|min:0',
             'labor_cost' => 'nullable|numeric|min:0',
             'tax_rate' => 'nullable|numeric|min:0|max:100',
-            'service_category_id' => 'nullable|exists:service_categories,id',
+            'service_category_id' => 'nullable|integer|exists:service_categories,id',
             'duration_minutes' => 'nullable|integer|min:1',
             'active' => 'nullable|boolean',
         ]);

@@ -7,13 +7,30 @@ use Illuminate\Http\Request;
 
 class AppointmentController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $appointments = Appointment::with(['customer', 'vehicle'])
-            ->latest('scheduled_at')
-            ->paginate(20);
+        $user = auth()->user();
+        $search = $request->get('search');
 
-        return view('appointments.index', compact('appointments'));
+        $query = Appointment::with(['customer', 'vehicle'])
+            ->where('tenant_id', $user->tenant_id)
+            ->latest('scheduled_at');
+
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->whereHas('customer', function ($q) use ($search) {
+                    $q->where('full_name', 'like', "%{$search}%")
+                      ->orWhere('phone', 'like', "%{$search}%");
+                })
+                ->orWhereHas('vehicle', function ($q) use ($search) {
+                    $q->where('registration_number', 'like', "%{$search}%");
+                });
+            });
+        }
+
+        $appointments = $query->paginate(20);
+
+        return view('appointments.index', compact('appointments', 'search'));
     }
 
     public function create()
@@ -36,6 +53,7 @@ class AppointmentController extends Controller
         ]);
 
         $d += [
+            'tenant_id' => auth()->user()->tenant_id,
             'business_id' => auth()->user()->business_id,
             'branch_id' => auth()->user()->branch_id ?? null,
             'status' => 'confirmed',

@@ -1,0 +1,105 @@
+/* Searchable Dropdown Styles */
+.searchable-dropdown {
+    position: relative;
+    width: 100%;
+}
+
+.searchable-dropdown-input {
+    width: 100%;
+    padding: 12px 14px;
+    font-size: 14px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    background: white;
+    cursor: text;
+    box-sizing: border-box;
+}
+
+.searchable-dropdown-input:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.searchable-dropdown.open .searchable-dropdown-input {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.searchable-dropdown-options {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    max-height: 200px;
+    overflow-y: auto;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    margin-top: 4px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    z-index: 1000;
+    display: none;
+}
+
+.searchable-dropdown.open .searchable-dropdown-options {
+    display: block;
+}
+
+.searchable-dropdown-option {
+    padding: 10px 14px;
+    cursor: pointer;
+    transition: background-color 0.15s;
+    font-size: 14px;
+    color: #374151;
+}
+
+.searchable-dropdown-option:hover,
+.searchable-dropdown-option.selected {
+    background-color: #f3f4f6;
+    color: #111827;
+}
+
+.searchable-dropdown-option.selected {
+    background-color: #eff6ff;
+    color: #1d4ed8;
+}
+
+.searchable-dropdown-no-results {
+    padding: 12px 14px;
+    color: #9ca3af;
+    font-size: 14px;
+    text-align: center;
+}
+
+/* Scrollbar styling for dropdown options */
+.searchable-dropdown-options::-webkit-scrollbar {
+    width: 6px;
+}
+
+.searchable-dropdown-options::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.searchable-dropdown-options::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+.searchable-dropdown-options::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+    .searchable-dropdown-options {
+        max-height: 150px;
+    }
+    
+    .searchable-dropdown-option {
+        padding: 8px 12px;
+        font-size: 13px;
+    }
+}

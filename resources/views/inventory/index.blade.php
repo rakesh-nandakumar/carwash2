@@ -6,7 +6,16 @@
         <h1>Item Master</h1>
         <p>Stock, valuation and traceable movements.</p>
     </div>
-    <a class="primary" href="{{ route('inventory.create') }}">+ New Product</a>
+    <div style="display:flex;gap:12px;align-items:center;">
+        <form method="GET" action="{{ route('inventory.index') }}" style="display:flex;gap:8px;">
+            <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="Search products..." style="padding:10px 14px;border:1px solid #e5e7eb;border-radius:10px;font-size:14px;width:250px;">
+            <button type="submit" style="padding:10px 16px;background:#111827;color:#fff;border:none;border-radius:10px;cursor:pointer;font-size:14px;">Search</button>
+            @if($search ?? null)
+            <a href="{{ route('inventory.index') }}" style="padding:10px 16px;background:#f3f4f6;color:#374151;border:none;border-radius:10px;cursor:pointer;font-size:14px;text-decoration:none;">Clear</a>
+            @endif
+        </form>
+        <a class="primary" href="{{ route('inventory.create') }}">+ New Product</a>
+    </div>
 </div>
 
 @if($lowStockItems->count() > 0)

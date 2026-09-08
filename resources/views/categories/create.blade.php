@@ -13,11 +13,11 @@
             </label>
             @if($selectedParent)
                 <label>Parent Category
-                    <select name="parent_id">
-                        @foreach($categories as $cat)
-                            <option value="{{ $cat->id }}" {{ $selectedParent == $cat->id ? 'selected' : '' }}>{{ $cat->name }}</option>
-                        @endforeach
-                    </select>
+                    <div class="searchable-dropdown" id="parentCategoryDropdown">
+                        <input type="hidden" name="parent_id" id="parent_id" value="{{ $selectedParent }}">
+                        <input type="text" class="searchable-dropdown-input" id="parentCategoryInput" placeholder="Search or select parent category...">
+                        <div class="searchable-dropdown-options"></div>
+                    </div>
                 </label>
             @else
                 <input type="hidden" name="parent_id" value="">
@@ -75,4 +75,57 @@
     }
 }
 </style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Category create page - loading parent categories via AJAX');
+    
+    // Load parent categories via AJAX like the reception page
+    async function loadParentCategories() {
+        try {
+            const response = await fetch('{{ route('categories.list') }}');
+            const categories = await response.json();
+
+            const dropdownContainer = document.getElementById('parentCategoryDropdown');
+            if (dropdownContainer) {
+                const categoryData = Array.isArray(categories) ? categories.map(category => ({
+                    id: category.id,
+                    label: category.name
+                })) : [];
+
+                console.log('Parent category data loaded:', categoryData);
+                console.log('Parent category data length:', categoryData.length);
+
+                const dropdown = new SearchableDropdown(dropdownContainer, {
+                    data: categoryData
+                });
+                console.log('SearchableDropdown initialized:', dropdown);
+                
+                // Set initial value if a parent is selected
+                @if($selectedParent && $selectedParentCategory)
+                    dropdown.setValue({{ $selectedParent }}, "{{ $selectedParentCategory->name }}");
+                @endif
+            }
+        } catch (error) {
+            console.error('Error loading parent categories:', error);
+        }
+    }
+    
+    loadParentCategories();
+});
+</script>
+    
+    const dropdownContainer = document.getElementById('parentCategoryDropdown');
+    if (dropdownContainer) {
+        const dropdown = new SearchableDropdown(dropdownContainer, {
+            data: categoryData
+        });
+        
+        // Set initial value if a parent is selected
+        @if($selectedParent && $selectedParentCategory)
+            dropdown.setValue({{ $selectedParent }}, "{{ $selectedParentCategory->name }}");
+        @endif
+    }
+});
+</script>
 @endsection

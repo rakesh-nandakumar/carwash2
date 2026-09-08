@@ -6,7 +6,16 @@
         <h1>Users</h1>
         <p>Manage system users and their permissions</p>
     </div>
-    <a href="{{ route('users.create') }}" class="primary">+ Add User</a>
+    <div style="display:flex;gap:12px;align-items:center;">
+        <form method="GET" action="{{ route('users.index') }}" style="display:flex;gap:8px;">
+            <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="Search users..." style="padding:10px 14px;border:1px solid #e5e7eb;border-radius:10px;font-size:14px;width:250px;">
+            <button type="submit" style="padding:10px 16px;background:#111827;color:#fff;border:none;border-radius:10px;cursor:pointer;font-size:14px;">Search</button>
+            @if($search ?? null)
+            <a href="{{ route('users.index') }}" style="padding:10px 16px;background:#f3f4f6;color:#374151;border:none;border-radius:10px;cursor:pointer;font-size:14px;text-decoration:none;">Clear</a>
+            @endif
+        </form>
+        <a href="{{ route('users.create') }}" class="primary">+ Add User</a>
+    </div>
 </div>
 
 <div class="users-grid">

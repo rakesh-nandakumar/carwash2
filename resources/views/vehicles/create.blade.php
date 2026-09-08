@@ -11,13 +11,11 @@
         <div class="form-grid">
             <label>
                 Customer*
-                <select name="customer_id" required>
-                    @foreach($customers as $c)
-                        <option value="{{ $c->id }}" @selected(request('customer_id')==$c->id)>
-                            {{ $c->full_name }} — {{ $c->phone }}
-                        </option>
-                    @endforeach
-                </select>
+                <div class="searchable-dropdown" id="customerDropdown">
+                    <input type="hidden" name="customer_id" id="customer_id" value="">
+                    <input type="text" class="searchable-dropdown-input" id="customerInput" placeholder="Search or select customer..." required>
+                    <div class="searchable-dropdown-options"></div>
+                </div>
             </label>
             <label>
                 Registration*
@@ -138,4 +136,41 @@
     }
 }
 </style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Vehicle create page - loading customers via AJAX');
+    
+    // Load customers via AJAX like the reception page
+    async function loadCustomers() {
+        try {
+            const response = await fetch('{{ route('customers.list') }}');
+            const customers = await response.json();
+
+            const dropdownContainer = document.getElementById('customerDropdown');
+            if (dropdownContainer) {
+                const customerData = Array.isArray(customers) ? customers.map(customer => ({
+                    id: customer.id,
+                    label: `${customer.full_name} — ${customer.whatsapp_number || customer.phone}`,
+                    name: customer.full_name,
+                    phone: customer.phone,
+                    whatsapp: customer.whatsapp_number || ''
+                })) : [];
+
+                console.log('Customer data loaded:', customerData);
+                console.log('Customer data length:', customerData.length);
+
+                const dropdown = new SearchableDropdown(dropdownContainer, {
+                    data: customerData
+                });
+                console.log('SearchableDropdown initialized:', dropdown);
+            }
+        } catch (error) {
+            console.error('Error loading customers:', error);
+        }
+    }
+    
+    loadCustomers();
+});
+</script>
 @endsection

@@ -17,9 +17,10 @@ class StockAdjustmentController extends Controller
     ) {
     }
 
-    public function index()
+    public function index(Request $request)
     {
         $user = auth()->user();
+        $search = $request->get('search');
 
         $query = StockAdjustment::with([
             'product',
@@ -27,6 +28,7 @@ class StockAdjustmentController extends Controller
             'adjustedBy',
             'reversedBy',
         ])
+            ->where('tenant_id', $user->tenant_id)
             ->where('business_id', $user->business_id)
             ->orderByDesc('created_at');
 
@@ -34,11 +36,19 @@ class StockAdjustmentController extends Controller
             $query->where('branch_id', $user->branch_id);
         }
 
+        if ($search) {
+            $query->whereHas('product', function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('sku', 'like', "%{$search}%");
+            });
+        }
+
         $adjustments = $query
             ->paginate(20)
             ->withQueryString();
 
-        $products = Product::where('business_id', $user->business_id)
+        $products = Product::where('tenant_id', $user->tenant_id)
+            ->where('business_id', $user->business_id)
             ->where('active', true)
             ->orderBy('name')
             ->get();
@@ -50,7 +60,8 @@ class StockAdjustmentController extends Controller
             compact(
                 'adjustments',
                 'products',
-                'reasons'
+                'reasons',
+                'search'
             )
         );
     }
@@ -89,6 +100,7 @@ class StockAdjustmentController extends Controller
         ]);
 
         $product = Product::where('id', $validated['product_id'])
+            ->where('tenant_id', $user->tenant_id)
             ->where('business_id', $user->business_id)
             ->first();
 

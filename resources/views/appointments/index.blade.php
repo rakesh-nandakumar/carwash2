@@ -6,7 +6,16 @@
         <h1>Appointments</h1>
         <p>Scheduled visits, reschedules and cancellations.</p>
     </div>
-    <a class="primary" href="{{ route('appointments.create') }}">+ Appointment</a>
+    <div style="display:flex;gap:12px;align-items:center;">
+        <form method="GET" action="{{ route('appointments.index') }}" style="display:flex;gap:8px;">
+            <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="Search appointments..." style="padding:10px 14px;border:1px solid #e5e7eb;border-radius:10px;font-size:14px;width:250px;">
+            <button type="submit" style="padding:10px 16px;background:#111827;color:#fff;border:none;border-radius:10px;cursor:pointer;font-size:14px;">Search</button>
+            @if($search ?? null)
+            <a href="{{ route('appointments.index') }}" style="padding:10px 16px;background:#f3f4f6;color:#374151;border:none;border-radius:10px;cursor:pointer;font-size:14px;text-decoration:none;">Clear</a>
+            @endif
+        </form>
+        <a class="primary" href="{{ route('appointments.create') }}">+ Appointment</a>
+    </div>
 </div>
 
 <div class="panel">

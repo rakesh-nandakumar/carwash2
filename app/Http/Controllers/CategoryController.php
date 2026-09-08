@@ -9,26 +9,46 @@ class CategoryController extends Controller
 {
     public function index()
     {
-        $categories = Category::whereNull('parent_id')
+        $categories = Category::where('business_id', auth()->user()->business_id)
+            ->whereNull('parent_id')
             ->with('children')
             ->latest()
             ->paginate(20);
         return view('categories.index', compact('categories'));
     }
 
+    public function list()
+    {
+        $categories = Category::select('id', 'name')
+            ->where('business_id', auth()->user()->business_id)
+            ->whereNull('parent_id')
+            ->orderBy('name')
+            ->get();
+        
+        \Log::info('CategoryController::list - User business_id: ' . auth()->user()->business_id);
+        \Log::info('CategoryController::list - Categories found: ' . $categories->count());
+        
+        return response()->json($categories);
+    }
+
     public function create()
     {
-        $categories = Category::whereNull('parent_id')
-            ->get();
         $selectedParent = request('parent_id');
-        return view('categories.create', compact('categories', 'selectedParent'));
+        $selectedParentCategory = null;
+        
+        if ($selectedParent) {
+            $selectedParentCategory = Category::where('business_id', auth()->user()->business_id)
+                ->find($selectedParent);
+        }
+        
+        return view('categories.create', compact('selectedParent', 'selectedParentCategory'));
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
             'name' => 'required',
-            'parent_id' => 'nullable|exists:categories,id'
+            'parent_id' => 'nullable|integer|exists:categories,id'
         ]);
 
         $validated['business_id'] = auth()->user()->business_id;

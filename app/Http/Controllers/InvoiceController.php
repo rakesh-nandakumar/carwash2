@@ -9,11 +9,28 @@ use Illuminate\Support\Facades\DB;
 
 class InvoiceController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $invoices = Invoice::with('customer')->latest()->paginate(20);
+        $user = auth()->user();
+        $search = $request->get('search');
 
-        return view('invoices.index', compact('invoices'));
+        $query = Invoice::with('customer')
+            ->where('tenant_id', $user->tenant_id)
+            ->latest();
+
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('invoice_number', 'like', "%{$search}%")
+                  ->orWhereHas('customer', function ($q) use ($search) {
+                      $q->where('full_name', 'like', "%{$search}%")
+                        ->orWhere('phone', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        $invoices = $query->paginate(20);
+
+        return view('invoices.index', compact('invoices', 'search'));
     }
 
     public function show(Invoice $invoice)

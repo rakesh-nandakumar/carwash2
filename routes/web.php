@@ -309,6 +309,9 @@ Route::prefix('{tenant}')
                 ->name('categories.index')
                 ->middleware('permission:categories.access');
 
+            Route::get('/categories/list', [CategoryController::class, 'list'])
+                ->name('categories.list');
+
             Route::get('/categories/create', [CategoryController::class, 'create'])
                 ->name('categories.create')
                 ->middleware('permission:categories.create');
@@ -520,6 +523,8 @@ Route::prefix('{tenant}')
             // ==================== END ROLES ====================
 
             // ==================== SERVICE CATEGORIES ====================
+            Route::get('/service-categories/list', [ServiceCategoryController::class, 'list'])
+                ->name('service-categories.list');
             Route::post('/service-categories', [ServiceCategoryController::class, 'store'])
                 ->name('service-categories.store')
                 ->middleware('permission:services.create');

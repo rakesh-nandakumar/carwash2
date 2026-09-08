@@ -19,7 +19,10 @@ class CustomerController extends Controller
             ->when($r->q, fn ($q, $v) =>
                 $q->where(function ($query) use ($v) {
                     $query->where('full_name', 'like', '%' . $v . '%')
-                          ->orWhere('phone', 'like', '%' . $v . '%');
+                          ->orWhere('phone', 'like', '%' . $v . '%')
+                          ->orWhere('phone', 'like', '%' . $this->normalizePhoneNumber($v) . '%')
+                          ->orWhere('whatsapp_number', 'like', '%' . $v . '%')
+                          ->orWhere('whatsapp_number', 'like', '%' . $this->normalizePhoneNumber($v) . '%');
                 })
             )
             ->latest()
@@ -28,13 +31,55 @@ class CustomerController extends Controller
         return view('customers.index', compact('customers'));
     }
 
-    public function list()
+    /**
+     * Normalize phone number to +94 format
+     * Converts: 07520727722 -> +94752072772
+     *           94752072772 -> +94752072772
+     *           +94752072772 -> +94752072772
+     */
+    private function normalizePhoneNumber($phone)
     {
-        return response()->json(
-            Customer::select('id', 'full_name', 'phone', 'whatsapp_number')
-                ->orderBy('full_name')
-                ->get()
-        );
+        $phone = trim($phone);
+        
+        // If already in +94 format, return as is
+        if (str_starts_with($phone, '+94')) {
+            return $phone;
+        }
+        
+        // If starts with 94, add + prefix
+        if (str_starts_with($phone, '94')) {
+            return '+' . $phone;
+        }
+        
+        // If starts with 0 and has 10 digits, convert to +94 format
+        if (str_starts_with($phone, '0') && strlen($phone) === 10) {
+            return '+94' . substr($phone, 1);
+        }
+        
+        return $phone;
+    }
+
+    public function list(Request $request)
+    {
+        $query = Customer::select('id', 'full_name', 'phone', 'whatsapp_number')
+            ->where('business_id', auth()->user()->business_id)
+            ->orderBy('full_name');
+
+        // Add search functionality for phone number normalization
+        if ($request->has('search')) {
+            $search = $request->search;
+            $normalizedPhone = $this->normalizePhoneNumber($search);
+            
+            $query->where(function ($q) use ($search, $normalizedPhone) {
+                $q->where('full_name', 'like', '%' . $search . '%')
+                  ->orWhere('phone', 'like', '%' . $search . '%')
+                  ->orWhere('phone', 'like', '%' . $normalizedPhone . '%')
+                  ->orWhere('whatsapp_number', 'like', '%' . $search . '%')
+                  ->orWhere('whatsapp_number', 'like', '%' . $normalizedPhone . '%');
+            });
+        }
+
+        return response()->json($query->get());
     }
 
     public function create()
