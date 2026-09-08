@@ -216,6 +216,20 @@
         aside.sidebar nav a.cashier-link.active {
             box-shadow: inset 3px 0 0 #10b981;
         }
+        aside.sidebar nav a.cheque-payments-link {
+            background: rgba(245, 158, 11, 0.12);
+            position: relative;
+        }
+        aside.sidebar nav a.cheque-payments-link:hover,
+        aside.sidebar nav a.cheque-payments-link.active {
+            background: rgba(245, 158, 11, 0.25);
+        }
+        aside.sidebar nav a.cheque-payments-link svg {
+            color: #f59e0b;
+        }
+        aside.sidebar nav a.cheque-payments-link.active {
+            box-shadow: inset 3px 0 0 #f59e0b;
+        }
         aside.sidebar a.logout {
             flex: 0 0 auto;
         }
@@ -351,8 +365,38 @@
             font-weight: bold;
             animation: pulse 2s infinite;
         }
+
+        .notification-badge.alert-badge {
+            background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+            border: 2px solid #fee2e2;
+            animation: urgentPulse 1s infinite;
+        }
+
+        .cheque-payments-link .notification-badge:first-of-type {
+            top: -6px;
+            right: 6px;
+        }
+
+        .cheque-payments-link .notification-badge.alert-badge {
+            top: 6px;
+            right: -6px;
+        }
+
+        @keyframes urgentPulse {
+            0%, 100% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+            }
+            50% {
+                transform: scale(1.15);
+                box-shadow: 0 0 0 4px rgba(239, 68, 68, 0);
+            }
+        }
+
         @keyframes pulse {
             0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
             50% { transform: scale(1.1); }
         }
         /* Toast */
@@ -526,6 +570,24 @@
                     @endphp
                     @if($readyForPaymentCount > 0)
                         <span class="notification-badge">{{ $readyForPaymentCount }}</span>
+                    @endif
+                </a>
+            @endif
+            @if(auth()->user()->hasPermissionTo('cashier.access'))
+                <a href="{{ route('cheque-payments.index') }}" class="cheque-payments-link {{ request()->routeIs('cheque-payments.*') ? 'active' : '' }}">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><path d="M12 15h.01"/><path d="M16 15h.01"/></svg>
+                    <span>Cheque Payments</span>
+                    @php
+                        $pendingChequesCount = \App\Models\Payment::where('method', 'cheque')->where('payment_received', false)->where('is_bounced', false)->count();
+                        $bouncedChequesNeedingFollowUp = \App\Models\Payment::where('method', 'cheque')->where('is_bounced', true)->where('follow_up_required', true)->where('replacement_payment_received', false)->count();
+                    @endphp
+                    @if($pendingChequesCount > 0 && $bouncedChequesNeedingFollowUp > 0)
+                        <span class="notification-badge" style="top: -6px; right: 6px;">{{ $pendingChequesCount }}</span>
+                        <span class="notification-badge alert-badge" style="top: 6px; right: -6px;">{{ $bouncedChequesNeedingFollowUp }}</span>
+                    @elseif($pendingChequesCount > 0)
+                        <span class="notification-badge">{{ $pendingChequesCount }}</span>
+                    @elseif($bouncedChequesNeedingFollowUp > 0)
+                        <span class="notification-badge alert-badge">{{ $bouncedChequesNeedingFollowUp }}</span>
                     @endif
                 </a>
             @endif

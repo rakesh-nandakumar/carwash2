@@ -16,6 +16,57 @@
         </form>
     </div>
 
+    {{-- Bounced Cheque Alert --}}
+    @php
+        $bouncedChequesNeedingFollowUp = \App\Models\Payment::with(['invoice.job.customer', 'invoice.job.vehicle'])
+            ->where('method', 'cheque')
+            ->where('is_bounced', true)
+            ->where('follow_up_required', true)
+            ->where('replacement_payment_received', false)
+            ->orderBy('bounced_at', 'desc')
+            ->get();
+    @endphp
+
+    @if($bouncedChequesNeedingFollowUp->count() > 0)
+        <div class="alert-panel bounced-cheque-alert">
+            <div class="alert-header">
+                <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                </svg>
+                <h3>⚠️ Bounced Cheques Require Action ({{ $bouncedChequesNeedingFollowUp->count() }})</h3>
+            </div>
+            <div class="alert-content">
+                @foreach($bouncedChequesNeedingFollowUp->take(3) as $bouncedCheque)
+                    <div class="bounced-cheque-item">
+                        <div class="cheque-info">
+                            <strong>{{ $bouncedCheque->invoice->job->customer->full_name }}</strong>
+                            <span>{{ $bouncedCheque->invoice->job->vehicle->registration_number }}</span>
+                        </div>
+                        <div class="cheque-details">
+                            <span class="amount">Rs. {{ number_format($bouncedCheque->amount, 2) }}</span>
+                            <span class="status">
+                                @if($bouncedCheque->isOverdueForFollowUp())
+                                    <span class="alert-badge overdue">Overdue</span>
+                                @else
+                                    <span class="alert-badge pending">Follow-up: {{ $bouncedCheque->follow_up_date ? $bouncedCheque->follow_up_date->format('M d') : 'ASAP' }}</span>
+                                @endif
+                            </span>
+                        </div>
+                        <div class="cheque-actions">
+                            <a href="{{ route('cheque-payments.show', $bouncedCheque) }}" class="btn-small">View Details</a>
+                            <a href="{{ route('cheque-payments.edit-bounce', $bouncedCheque) }}" class="btn-small primary">Manage</a>
+                        </div>
+                    </div>
+                @endforeach
+                @if($bouncedChequesNeedingFollowUp->count() > 3)
+                    <div class="view-all-link">
+                        <a href="{{ route('cheque-payments.index') }}">View all {{ $bouncedChequesNeedingFollowUp->count() }} bounced cheques →</a>
+                    </div>
+                @endif
+            </div>
+        </div>
+    @endif
+
     {{-- Till Summary Panel --}}
     <div class="till-panel">
         <div class="till-header">
@@ -544,6 +595,182 @@
 .btn-shift-close:hover {
     background: #d97706 !important;
     border-color: #d97706 !important;
+}
+
+/* Bounced Cheque Alert Styles */
+.alert-panel {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin: 20px 40px;
+    overflow: hidden;
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.bounced-cheque-alert {
+    border: 3px solid #ef4444;
+    background: linear-gradient(135deg, #fff5f5 0%, #fef2f2 100%);
+}
+
+.alert-header {
+    background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 2px solid #ef4444;
+}
+
+.alert-header svg {
+    color: #dc2626;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.7;
+    }
+}
+
+.alert-header h3 {
+    color: #dc2626;
+    font-size: 18px;
+    font-weight: 700;
+    margin: 0;
+}
+
+.alert-content {
+    padding: 16px 20px;
+}
+
+.bounced-cheque-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    gap: 16px;
+}
+
+.bounced-cheque-item:last-child {
+    margin-bottom: 0;
+}
+
+.cheque-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+}
+
+.cheque-info strong {
+    color: #1e293b;
+    font-size: 14px;
+}
+
+.cheque-info span {
+    color: #64748b;
+    font-size: 12px;
+}
+
+.cheque-details {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.cheque-details .amount {
+    color: #dc2626;
+    font-weight: 700;
+    font-size: 14px;
+}
+
+.cheque-details .alert-badge {
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.cheque-details .alert-badge.overdue {
+    background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+    color: #dc2626;
+    border: 1px solid #ef4444;
+}
+
+.cheque-details .alert-badge.pending {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    color: #d97706;
+    border: 1px solid #f59e0b;
+}
+
+.cheque-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-small {
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: 1px solid #e5e7eb;
+    background: white;
+    color: #475569;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+}
+
+.btn-small:hover {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+}
+
+.btn-small.primary {
+    background: #3b82f6;
+    color: white;
+    border-color: #3b82f6;
+}
+
+.btn-small.primary:hover {
+    background: #2563eb;
+    border-color: #2563eb;
+}
+
+.view-all-link {
+    text-align: center;
+    padding-top: 12px;
+    border-top: 1px solid #fecaca;
+}
+
+.view-all-link a {
+    color: #dc2626;
+    font-weight: 600;
+    font-size: 13px;
+    text-decoration: none;
+}
+
+.view-all-link a:hover {
+    text-decoration: underline;
 }
 
 .btn-history {

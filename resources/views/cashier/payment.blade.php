@@ -97,7 +97,7 @@
                 <span>Tax</span>
                 <span>Rs. {{ number_format($calculation['tax'], 2) }}</span>
             </div>
-            <div class="summary-row total-row">
+            <div class="summary-row total-row highlighted">
                 <span>Total Due</span>
                 <span class="total-amount">Rs. {{ number_format($calculation['total'], 2) }}</span>
             </div>
@@ -137,6 +137,11 @@
                                 <span class="method-icon">🏦</span>
                                 <span class="method-label">Bank Transfer</span>
                             </label>
+                            <label class="payment-method-option">
+                                <input type="radio" name="payment_method" value="cheque" onchange="toggleReferenceField()">
+                                <span class="method-icon">📄</span>
+                                <span class="method-label">Cheque</span>
+                            </label>
                         </div>
                     </div>
 
@@ -148,8 +153,9 @@
                                     <option value="card">Card</option>
                                     <option value="upi">UPI</option>
                                     <option value="bank_transfer">Bank Transfer</option>
+                                    <option value="cheque">Cheque</option>
                                 </select>
-                                <input type="number" step=".01" class="split-amount" placeholder="Amount" oninput="calculateSplitTotal()">
+                                <input type="number" step=".01" class="split-amount" placeholder="0.00" oninput="calculateSplitTotal()">
                                 <input type="text" class="split-reference" placeholder="Reference (if needed)" style="display: none;">
                                 <button type="button" class="remove-row-btn" onclick="removePaymentRow(this)" style="display: none;">×</button>
                             </div>
@@ -167,9 +173,41 @@
                     <input type="text" name="reference_number" id="referenceNumber" placeholder="Enter reference number">
                 </div>
 
-                <div class="form-section">
+                <div class="form-section" id="chequeFields" style="display: none;">
+                    <label>Cheque Number</label>
+                    <input type="text" name="cheque_number" id="chequeNumber" placeholder="Enter cheque number">
+                </div>
+
+                <div class="form-section" id="bankField" style="display: none;">
+                    <label>Bank Name</label>
+                    <input type="text" name="bank_name" id="bankName" placeholder="Enter bank name">
+                </div>
+
+                <div class="form-section" id="chequeDateField" style="display: none;">
+                    <label>Cheque Due Date</label>
+                    <input type="date" name="cheque_due_date" id="chequeDueDate">
+                </div>
+
+                <div class="form-section" id="paymentReceivedField" style="display: none;">
+                    <label>Payment Received Confirmation</label>
+                    <div class="payment-received-options">
+                        <label class="radio-option">
+                            <input type="radio" name="payment_received" value="yes" onchange="togglePaymentReceived()">
+                            <span>Yes - Payment received and cleared</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="payment_received" value="no" checked onchange="togglePaymentReceived()">
+                            <span>No - Payment pending (cheque not yet cleared)</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-section coupon-section">
                     <label>Coupon/Voucher Code</label>
-                    <input type="text" name="coupon_code" id="couponCode" placeholder="Enter coupon code" oninput="applyCoupon()">
+                    <div class="coupon-input-wrapper">
+                        <input type="text" name="coupon_code" id="couponCode" placeholder="Enter coupon code">
+                        <button type="button" class="apply-coupon-btn" onclick="applyCoupon()">Apply</button>
+                    </div>
                 </div>
 
                 <div class="form-row">
@@ -204,7 +242,7 @@
 
                 <div class="form-section" id="globalDiscountSection" style="display: none;">
                     <label id="discountValueLabel">Discount Amount</label>
-                    <div style="position: relative;">
+                    <div class="discount-input-wrapper">
                         <input
                             type="number"
                             step=".01"
@@ -214,7 +252,7 @@
                             placeholder="0.00"
                             oninput="calculateTotal()"
                         >
-                        <span id="discountValueSuffix" style="position:absolute;right:16px;top:50%;transform:translateY(-50%);color:#64748b;font-weight:600;display:none;">%</span>
+                        <span id="discountValueSuffix" class="input-suffix">%</span>
                     </div>
                 </div>
 
@@ -258,14 +296,18 @@
                     @endforeach
                 </div>
 
-                <div class="form-section">
+                <div class="form-section amount-section">
                     <label>Amount Received</label>
-                    <input type="number" step=".01" name="amount_received" id="amountReceived" placeholder="Enter amount received" required oninput="calculateBalance()" onwheel="this.blur()">
+                    <div class="amount-input-wrapper">
+                        <span class="currency-symbol">Rs.</span>
+                        <input type="number" step=".01" name="amount_received" id="amountReceived" placeholder="0.00" required oninput="calculateBalance()" onwheel="this.blur()">
+                    </div>
+                    <small class="input-hint">Enter the amount received from customer</small>
                 </div>
 
                 <div class="balance-card" id="balanceDisplay" style="display: none;">
                     <div class="balance-content">
-                        <span>Balance to Return</span>
+                        <span id="balanceLabel">Balance to Return</span>
                         <span id="balanceAmount">Rs. 0.00</span>
                     </div>
                 </div>
@@ -281,7 +323,7 @@
                     </div>
                     <div class="summary-row">
                         <span>Total Due</span>
-                        <strong id="displayTotal">Rs. {{ number_format($calculation['total'], 2) }}</strong>
+                        <strong id="displayTotal" class="highlighted-amount">Rs. {{ number_format($calculation['total'], 2) }}</strong>
                     </div>
                     <div class="summary-row">
                         <span>Amount Received</span>
@@ -466,10 +508,20 @@
     border-bottom: 2px solid #e2e8f0;
 }
 
+.total-row.highlighted {
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    border-radius: 12px;
+    padding: 20px;
+    margin: 16px 0 0 0;
+    border: 2px solid #3b82f6;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+}
+
 .total-amount {
     font-size: 24px;
     font-weight: 700;
-    color: #1e293b;
+    color: #1e40af;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.1);
 }
 
 .form-section {
@@ -494,6 +546,7 @@
     background: #f8fafc;
     color: #1e293b;
     box-sizing: border-box;
+    transition: all 0.2s ease;
 }
 
 .form-section input:focus,
@@ -502,6 +555,71 @@
     border-color: #94a3b8;
     background: white;
     box-shadow: 0 0 0 4px rgba(148, 163, 184, 0.1);
+}
+
+.amount-section {
+    position: relative;
+}
+
+.amount-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.currency-symbol {
+    position: absolute;
+    left: 16px;
+    font-size: 16px;
+    font-weight: 600;
+    color: #64748b;
+    pointer-events: none;
+}
+
+.amount-section input {
+    padding-left: 50px;
+    border: 3px solid #3b82f6;
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    font-size: 18px;
+    font-weight: 600;
+    color: #1e40af;
+}
+
+.amount-section input:focus {
+    border-color: #2563eb;
+    background: white;
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
+}
+
+.input-hint {
+    display: block;
+    margin-top: 6px;
+    font-size: 12px;
+    color: #64748b;
+    font-weight: 500;
+}
+
+.discount-input-wrapper {
+    position: relative;
+}
+
+.input-suffix {
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #64748b;
+    font-weight: 600;
+    display: none;
+}
+
+#discountValue {
+    padding-right: 40px;
+}
+
+#discountValue:focus {
+    border-color: #f59e0b;
+    box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.1);
 }
 
 .form-row {
@@ -529,11 +647,19 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 16px 12px;
+    padding: 20px 12px;
     background: #f8fafc;
     border: 2px solid #e2e8f0;
     border-radius: 12px;
     cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.payment-method-option:hover {
+    border-color: #cbd5e1;
+    background: #f1f5f9;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
 }
 
 .payment-method-option input[type="radio"] {
@@ -541,18 +667,30 @@
 }
 
 .payment-method-option:has(input:checked) {
-    border-color: #94a3b8;
-    background: #f1f5f9;
+    border-color: #3b82f6;
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+    transform: translateY(-2px);
 }
 
 .method-icon {
-    font-size: 28px;
-    margin-bottom: 8px;
+    font-size: 32px;
+    margin-bottom: 10px;
+    transition: transform 0.2s ease;
+}
+
+.payment-method-option:has(input:checked) .method-icon {
+    transform: scale(1.1);
 }
 
 .method-label {
     font-size: 13px;
     font-weight: 600;
+    color: #475569;
+}
+
+.payment-method-option:has(input:checked) .method-label {
+    color: #1e40af;
 }
 
 .split-toggle {
@@ -691,13 +829,76 @@
     font-size: 13px;
     background: white;
     width: 100px;
+    transition: all 0.2s ease;
+}
+
+.discount-inputs input:focus {
+    border-color: #f59e0b;
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+    outline: none;
+}
+
+.payment-received-options {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.radio-option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: #f8fafc;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.radio-option:hover {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+}
+
+.radio-option input[type="radio"] {
+    width: 18px;
+    height: 18px;
+    accent-color: #1e293b;
+}
+
+.radio-option span {
+    font-size: 14px;
+    font-weight: 500;
+    color: #475569;
+}
+
+.radio-option:has(input:checked) {
+    border-color: #1e293b;
+    background: #f1f5f9;
+}
+
+.radio-option:has(input:checked) span {
+    color: #1e293b;
+    font-weight: 600;
 }
 
 .balance-card {
-    background: #10b981;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
     border-radius: 16px;
-    padding: 20px;
+    padding: 24px;
     margin-top: 20px;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    transition: all 0.3s ease;
+}
+
+.balance-card.positive {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.balance-card.negative {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
 }
 
 .balance-content {
@@ -714,8 +915,9 @@
 
 .balance-content span:last-child {
     color: white;
-    font-size: 28px;
+    font-size: 32px;
     font-weight: 700;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .live-summary {
@@ -732,10 +934,73 @@
     margin-top: 8px;
 }
 
+.highlighted-amount {
+    color: #1e40af;
+    font-size: 20px;
+    font-weight: 700;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+/* Enhanced focus states for important inputs */
+.form-section input:focus,
+.form-section select:focus {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(148, 163, 184, 0.15);
+}
+
+/* Special styling for split payment amount inputs */
+.split-amount {
+    border-color: #3b82f6 !important;
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%) !important;
+    font-weight: 600;
+    color: #1e40af;
+}
+
+.split-amount:focus {
+    border-color: #2563eb !important;
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2) !important;
+}
+
+.coupon-section {
+    position: relative;
+}
+
+.coupon-input-wrapper {
+    display: flex;
+    gap: 8px;
+}
+
+.coupon-input-wrapper input {
+    flex: 1;
+}
+
+.apply-coupon-btn {
+    padding: 14px 20px;
+    background: #f59e0b;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.apply-coupon-btn:hover {
+    background: #d97706;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(245, 158, 11, 0.2);
+}
+
+.apply-coupon-btn:active {
+    transform: translateY(0);
+}
+
 .process-button {
     width: 100%;
     padding: 18px 24px;
-    background: #1e293b;
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
     color: white;
     border: none;
     border-radius: 16px;
@@ -747,6 +1012,18 @@
     justify-content: center;
     gap: 12px;
     margin-top: 24px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.process-button:hover {
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+}
+
+.process-button:active {
+    transform: translateY(0);
 }
 
 .payment-back {
@@ -908,6 +1185,16 @@ function toggleReferenceField() {
     const paymentMethod = document.querySelector('input[name="payment_method"]:checked').value;
     const referenceField = document.getElementById('referenceField');
     const referenceLabel = document.getElementById('referenceLabel');
+    const chequeFields = document.getElementById('chequeFields');
+    const bankField = document.getElementById('bankField');
+    const chequeDateField = document.getElementById('chequeDateField');
+    const paymentReceivedField = document.getElementById('paymentReceivedField');
+
+    // Hide all cheque-specific fields by default
+    chequeFields.style.display = 'none';
+    bankField.style.display = 'none';
+    chequeDateField.style.display = 'none';
+    paymentReceivedField.style.display = 'none';
 
     if (paymentMethod === 'cash') {
         referenceField.style.display = 'none';
@@ -923,7 +1210,21 @@ function toggleReferenceField() {
         referenceField.style.display = 'block';
         referenceLabel.textContent = 'Bank Transfer Reference';
         document.getElementById('referenceNumber').placeholder = 'Enter bank transfer reference';
+    } else if (paymentMethod === 'cheque') {
+        referenceField.style.display = 'block';
+        referenceLabel.textContent = 'Reference Number (Optional)';
+        document.getElementById('referenceNumber').placeholder = 'Enter any additional reference';
+        // Show cheque-specific fields
+        chequeFields.style.display = 'block';
+        bankField.style.display = 'block';
+        chequeDateField.style.display = 'block';
+        paymentReceivedField.style.display = 'block';
     }
+}
+
+function togglePaymentReceived() {
+    const paymentReceived = document.querySelector('input[name="payment_received"]:checked').value;
+    // Can add additional logic here if needed based on payment received status
 }
 
 function updateHiddenFieldsBeforeSubmit() {
@@ -1142,8 +1443,9 @@ function addPaymentRow() {
             <option value="card">Card</option>
             <option value="upi">UPI</option>
             <option value="bank_transfer">Bank Transfer</option>
+            <option value="cheque">Cheque</option>
         </select>
-        <input type="number" step=".01" class="split-amount" placeholder="Amount" oninput="calculateSplitTotal()">
+        <input type="number" step=".01" class="split-amount" placeholder="0.00" oninput="calculateSplitTotal()">
         <input type="text" class="split-reference" placeholder="Reference (if needed)" style="display: none;">
         <button type="button" class="remove-row-btn" onclick="removePaymentRow(this)">×</button>
     `;
@@ -1178,6 +1480,7 @@ function updateSplitReference(select) {
         if (method === 'card') referenceInput.placeholder = 'Card reference';
         else if (method === 'upi') referenceInput.placeholder = 'UPI transaction ID';
         else if (method === 'bank_transfer') referenceInput.placeholder = 'Bank transfer reference';
+        else if (method === 'cheque') referenceInput.placeholder = 'Cheque number';
     }
 }
 
@@ -1195,7 +1498,19 @@ function calculateSplitTotal() {
 }
 
 function applyCoupon() {
-    console.log('Applying coupon:', document.getElementById('couponCode').value);
+    const couponCode = document.getElementById('couponCode').value;
+    console.log('Applying coupon:', couponCode);
+    
+    // Visual feedback for coupon application
+    const applyBtn = document.querySelector('.apply-coupon-btn');
+    if (couponCode.trim()) {
+        applyBtn.textContent = 'Applied ✓';
+        applyBtn.style.background = '#10b981';
+        setTimeout(() => {
+            applyBtn.textContent = 'Apply';
+            applyBtn.style.background = '#f59e0b';
+        }, 2000);
+    }
 }
 
 function calculateBalance() {
@@ -1207,17 +1522,25 @@ function calculateBalance() {
 
     const balanceDisplay = document.getElementById('balanceDisplay');
     const balanceAmount = document.getElementById('balanceAmount');
+    const balanceLabel = document.getElementById('balanceLabel');
+    const displayBalance = document.getElementById('displayBalance');
 
     if (amountReceived > 0) {
         balanceDisplay.style.display = 'block';
+        balanceDisplay.classList.remove('positive', 'negative');
+        
         if (balance >= 0) {
+            // Customer paid more than due - return balance
             balanceAmount.textContent = 'Rs. ' + balance.toFixed(2);
-            balanceDisplay.style.background = '#10b981';
-            document.getElementById('displayBalance').style.color = '#10b981';
+            balanceDisplay.classList.add('positive');
+            balanceLabel.textContent = 'Balance to Return';
+            displayBalance.style.color = '#10b981';
         } else {
+            // Customer still owes money
             balanceAmount.textContent = 'Rs. ' + Math.abs(balance).toFixed(2);
-            balanceDisplay.style.background = '#ef4444';
-            document.getElementById('displayBalance').style.color = '#ef4444';
+            balanceDisplay.classList.add('negative');
+            balanceLabel.textContent = 'Amount Due';
+            displayBalance.style.color = '#ef4444';
         }
     } else {
         balanceDisplay.style.display = 'none';

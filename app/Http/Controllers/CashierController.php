@@ -118,7 +118,7 @@ class CashierController extends Controller
     public function processPayment(Request $request, Job $job)
     {
         $request->validate([
-            'payment_method' => 'required|string',
+            'payment_method' => 'required|string|in:cash,card,upi,bank_transfer,cheque',
             'amount_received' => 'required|numeric|min:0',
 
             'discount_type' => 'nullable|in:none,amount,percentage',
@@ -134,6 +134,12 @@ class CashierController extends Controller
             'individual_part_discounts.*' => 'nullable|numeric|min:0',
 
             'coupon_code' => 'nullable|string',
+
+            // Cheque-specific fields
+            'cheque_number' => 'nullable|string|required_if:payment_method,cheque',
+            'bank_name' => 'nullable|string|required_if:payment_method,cheque',
+            'cheque_due_date' => 'nullable|date|required_if:payment_method,cheque',
+            'payment_received' => 'nullable|in:yes,no',
         ]);
 
         return DB::transaction(function () use ($request, $job) {
@@ -676,17 +682,30 @@ class CashierController extends Controller
             |--------------------------------------------------------------------------
             */
 
-            $payment = Payment::create([
+            $paymentData = [
                 'invoice_id' => $invoice->id,
                 'method' => $request->payment_method,
                 'amount' => $amountReceived,
-                'reference' => $request->input('reference'),
+                'reference' => $request->input('reference_number'),
                 'received_by' => auth()->id(),
-            ]);
+            ];
+
+            // Add cheque-specific fields if payment method is cheque
+            if ($request->payment_method === 'cheque') {
+                $paymentData['cheque_number'] = $request->cheque_number;
+                $paymentData['bank_name'] = $request->bank_name;
+                $paymentData['cheque_due_date'] = $request->cheque_due_date;
+                $paymentData['payment_received'] = $request->payment_received === 'yes';
+                if ($request->payment_received === 'yes') {
+                    $paymentData['payment_received_at'] = now();
+                }
+            }
+
+            $payment = Payment::create($paymentData);
 
             /*
             |--------------------------------------------------------------------------
-            | Create CashMovement only for cash payments
+            | Create CashMovement only for cash payments and received cheques
             |--------------------------------------------------------------------------
             */
 
@@ -695,9 +714,18 @@ class CashierController extends Controller
                 // If customer overpaid (invoiceBalance < 0), record the invoice total since change is given back
                 // Otherwise record the full payment amount
                 $netCashAmount = $invoiceBalance < 0 ? $finalTotal : $amountReceived;
-                
+
                 $this->cashMovements->recordSale(
                     amount: $netCashAmount,
+                    reference: $payment,
+                    userId: auth()->id(),
+                );
+            } elseif ($request->payment_method === 'cheque' && $request->payment_received === 'yes' && $amountReceived > 0) {
+                // Only record cheque payment in till when payment is actually received/cleared
+                $netChequeAmount = $invoiceBalance < 0 ? $finalTotal : $amountReceived;
+
+                $this->cashMovements->recordSale(
+                    amount: $netChequeAmount,
                     reference: $payment,
                     userId: auth()->id(),
                 );

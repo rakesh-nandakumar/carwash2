@@ -247,6 +247,7 @@ class CashMovementService
                 'card_sales' => 0,
                 'mobile_money_sales' => 0,
                 'bank_transfer_sales' => 0,
+                'cheque_sales' => 0,
                 'other_payment_sales' => 0,
                 'total_sales' => 0,
                 'cash_in' => 0,
@@ -328,11 +329,18 @@ class CashMovementService
                 ->where('method', 'bank_transfer')
                 ->sum('amount');
 
-            $otherPaymentSales = (float) (clone $payments)
-                ->whereNotIn('method', ['cash', 'card', 'upi', 'bank_transfer'])
+            // Only count cheques that have been received/cleared
+            $chequeSales = (float) (clone $payments)
+                ->where('method', 'cheque')
+                ->where('payment_received', true)
+                ->where('is_bounced', false)
                 ->sum('amount');
 
-            $totalSales = $cashSales + $cardSales + $mobileMoneySales + $bankTransferSales + $otherPaymentSales;
+            $otherPaymentSales = (float) (clone $payments)
+                ->whereNotIn('method', ['cash', 'card', 'upi', 'bank_transfer', 'cheque'])
+                ->sum('amount');
+
+            $totalSales = $cashSales + $cardSales + $mobileMoneySales + $bankTransferSales + $chequeSales + $otherPaymentSales;
 
             $expectedBalance = round(
                 $closure->opening_balance + $cashSales + $cashIn - $cashOut - $cashRefunds - $cashDrops,
@@ -349,6 +357,7 @@ class CashMovementService
                 'card_sales' => $cardSales,
                 'mobile_money_sales' => $mobileMoneySales,
                 'bank_transfer_sales' => $bankTransferSales,
+                'cheque_sales' => $chequeSales,
                 'other_payment_sales' => $otherPaymentSales,
                 'total_sales' => $totalSales,
                 'cash_in' => $cashIn,
@@ -415,17 +424,25 @@ class CashMovementService
             ->where('method', 'bank_transfer')
             ->sum('amount');
 
-        $otherPaymentSales = (float) (clone $payments)
-            ->whereNotIn('method', ['cash', 'card', 'upi', 'bank_transfer'])
+        // Only count cheques that have been received/cleared
+        $chequeSales = (float) (clone $payments)
+            ->where('method', 'cheque')
+            ->where('payment_received', true)
+            ->where('is_bounced', false)
             ->sum('amount');
 
-        $totalSales = $cashSales + $cardSales + $mobileMoneySales + $bankTransferSales + $otherPaymentSales;
+        $otherPaymentSales = (float) (clone $payments)
+            ->whereNotIn('method', ['cash', 'card', 'upi', 'bank_transfer', 'cheque'])
+            ->sum('amount');
+
+        $totalSales = $cashSales + $cardSales + $mobileMoneySales + $bankTransferSales + $chequeSales + $otherPaymentSales;
 
         return [
             'cash_sales' => $cashSales,
             'card_sales' => $cardSales,
             'mobile_money_sales' => $mobileMoneySales,
             'bank_transfer_sales' => $bankTransferSales,
+            'cheque_sales' => $chequeSales,
             'other_payment_sales' => $otherPaymentSales,
             'total_sales' => $totalSales,
             'cash_in' => $cashIn,

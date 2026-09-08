@@ -5,6 +5,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Auth\ImpersonationSessionController;
 use App\Http\Controllers\CashierController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\ChequePaymentController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\InspectionController;
@@ -431,6 +432,40 @@ Route::prefix('{tenant}')
                 ->name('cashier.shift-show')
                 ->middleware('permission:cashier.access');
             // ==================== END CASHIER ====================
+
+            // ==================== CHEQUE PAYMENTS ====================
+            Route::get('/cheque-payments', [ChequePaymentController::class, 'index'])
+                ->name('cheque-payments.index')
+                ->middleware('permission:cashier.access');
+
+            Route::get('/cheque-payments/{payment}/confirm', [ChequePaymentController::class, 'confirm'])
+                ->name('cheque-payments.confirm')
+                ->middleware('permission:cashier.access');
+
+            Route::post('/cheque-payments/{payment}/process', [ChequePaymentController::class, 'processConfirmation'])
+                ->name('cheque-payments.process')
+                ->middleware('permission:cashier.access');
+
+            Route::get('/cheque-payments/{payment}', [ChequePaymentController::class, 'show'])
+                ->name('cheque-payments.show')
+                ->middleware('permission:cashier.access');
+
+            Route::get('/cheque-payments/{payment}/edit-bounce', [ChequePaymentController::class, 'editBounce'])
+                ->name('cheque-payments.edit-bounce')
+                ->middleware('permission:cashier.access');
+
+            Route::post('/cheque-payments/{payment}/update-bounce', [ChequePaymentController::class, 'updateBounce'])
+                ->name('cheque-payments.update-bounce')
+                ->middleware('permission:cashier.access');
+
+            Route::get('/cheque-payments/{payment}/replacement', [ChequePaymentController::class, 'showReplacementForm'])
+                ->name('cheque-payments.replacement')
+                ->middleware('permission:cashier.access');
+
+            Route::post('/cheque-payments/{payment}/process-replacement', [ChequePaymentController::class, 'processReplacement'])
+                ->name('cheque-payments.process-replacement')
+                ->middleware('permission:cashier.access');
+            // ==================== END CHEQUE PAYMENTS ====================
 
             // ==================== REPORTS (UPDATED) ====================
             Route::get('/reports', [ReportController::class, 'index'])
