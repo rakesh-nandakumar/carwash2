@@ -50,6 +50,8 @@
                     <option>Three-wheeler</option>
                     <option>Motorcycle</option>
                     <option>Commercial</option>
+                    <option>Bus</option>
+                    <option>JCB Truck</option>
                 </select>
             </label>
             <label>

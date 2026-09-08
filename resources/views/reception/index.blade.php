@@ -101,35 +101,37 @@
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <label>Registration Number *</label>
-                    <input type="text" id="modalVehicleRegistration" placeholder="Enter registration number">
-                </div>
-                <div class="form-group">
-                    <label>Make</label>
-                    <input type="text" id="modalVehicleMake" placeholder="e.g., Toyota">
-                </div>
-                <div class="form-group">
-                    <label>Model</label>
-                    <input type="text" id="modalVehicleModel" placeholder="e.g., Corolla">
-                </div>
-                <div class="form-group">
-                    <label>Category</label>
-                    <div class="searchable-dropdown" id="vehicleCategoryDropdown">
-                        <input type="hidden" id="modalVehicleCategory" name="category" value="">
-                        <input type="text" class="searchable-dropdown-input" id="vehicleCategoryInput" placeholder="Search or select category...">
-                        <div class="searchable-dropdown-options"></div>
+                <div class="vehicle-form-grid">
+                    <div class="form-group">
+                        <label>Registration Number *</label>
+                        <input type="text" id="modalVehicleRegistration" placeholder="Enter registration number">
                     </div>
-                </div>
-                <div class="form-group">
-                    <label>Customer *</label>
-                    <div class="customer-select-wrapper">
-                        <div class="searchable-dropdown" id="customerDropdown">
-                            <input type="hidden" id="modalVehicleCustomer" name="customer_id" value="">
-                            <input type="text" class="searchable-dropdown-input" id="modalVehicleCustomerInput" placeholder="Search or select customer...">
+                    <div class="form-group">
+                        <label>Make</label>
+                        <input type="text" id="modalVehicleMake" placeholder="e.g., Toyota">
+                    </div>
+                    <div class="form-group">
+                        <label>Model</label>
+                        <input type="text" id="modalVehicleModel" placeholder="e.g., Corolla">
+                    </div>
+                    <div class="form-group">
+                        <label>Category</label>
+                        <div class="searchable-dropdown" id="vehicleCategoryDropdown">
+                            <input type="hidden" id="modalVehicleCategory" name="category" value="">
+                            <input type="text" class="searchable-dropdown-input" id="vehicleCategoryInput" placeholder="Search or select category...">
                             <div class="searchable-dropdown-options"></div>
                         </div>
-                        <button type="button" class="btn-add-customer" onclick="openCustomerModal()">+ New Customer</button>
+                    </div>
+                    <div class="form-group">
+                        <label>Customer *</label>
+                        <div class="customer-select-wrapper">
+                            <div class="searchable-dropdown" id="customerDropdown">
+                                <input type="hidden" id="modalVehicleCustomer" name="customer_id" value="">
+                                <input type="text" class="searchable-dropdown-input" id="modalVehicleCustomerInput" placeholder="Search or select customer...">
+                                <div class="searchable-dropdown-options"></div>
+                            </div>
+                            <button type="button" class="btn-add-customer" onclick="openCustomerModal()">+ New Customer</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -382,6 +384,8 @@ let selectedProducts = [];
 let searchTimeout = null;
 let customerDropdown = null;
 let selectedCustomerData = null;
+let vehicleCategoryDropdown = null;
+let selectedCategoryData = null;
 
 // ---------- Customer WhatsApp auto-fill ----------
 let receptionWhatsappManuallyEdited = false;
@@ -763,6 +767,7 @@ function openVehicleModal(registration = '') {
     document.getElementById('modalVehicleRegistration').value = decodeURIComponent(registration);
     removeVehicleImage();
     loadCustomersForModal();
+    loadVehicleCategoriesForModal();
 }
 
 function closeVehicleModal(keepPreview = false) {
@@ -864,6 +869,35 @@ async function loadCustomersForModal() {
     } catch (error) {
         console.error('Error loading customers:', error);
         showToast('Error loading customers', 'error');
+    }
+}
+
+function loadVehicleCategoriesForModal() {
+    // Initialize searchable dropdown with vehicle category data
+    const categoryDropdownContainer = document.getElementById('vehicleCategoryDropdown');
+    if (categoryDropdownContainer) {
+        const categoryData = [
+            { id: 'Small Car', label: 'Small Car' },
+            { id: 'Sedan', label: 'Sedan' },
+            { id: 'SUV', label: 'SUV' },
+            { id: 'Luxury', label: 'Luxury' },
+            { id: 'Van', label: 'Van' },
+            { id: 'Pickup', label: 'Pickup' },
+            { id: 'Jeep', label: 'Jeep' },
+            { id: 'Three-wheeler', label: 'Three-wheeler' },
+            { id: 'Motorcycle', label: 'Motorcycle' },
+            { id: 'Commercial', label: 'Commercial' },
+            { id: 'Bus', label: 'Bus' },
+            { id: 'JCB Truck', label: 'JCB Truck' }
+        ];
+
+        vehicleCategoryDropdown = new SearchableDropdown(categoryDropdownContainer, {
+            data: categoryData,
+            onSelect: function(item) {
+                // Store selected category data for later use
+                selectedCategoryData = item;
+            }
+        });
     }
 }
 
@@ -2854,7 +2888,7 @@ document.addEventListener('click', (e) => {
     border: 1px solid var(--panel-border);
     border-radius: 18px;
     width: 100%;
-    max-width: 500px;
+    max-width: 600px;
     max-height: 92vh;
     overflow-y: auto;
     backdrop-filter: blur(30px) saturate(145%);
@@ -2971,8 +3005,13 @@ document.addEventListener('click', (e) => {
     align-items: center;
 }
 
-.customer-select-wrapper select {
+.customer-select-wrapper .searchable-dropdown {
     flex: 1;
+}
+
+/* Ensure customer dropdown input matches category dropdown height */
+#modalVehicleCustomerInput {
+    height: 46px !important;
 }
 
 .btn-add-customer {
@@ -2985,6 +3024,17 @@ document.addEventListener('click', (e) => {
     font-size: 13px;
     font-weight: 600;
     white-space: nowrap;
+    height: 46px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+    flex-shrink: 0;
+}
+
+.btn-add-customer:hover {
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.85), rgba(37, 99, 235, 0.85));
+    transform: translateY(-1px);
 }
 
 /* ===================== RESPONSIVE ===================== */
@@ -3124,6 +3174,130 @@ document.addEventListener('click', (e) => {
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
     }
+}
+
+/* ===================== VEHICLE FORM GRID LAYOUT ===================== */
+
+.vehicle-form-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+}
+
+@media (min-width: 768px) {
+    .vehicle-form-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+    }
+
+    /* Registration and Make on same line (short fields) */
+    .vehicle-form-grid .form-group:nth-child(1),
+    .vehicle-form-grid .form-group:nth-child(2) {
+        grid-column: span 1;
+    }
+
+    /* Model, Category, and Customer span full width */
+    .vehicle-form-grid .form-group:nth-child(3),
+    .vehicle-form-grid .form-group:nth-child(4),
+    .vehicle-form-grid .form-group:nth-child(5) {
+        grid-column: span 2;
+    }
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 767px) {
+    .vehicle-form-grid {
+        gap: 12px;
+    }
+}
+
+/* ===================== SEARCHABLE DROPDOWN CUSTOM STYLES ===================== */
+
+/* Override searchable dropdown styles for dark theme - applies to both category and customer dropdowns */
+.searchable-dropdown-input {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid rgba(186, 230, 253, 0.25) !important;
+    color: #bae6fd !important;
+    height: 46px !important;
+    padding: 12px 14px !important;
+    box-sizing: border-box !important;
+}
+
+.searchable-dropdown-input::placeholder {
+    color: rgba(186, 230, 253, 0.55) !important;
+}
+
+.searchable-dropdown-input:focus {
+    border-color: rgba(125, 211, 252, 0.75) !important;
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.12) !important;
+}
+
+.searchable-dropdown.open .searchable-dropdown-input {
+    border-color: rgba(125, 211, 252, 0.75) !important;
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.12) !important;
+}
+
+.searchable-dropdown-options {
+    background: rgba(30, 41, 59, 0.95) !important;
+    border: 1px solid rgba(186, 230, 253, 0.25) !important;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2) !important;
+    backdrop-filter: blur(10px) !important;
+    max-height: 200px !important;
+    scroll-behavior: smooth !important;
+}
+
+.searchable-dropdown-option {
+    color: #bae6fd !important;
+    border-bottom: 1px solid rgba(186, 230, 253, 0.1) !important;
+    min-height: 40px !important;
+}
+
+.searchable-dropdown-option:hover {
+    background: rgba(56, 189, 248, 0.15) !important;
+    color: #e0f2fe !important;
+}
+
+.searchable-dropdown-option.selected {
+    background: rgba(56, 189, 248, 0.25) !important;
+    color: #e0f2fe !important;
+}
+
+.searchable-dropdown-option:hover::after {
+    color: #38bdf8 !important;
+}
+
+.searchable-dropdown-option.selected::after {
+    color: #38bdf8 !important;
+}
+
+.searchable-dropdown-no-results {
+    color: rgba(186, 230, 253, 0.55) !important;
+}
+
+/* Enhanced scrollbar for dark theme */
+.searchable-dropdown-options::-webkit-scrollbar {
+    width: 12px !important;
+}
+
+.searchable-dropdown-options::-webkit-scrollbar-track {
+    background: rgba(30, 41, 59, 0.5) !important;
+    border-radius: 6px !important;
+}
+
+.searchable-dropdown-options::-webkit-scrollbar-thumb {
+    background: rgba(56, 189, 248, 0.6) !important;
+    border-radius: 6px !important;
+    border: 2px solid rgba(30, 41, 59, 0.5) !important;
+}
+
+.searchable-dropdown-options::-webkit-scrollbar-thumb:hover {
+    background: rgba(56, 189, 248, 0.8) !important;
+}
+
+/* Firefox scrollbar for dark theme */
+.searchable-dropdown-options {
+    scrollbar-width: auto !important;
+    scrollbar-color: rgba(56, 189, 248, 0.6) rgba(30, 41, 59, 0.5) !important;
 }
 </style>
 @endsection
