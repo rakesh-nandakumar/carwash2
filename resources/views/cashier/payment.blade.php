@@ -97,7 +97,7 @@
                 <span>Tax</span>
                 <span>Rs. {{ number_format($calculation['tax'], 2) }}</span>
             </div>
-            <div class="summary-row total-row highlighted">
+            <div class="summary-row total-row">
                 <span>Total Due</span>
                 <span class="total-amount">Rs. {{ number_format($calculation['total'], 2) }}</span>
             </div>
@@ -327,7 +327,7 @@
                     </div>
                     <div class="summary-row">
                         <span>Amount Received</span>
-                        <strong id="displayReceived">Rs. 0.00</strong>
+                        <strong id="displayReceived" class="received-amount">Rs. 0.00</strong>
                     </div>
                     <div class="summary-row final-row">
                         <span>Balance</span>
@@ -509,19 +509,17 @@
 }
 
 .total-row.highlighted {
-    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    background: #f8fafc;
     border-radius: 12px;
     padding: 20px;
     margin: 16px 0 0 0;
-    border: 2px solid #3b82f6;
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+    border: 2px solid #e2e8f0;
 }
 
 .total-amount {
     font-size: 24px;
     font-weight: 700;
-    color: #1e40af;
-    text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    color: #1e293b;
 }
 
 .form-section {
@@ -578,16 +576,16 @@
 
 .amount-section input {
     padding-left: 50px;
-    border: 3px solid #3b82f6;
+    border: 2px solid #3b82f6;
     background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
     font-size: 18px;
     font-weight: 600;
-    color: #1e40af;
+    color: #1e293b;
 }
 
 .amount-section input:focus {
     border-color: #2563eb;
-    background: white;
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
     box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
 }
 
@@ -639,8 +637,9 @@
 
 .payment-methods {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     gap: 12px;
+    flex-wrap: nowrap;
 }
 
 .payment-method-option {
@@ -935,10 +934,25 @@
 }
 
 .highlighted-amount {
-    color: #1e40af;
+    color: #1e293b;
     font-size: 20px;
     font-weight: 700;
-    text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    padding: 8px 16px;
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    border: 2px solid #3b82f6;
+    border-radius: 8px;
+    display: inline-block;
+}
+
+.received-amount {
+    color: #1e293b;
+    font-size: 20px;
+    font-weight: 700;
+    padding: 8px 16px;
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    border: 2px solid #3b82f6;
+    border-radius: 8px;
+    display: inline-block;
 }
 
 /* Enhanced focus states for important inputs */
@@ -1102,7 +1116,21 @@
     }
 
     .payment-methods {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(5, 1fr);
+        gap: 8px;
+    }
+
+    .payment-method-option {
+        padding: 16px 8px;
+    }
+
+    .method-icon {
+        font-size: 24px;
+        margin-bottom: 6px;
+    }
+
+    .method-label {
+        font-size: 11px;
     }
 
     .payment-method-header {
@@ -1163,7 +1191,21 @@
     }
 
     .payment-methods {
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px;
+    }
+
+    .payment-method-option {
+        padding: 12px 6px;
+    }
+
+    .method-icon {
+        font-size: 20px;
+        margin-bottom: 4px;
+    }
+
+    .method-label {
+        font-size: 10px;
     }
 
     .header-content h1 {

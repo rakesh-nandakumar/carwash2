@@ -214,20 +214,15 @@ class JobController extends Controller
         }
 
         $sendWhatsapp = $r->has('send_whatsapp');
-        $statusLabel = $newStatus->getLabel();
         $customNotes = $r->custom_notes;
 
-        $message = "🚗 *Vehicle Service Update*\n\n";
-        $message .= "*Vehicle:* {$job->vehicle->registration_number}\n";
-        $message .= "*Make/Model:* {$job->vehicle->make} {$job->vehicle->model}\n";
-        $message .= "*Job Number:* {$job->job_number}\n";
-        $message .= "*Status:* {$statusLabel}\n";
-
-        if ($customNotes) {
-            $message .= "\n*Notes:* {$customNotes}\n";
-        }
-
-        $message .= "\nThank you for choosing our service!";
+        $message = $newStatus->getWhatsAppMessage(
+            $job->job_number,
+            $job->vehicle->registration_number,
+            $job->vehicle->make,
+            $job->vehicle->model,
+            $customNotes
+        );
 
         $phoneNumber = null;
 
