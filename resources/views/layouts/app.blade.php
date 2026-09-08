@@ -22,7 +22,7 @@
     </script>
     <style>
         html.sidebar-preload-collapsed aside.sidebar {
-            margin-left: -280px !important;
+            margin-left: -380px !important;
         }
         html.sidebar-preload-collapsed .main {
             margin-left: 0 !important;
@@ -117,21 +117,21 @@
             height: 100dvh;  /* real visible viewport height on mobile */
             /* Default sizing "tokens" — JS scales these down only if the
                nav content would otherwise overflow and need to scroll. */
-            --nav-link-padding-v: 8px;
-            --nav-link-padding-h: 14px;
-            --nav-link-font-size: 13.5px;
-            --nav-link-gap: 10px;
-            --nav-link-margin-bottom: 2px;
-            --nav-icon-size: 17px;
-            --nav-padding-v: 12px;
-            --brand-padding-v: 25px;
-            --brand-padding-b: 20px;
+            --nav-link-padding-v: 14px;
+            --nav-link-padding-h: 20px;
+            --nav-link-font-size: 16px;
+            --nav-link-gap: 14px;
+            --nav-link-margin-bottom: 5px;
+            --nav-icon-size: 24px;
+            --nav-padding-v: 18px;
+            --brand-padding-v: 38px;
+            --brand-padding-b: 28px;
         }
         aside.sidebar nav {
             display: flex;
             flex-direction: column;
             padding: var(--nav-padding-v) 12px;
-            overflow-y: auto; /* safety-net only; JS aims to make this unnecessary */
+            overflow-y: auto; /* allow scrolling instead of auto-scaling */
             flex: 1 1 auto;
             min-height: 0;
         }
@@ -156,40 +156,56 @@
             color: rgba(255, 255, 255, 0.75);
             padding: var(--nav-link-padding-v) var(--nav-link-padding-h);
             text-decoration: none;
-            transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
-            border-radius: 8px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 12px;
             margin-bottom: var(--nav-link-margin-bottom);
             font-size: var(--nav-link-font-size);
             font-weight: 500;
             position: relative;
+            border: 1px solid transparent;
         }
         aside.sidebar nav a svg {
             flex-shrink: 0;
             color: rgba(255, 255, 255, 0.7);
             width: var(--nav-icon-size);
             height: var(--nav-icon-size);
-            transition: color 0.2s ease;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         aside.sidebar nav a span {
             color: inherit;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         /* Hover effect */
         aside.sidebar nav a:hover {
-            background: rgba(255, 255, 255, 0.1);
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.08));
             color: #ffffff;
-            transform: translateX(2px);
+            transform: translateX(4px) scale(1.02);
+            border-color: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.1);
         }
         aside.sidebar nav a:hover svg {
             color: #ffffff;
+            transform: scale(1.1);
+            filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.3));
+        }
+        aside.sidebar nav a:hover span {
+            font-weight: 600;
         }
         /* Active state */
         aside.sidebar nav a.active {
-            background: linear-gradient(135deg, rgba(74, 144, 226, 0.25), rgba(74, 144, 226, 0.15));
+            background: linear-gradient(135deg, rgba(74, 144, 226, 0.35), rgba(74, 144, 226, 0.25));
             color: #ffffff;
-            box-shadow: inset 3px 0 0 #4a90e2;
+            box-shadow: inset 4px 0 0 #4a90e2, 0 4px 12px rgba(74, 144, 226, 0.3);
+            border-color: rgba(74, 144, 226, 0.4);
+            transform: translateX(2px);
         }
         aside.sidebar nav a.active svg {
             color: #4a90e2;
+            transform: scale(1.05);
+            filter: drop-shadow(0 0 6px rgba(74, 144, 226, 0.5));
+        }
+        aside.sidebar nav a.active span {
+            font-weight: 600;
         }
         /* Special links */
         aside.sidebar nav a.reception-link {
@@ -239,17 +255,17 @@
                 display: flex !important;
             }
             aside.sidebar {
-                width: 280px !important;
+                width: 380px !important;
                 margin-left: 0 !important;
                 transition: margin-left 0.3s ease !important;
             }
             aside.sidebar.collapsed {
-                margin-left: -280px !important;
+                margin-left: -380px !important;
             }
             .main {
-                margin-left: 280px !important;
+                margin-left: 380px !important;
                 transition: margin-left 0.3s ease !important;
-                width: calc(100% - 280px) !important;
+                width: calc(100% - 380px) !important;
             }
             .main.expanded {
                 margin-left: 0 !important;
@@ -262,9 +278,9 @@
             }
             aside.sidebar {
                 position: fixed !important;
-                left: -240px !important;
+                left: -300px !important;
                 top: 0 !important;
-                width: 240px !important;
+                width: 300px !important;
                 z-index: 1000 !important;
                 transition: left 0.3s ease !important;
                 background: #0a1f33 !important;
@@ -284,24 +300,24 @@
             }
             aside.sidebar {
                 position: fixed !important;
-                left: -200px !important;
+                left: -260px !important;
                 top: 0 !important;
-                width: 200px !important;
+                width: 260px !important;
                 z-index: 1000 !important;
                 transition: left 0.3s ease !important;
                 background: #0a1f33 !important;
                 box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1) !important;
 
                 /* Smaller content on mobile */
-                --nav-link-padding-v: 6px;
-                --nav-link-padding-h: 12px;
-                --nav-link-font-size: 12.5px;
-                --nav-link-gap: 8px;
-                --nav-link-margin-bottom: 1px;
-                --nav-icon-size: 15px;
-                --nav-padding-v: 8px;
-                --brand-padding-v: 16px;
-                --brand-padding-b: 12px;
+                --nav-link-padding-v: 10px;
+                --nav-link-padding-h: 16px;
+                --nav-link-font-size: 14px;
+                --nav-link-gap: 12px;
+                --nav-link-margin-bottom: 3px;
+                --nav-icon-size: 20px;
+                --nav-padding-v: 14px;
+                --brand-padding-v: 30px;
+                --brand-padding-b: 22px;
             }
             .main {
                 margin-left: 0 !important;
@@ -317,19 +333,19 @@
         }
         @media (max-width: 480px) {
             aside.sidebar {
-                width: 180px !important;
-                left: -180px !important;
+                width: 240px !important;
+                left: -240px !important;
 
                 /* Even more compact on very small screens */
-                --nav-link-padding-v: 5px;
-                --nav-link-padding-h: 10px;
-                --nav-link-font-size: 12px;
-                --nav-link-gap: 7px;
-                --nav-link-margin-bottom: 1px;
-                --nav-icon-size: 14px;
-                --nav-padding-v: 6px;
-                --brand-padding-v: 12px;
-                --brand-padding-b: 10px;
+                --nav-link-padding-v: 9px;
+                --nav-link-padding-h: 15px;
+                --nav-link-font-size: 13px;
+                --nav-link-gap: 11px;
+                --nav-link-margin-bottom: 3px;
+                --nav-icon-size: 18px;
+                --nav-padding-v: 12px;
+                --brand-padding-v: 28px;
+                --brand-padding-b: 20px;
             }
             header {
                 padding: 10px !important;
@@ -468,43 +484,43 @@
         <nav id="sidebarNav">
             @if(auth()->user()->hasPermissionTo('reception.access'))
                 <a href="{{ route('reception.index') }}" class="reception-link {{ request()->routeIs('reception.*') ? 'active' : '' }}">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>
                     <span>Reception</span>
                 </a>
             @endif
             @if(auth()->user()->hasPermissionTo('dashboard.access'))
                 <a href="{{ route('dashboard') }}" class="{{ request()->routeIs('dashboard') ? 'active' : '' }}">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
                     <span>Dashboard</span>
                 </a>
             @endif
             @if(auth()->user()->hasPermissionTo('live_job_board.access'))
                 <a href="{{ route('jobs.board') }}" class="{{ request()->routeIs('jobs.board') ? 'active' : '' }}">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
                     <span>Live Job Board</span>
                 </a>
             @endif
             @if(auth()->user()->hasPermissionTo('job_cards.access'))
                 <a href="{{ route('jobs.index') }}" class="{{ request()->routeIs('jobs.index') || request()->routeIs('jobs.show') || request()->routeIs('jobs.create') || request()->routeIs('jobs.edit') ? 'active' : '' }}">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
                     <span>Job Cards</span>
                 </a>
             @endif
             @if(auth()->user()->hasPermissionTo('customers.access'))
                 <a href="{{ route('customers.index') }}" class="{{ request()->routeIs('customers.*') ? 'active' : '' }}">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                     <span>Customers</span>
                 </a>
             @endif
             @if(auth()->user()->hasPermissionTo('vehicles.access'))
                 <a href="{{ route('vehicles.index') }}" class="{{ request()->routeIs('vehicles.*') ? 'active' : '' }}">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
                     <span>Vehicles</span>
                 </a>
             @endif
             @if(auth()->user()->hasPermissionTo('appointments.access'))
                 <a href="{{ route('appointments.index') }}" class="{{ request()->routeIs('appointments.*') ? 'active' : '' }}">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                     <span>Appointments</span>
                 </a>
             @endif
@@ -512,7 +528,7 @@
             {{-- ==================== INVENTORY SECTION ==================== --}}
             @if(auth()->user()->hasPermissionTo('inventory.access'))
                 <a href="{{ route('inventory.index') }}" class="{{ request()->routeIs('inventory.*') ? 'active' : '' }}">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
                         <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
                         <line x1="12" y1="22.08" x2="12" y2="12"/>
@@ -524,7 +540,7 @@
             @if(auth()->user()->hasPermissionTo('stock_adjustments.access'))
                 <a href="{{ route('stock-adjustments.index') }}"
                    class="{{ request()->routeIs('stock-adjustments.*') ? 'active' : '' }}">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M12 3v18"/>
                         <path d="M3 12h18"/>
                         <path d="M5 5h14v14H5z"/>
@@ -535,7 +551,7 @@
 
             @if(auth()->user()->hasPermissionTo('categories.access'))
                 <a href="{{ route('categories.index') }}" class="{{ request()->routeIs('categories.*') ? 'active' : '' }}">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
                         <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
                     </svg>
@@ -545,7 +561,7 @@
 
             @if(auth()->user()->hasPermissionTo('services.access'))
                 <a href="{{ route('services.index') }}" class="{{ request()->routeIs('services.*') ? 'active' : '' }}">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M12 2L2 7l10 5 10-5-10-5z"/>
                         <path d="M2 17l10 5 10-5"/>
                         <path d="M2 12l10 5 10-5"/>
@@ -557,13 +573,13 @@
 
             @if(auth()->user()->hasPermissionTo('invoices.access'))
                 <a href="{{ route('invoices.index') }}" class="{{ request()->routeIs('invoices.*') ? 'active' : '' }}">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
                     <span>Invoices</span>
                 </a>
             @endif
             @if(auth()->user()->hasPermissionTo('cashier.access'))
                 <a href="{{ route('cashier.index') }}" class="cashier-link {{ request()->routeIs('cashier.*') ? 'active' : '' }}">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
                     <span>Cashier</span>
                     @php
                         $readyForPaymentCount = \App\Models\Job::where('status', \App\Enums\JobStatus::READY_FOR_PAYMENT->value)->count();
@@ -575,7 +591,7 @@
             @endif
             @if(auth()->user()->hasPermissionTo('cashier.access'))
                 <a href="{{ route('cheque-payments.index') }}" class="cheque-payments-link {{ request()->routeIs('cheque-payments.*') ? 'active' : '' }}">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><path d="M12 15h.01"/><path d="M16 15h.01"/></svg>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><path d="M12 15h.01"/><path d="M16 15h.01"/></svg>
                     <span>Cheque Payments</span>
                     @php
                         $pendingChequesCount = \App\Models\Payment::where('method', 'cheque')->where('payment_received', false)->where('is_bounced', false)->count();
@@ -593,13 +609,13 @@
             @endif
             @if(auth()->user()->hasPermissionTo('reports.access'))
                 <a href="{{ route('reports') }}" class="{{ request()->routeIs('reports*') ? 'active' : '' }}">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
                     <span>Reports</span>
                 </a>
             @endif
             @if(auth()->user()->hasPermissionTo('users.access'))
                 <a href="{{ route('users.index') }}" class="{{ request()->routeIs('users.*') ? 'active' : '' }}">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                     <span>Users</span>
                 </a>
             @endif
@@ -738,17 +754,17 @@
         }
         // ===== Auto-fit sidebar nav so it never needs to scroll =====
         const NAV_BASE = {
-            paddingV: 8,
-            paddingH: 14,
-            fontSize: 13.5,
-            gap: 10,
-            marginBottom: 2,
-            iconSize: 17,
-            navPaddingV: 12
+            paddingV: 14,
+            paddingH: 20,
+            fontSize: 16,
+            gap: 14,
+            marginBottom: 5,
+            iconSize: 24,
+            navPaddingV: 18
         };
         const BRAND_BASE = {
-            paddingV: 25,
-            paddingB: 20
+            paddingV: 38,
+            paddingB: 28
         };
         const NAV_MIN_SCALE = 0.45;
         const NAV_MIN_FONT = 10;
@@ -778,8 +794,12 @@
             if (window.innerWidth <= 768) {
                 return;
             }
+            // Disable auto-fit for now to allow larger fonts and icons
             applyNavScale(1);
             applyBrandScale(1);
+            return;
+            // Original auto-fit logic commented out
+            /*
             requestAnimationFrame(() => {
                 if (fits()) return;
                 let scale = 1;
@@ -804,6 +824,7 @@
                     }
                 });
             });
+            */
         }
         let navFitTimeout;
         function scheduleFitSidebarNav() {
