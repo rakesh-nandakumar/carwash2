@@ -9,10 +9,9 @@
     <a class="primary" href="{{ route('customers.create') }}">+ New Customer</a>
 </div>
 
-<form class="search">
-    <input name="q" placeholder="Search name or phone" value="{{ request('q') }}">
-    <button>Search</button>
-</form>
+<div class="search">
+    <input id="customerSearch" placeholder="Search name or phone" oninput="filterCustomers()">
+</div>
 
 <div class="panel">
     <!-- Desktop Table -->
@@ -296,4 +295,24 @@ nav[role="navigation"] svg {
     }
 }
 </style>
+
+<script>
+function filterCustomers() {
+    const query = document.getElementById('customerSearch').value.toLowerCase().trim();
+    const tableRows = document.querySelectorAll('.customers-table tbody tr');
+    const mobileCards = document.querySelectorAll('.customer-card');
+
+    // Filter desktop table rows
+    tableRows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(query) ? '' : 'none';
+    });
+
+    // Filter mobile cards
+    mobileCards.forEach(card => {
+        const text = card.textContent.toLowerCase();
+        card.style.display = text.includes(query) ? '' : 'none';
+    });
+}
+</script>
 @endsection

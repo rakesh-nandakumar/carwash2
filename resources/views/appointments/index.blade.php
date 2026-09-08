@@ -7,13 +7,7 @@
         <p>Scheduled visits, reschedules and cancellations.</p>
     </div>
     <div style="display:flex;gap:12px;align-items:center;">
-        <form method="GET" action="{{ route('appointments.index') }}" style="display:flex;gap:8px;">
-            <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="Search appointments..." style="padding:10px 14px;border:1px solid #e5e7eb;border-radius:10px;font-size:14px;width:250px;">
-            <button type="submit" style="padding:10px 16px;background:#111827;color:#fff;border:none;border-radius:10px;cursor:pointer;font-size:14px;">Search</button>
-            @if($search ?? null)
-            <a href="{{ route('appointments.index') }}" style="padding:10px 16px;background:#f3f4f6;color:#374151;border:none;border-radius:10px;cursor:pointer;font-size:14px;text-decoration:none;">Clear</a>
-            @endif
-        </form>
+        <input type="text" id="appointmentSearch" placeholder="Search appointments..." oninput="filterAppointments()" style="padding:10px 14px;border:1px solid #e5e7eb;border-radius:10px;font-size:14px;width:250px;">
         <a class="primary" href="{{ route('appointments.create') }}">+ Appointment</a>
     </div>
 </div>
@@ -277,4 +271,24 @@ nav[role="navigation"] svg {
     }
 }
 </style>
+
+<script>
+function filterAppointments() {
+    const query = document.getElementById('appointmentSearch').value.toLowerCase().trim();
+    const tableRows = document.querySelectorAll('.appointments-table tbody tr');
+    const mobileCards = document.querySelectorAll('.appointment-card');
+
+    // Filter desktop table rows
+    tableRows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(query) ? '' : 'none';
+    });
+
+    // Filter mobile cards
+    mobileCards.forEach(card => {
+        const text = card.textContent.toLowerCase();
+        card.style.display = text.includes(query) ? '' : 'none';
+    });
+}
+</script>
 @endsection

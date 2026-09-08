@@ -6,13 +6,7 @@
         <p>Correct physical stock quantities and maintain a complete adjustment history.</p>
     </div>
     <div style="display:flex;gap:12px;align-items:center;">
-        <form method="GET" action="{{ route('stock-adjustments.index') }}" style="display:flex;gap:8px;">
-            <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="Search adjustments..." style="padding:10px 14px;border:1px solid #e5e7eb;border-radius:10px;font-size:14px;width:250px;">
-            <button type="submit" style="padding:10px 16px;background:#111827;color:#fff;border:none;border-radius:10px;cursor:pointer;font-size:14px;">Search</button>
-            @if($search ?? null)
-            <a href="{{ route('stock-adjustments.index') }}" style="padding:10px 16px;background:#f3f4f6;color:#374151;border:none;border-radius:10px;cursor:pointer;font-size:14px;text-decoration:none;">Clear</a>
-            @endif
-        </form>
+        <input type="text" id="adjustmentSearch" placeholder="Search adjustments..." oninput="filterAdjustments()" style="padding:10px 14px;border:1px solid #e5e7eb;border-radius:10px;font-size:14px;width:250px;">
         @if(auth()->user()->hasPermissionTo('stock_adjustments.create'))
             <button
                 type="button"
@@ -681,6 +675,17 @@ function openReverseModal(
 }
 function closeReverseModal() {
     document.getElementById('reverseModal').style.display = 'none';
+}
+
+// Filter stock adjustments by search
+function filterAdjustments() {
+    const query = document.getElementById('adjustmentSearch').value.toLowerCase().trim();
+    const tableRows = document.querySelectorAll('.adjustment-table tbody tr');
+
+    tableRows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(query) ? '' : 'none';
+    });
 }
 </script>
 @endsection

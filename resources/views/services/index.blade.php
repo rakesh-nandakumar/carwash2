@@ -7,13 +7,7 @@
         <p>Manage service types and pricing</p>
     </div>
     <div style="display:flex;gap:12px;align-items:center;">
-        <form method="GET" action="{{ route('services.index') }}" style="display:flex;gap:8px;">
-            <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="Search services..." style="padding:10px 14px;border:1px solid #e5e7eb;border-radius:10px;font-size:14px;width:250px;">
-            <button type="submit" style="padding:10px 16px;background:#111827;color:#fff;border:none;border-radius:10px;cursor:pointer;font-size:14px;">Search</button>
-            @if($search ?? null)
-            <a href="{{ route('services.index') }}" style="padding:10px 16px;background:#f3f4f6;color:#374151;border:none;border-radius:10px;cursor:pointer;font-size:14px;text-decoration:none;">Clear</a>
-            @endif
-        </form>
+        <input type="text" id="serviceSearch" placeholder="Search services..." oninput="filterServices()" style="padding:10px 14px;border:1px solid #e5e7eb;border-radius:10px;font-size:14px;width:250px;">
         <a class="primary" href="{{ route('services.create') }}">+ New Service</a>
     </div>
 </div>
@@ -128,6 +122,24 @@ function toggleServiceStatus(serviceId, checkbox) {
         }
     })
     .catch(error => console.error('Error:', error));
+}
+
+function filterServices() {
+    const query = document.getElementById('serviceSearch').value.toLowerCase().trim();
+    const tableRows = document.querySelectorAll('.services-table tbody tr');
+    const mobileCards = document.querySelectorAll('.service-card');
+
+    // Filter desktop table rows
+    tableRows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(query) ? '' : 'none';
+    });
+
+    // Filter mobile cards
+    mobileCards.forEach(card => {
+        const text = card.textContent.toLowerCase();
+        card.style.display = text.includes(query) ? '' : 'none';
+    });
 }
 </script>
 

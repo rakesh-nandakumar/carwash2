@@ -7,13 +7,7 @@
         <p>Manage system users and their permissions</p>
     </div>
     <div style="display:flex;gap:12px;align-items:center;">
-        <form method="GET" action="{{ route('users.index') }}" style="display:flex;gap:8px;">
-            <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="Search users..." style="padding:10px 14px;border:1px solid #e5e7eb;border-radius:10px;font-size:14px;width:250px;">
-            <button type="submit" style="padding:10px 16px;background:#111827;color:#fff;border:none;border-radius:10px;cursor:pointer;font-size:14px;">Search</button>
-            @if($search ?? null)
-            <a href="{{ route('users.index') }}" style="padding:10px 16px;background:#f3f4f6;color:#374151;border:none;border-radius:10px;cursor:pointer;font-size:14px;text-decoration:none;">Clear</a>
-            @endif
-        </form>
+        <input type="text" id="userSearch" placeholder="Search users..." oninput="filterUsers()" style="padding:10px 14px;border:1px solid #e5e7eb;border-radius:10px;font-size:14px;width:250px;">
         <a href="{{ route('users.create') }}" class="primary">+ Add User</a>
     </div>
 </div>
@@ -277,4 +271,16 @@ nav[role="navigation"] svg {
     padding: 0 14px;
 }
 </style>
+
+<script>
+function filterUsers() {
+    const query = document.getElementById('userSearch').value.toLowerCase().trim();
+    const userCards = document.querySelectorAll('.user-card');
+
+    userCards.forEach(card => {
+        const text = card.textContent.toLowerCase();
+        card.style.display = text.includes(query) ? '' : 'none';
+    });
+}
+</script>
 @endsection

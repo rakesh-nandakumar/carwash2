@@ -224,6 +224,17 @@
 
                 <div class="services-section">
                     <h3>Select Services</h3>
+
+                    <div class="service-search-wrapper">
+                        <input
+                            type="text"
+                            id="serviceSearch"
+                            class="form-input"
+                            placeholder="Search services by name..."
+                            oninput="filterReceptionServices()"
+                        >
+                    </div>
+
                     <div id="servicesList" class="services-grid"></div>
                 </div>
 
@@ -819,6 +830,19 @@ function closeJobModal() {
     const productSearch = document.getElementById('productSearch');
     if (productSearch) productSearch.value = '';
 
+    const serviceSearch = document.getElementById('serviceSearch');
+    if (serviceSearch) serviceSearch.value = '';
+
+    // Reset services list to show all services
+    if (receptionServices.length > 0) {
+        renderReceptionServices(receptionServices);
+    }
+
+    // Reset products list to show all products
+    if (receptionProducts.length > 0) {
+        renderReceptionProducts(receptionProducts);
+    }
+
     const selectedProductsList = document.getElementById('selectedProductsList');
     if (selectedProductsList) selectedProductsList.innerHTML = '';
 
@@ -1134,6 +1158,23 @@ function showJobForm() {
     document.getElementById('searchResults').innerHTML = '';
     document.getElementById('jobModal').classList.add('active');
 
+    // Clear search inputs and reset filtered lists
+    const productSearch = document.getElementById('productSearch');
+    if (productSearch) productSearch.value = '';
+
+    const serviceSearch = document.getElementById('serviceSearch');
+    if (serviceSearch) serviceSearch.value = '';
+
+    // Reset services list to show all services
+    if (receptionServices.length > 0) {
+        renderReceptionServices(receptionServices);
+    }
+
+    // Reset products list to show all products
+    if (receptionProducts.length > 0) {
+        renderReceptionProducts(receptionProducts);
+    }
+
     jobImageFile = null;
     jobImagePreviewUrl = selectedVehicle?.image || null;
 
@@ -1226,18 +1267,21 @@ async function loadServices() {
     const services = await response.json();
 
     receptionServices = services;
+    renderReceptionServices(receptionServices);
+}
 
+function renderReceptionServices(services) {
     const servicesList = document.getElementById('servicesList');
     servicesList.innerHTML = services.map(service => `
         <label class="service-item">
-            <input type="checkbox" value="${service.id}" data-price="${service.base_price}">
+            <input type="checkbox" value="${service.id}" data-price="${service.base_price}" ${selectedServices.includes(String(service.id)) ? 'checked' : ''}>
             <div class="service-info">
                 <span class="service-name">${service.name}</span>
                 <span class="service-price">LKR ${service.base_price.toLocaleString()}</span>
             </div>
         </label>
     `).join('');
-    
+
     document.querySelectorAll('.service-item input').forEach(checkbox => {
         checkbox.addEventListener('change', (e) => {
             if (e.target.checked) {
@@ -1407,6 +1451,24 @@ function removeReceptionProduct(index) {
     selectedProducts.splice(index, 1);
     renderSelectedProducts();
     calculateReceptionTotals();
+}
+
+function filterReceptionServices() {
+    const query = (document.getElementById('serviceSearch')?.value || '').toLowerCase().trim();
+
+    if (!query) {
+        renderReceptionServices(receptionServices);
+        return;
+    }
+
+    const filtered = receptionServices.filter(service => {
+        return (
+            (service.name || '').toLowerCase().includes(query) ||
+            (service.description || '').toLowerCase().includes(query)
+        );
+    });
+
+    renderReceptionServices(filtered);
 }
 
 function filterReceptionProducts() {
@@ -2404,6 +2466,33 @@ document.addEventListener('click', (e) => {
     font-weight: 600;
     font-size: 14px;
     white-space: nowrap;
+}
+
+/* Services section */
+.service-search-wrapper {
+    margin-bottom: 12px;
+}
+
+.service-search-wrapper input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 12px 14px;
+    border: 1px solid rgba(186, 230, 253, 0.25);
+    border-radius: 12px;
+    font-size: 14px;
+    color: var(--text);
+    background: linear-gradient(135deg, rgba(125, 211, 252, 0.12), rgba(59, 130, 246, 0.07));
+    backdrop-filter: blur(14px);
+}
+
+.service-search-wrapper input::placeholder {
+    color: rgba(186, 230, 253, 0.55);
+}
+
+.service-search-wrapper input:focus {
+    outline: none;
+    border-color: rgba(125, 211, 252, 0.75);
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.12);
 }
 
 /* Products section */

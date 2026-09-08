@@ -7,13 +7,7 @@
         <p>Stock, valuation and traceable movements.</p>
     </div>
     <div style="display:flex;gap:12px;align-items:center;">
-        <form method="GET" action="{{ route('inventory.index') }}" style="display:flex;gap:8px;">
-            <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="Search products..." style="padding:10px 14px;border:1px solid #e5e7eb;border-radius:10px;font-size:14px;width:250px;">
-            <button type="submit" style="padding:10px 16px;background:#111827;color:#fff;border:none;border-radius:10px;cursor:pointer;font-size:14px;">Search</button>
-            @if($search ?? null)
-            <a href="{{ route('inventory.index') }}" style="padding:10px 16px;background:#f3f4f6;color:#374151;border:none;border-radius:10px;cursor:pointer;font-size:14px;text-decoration:none;">Clear</a>
-            @endif
-        </form>
+        <input type="text" id="inventorySearch" placeholder="Search products..." oninput="filterInventory()" style="padding:10px 14px;border:1px solid #e5e7eb;border-radius:10px;font-size:14px;width:250px;">
         <a class="primary" href="{{ route('inventory.create') }}">+ New Product</a>
     </div>
 </div>
@@ -402,6 +396,25 @@ document.addEventListener('visibilitychange', function() {
         updateInventoryStatus();
     }
 });
+
+// Filter inventory items by search
+function filterInventory() {
+    const query = document.getElementById('inventorySearch').value.toLowerCase().trim();
+    const tableRows = document.querySelectorAll('.inventory-table tbody tr');
+    const mobileCards = document.querySelectorAll('.inventory-card');
+
+    // Filter desktop table rows
+    tableRows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(query) ? '' : 'none';
+    });
+
+    // Filter mobile cards
+    mobileCards.forEach(card => {
+        const text = card.textContent.toLowerCase();
+        card.style.display = text.includes(query) ? '' : 'none';
+    });
+}
 </script>
 
 <style>

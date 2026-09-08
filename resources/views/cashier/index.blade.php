@@ -6,14 +6,9 @@
             <h1>Cashier Dashboard</h1>
             <p>Process payments for completed vehicles</p>
         </div>
-        <form class="search-form" method="get" action="{{ route('cashier.search') }}">
-            <input name="q" placeholder="Search by registration, customer, or job number..." required>
-            <button type="submit">
-                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                </svg>
-            </button>
-        </form>
+        <div class="search-form">
+            <input id="cashierSearch" placeholder="Search by registration, customer, or job number..." oninput="filterCashierJobs()">
+        </div>
     </div>
 
     {{-- Bounced Cheque Alert --}}
@@ -1248,5 +1243,16 @@ function showTillNotOpenToast() {
 
 // Make the function available globally
 window.showTillNotOpenToast = showTillNotOpenToast;
+
+// Filter cashier jobs by search
+function filterCashierJobs() {
+    const query = document.getElementById('cashierSearch').value.toLowerCase().trim();
+    const jobCards = document.querySelectorAll('.vehicle-card');
+
+    jobCards.forEach(card => {
+        const text = card.textContent.toLowerCase();
+        card.style.display = text.includes(query) ? '' : 'none';
+    });
+}
 </script>
 @endsection
