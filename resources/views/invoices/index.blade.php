@@ -368,7 +368,6 @@
     width: 100%;
     max-width: 400px;
     max-height: 90vh;
-    overflow-y: auto;
     border-radius: 14px;
     padding: 24px;
     box-shadow: 0 25px 60px rgba(0,0,0,.3);
@@ -412,7 +411,6 @@
 
 .modal-body {
     margin-bottom: 20px;
-    overflow: visible;
 }
 
 .modal-footer {
@@ -891,7 +889,7 @@ nav[role="navigation"] svg {
 .searchable-dropdown {
     position: relative;
     width: 100%;
-    z-index: 10;
+    z-index: 1;
 }
 
 .searchable-dropdown-input {
@@ -917,6 +915,10 @@ nav[role="navigation"] svg {
     box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
 }
 
+.searchable-dropdown.open {
+    z-index: 100;
+}
+
 .searchable-dropdown-options {
     position: absolute;
     top: 100%;
@@ -924,12 +926,13 @@ nav[role="navigation"] svg {
     right: 0;
     max-height: 200px;
     overflow-y: auto;
+    overflow-x: hidden;
     background: rgba(10, 31, 51, 0.95);
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 8px;
     margin-top: 4px;
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
-    z-index: 1000;
+    z-index: 10000;
     display: none;
     scroll-behavior: smooth;
 }
@@ -949,6 +952,9 @@ nav[role="navigation"] svg {
     align-items: center;
     position: relative;
     min-height: 35px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .searchable-dropdown-option:last-child {
@@ -1004,7 +1010,7 @@ nav[role="navigation"] svg {
 .searchable-dropdown {
     position: relative;
     width: 100%;
-    z-index: 10;
+    z-index: 1;
 }
 
 .searchable-dropdown-input {
@@ -1030,6 +1036,10 @@ nav[role="navigation"] svg {
     box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
 }
 
+.searchable-dropdown.open {
+    z-index: 100;
+}
+
 .searchable-dropdown-options {
     position: absolute;
     top: 100%;
@@ -1037,12 +1047,13 @@ nav[role="navigation"] svg {
     right: 0;
     max-height: 200px;
     overflow-y: auto;
+    overflow-x: hidden;
     background: rgba(10, 31, 51, 0.95);
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 8px;
     margin-top: 4px;
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
-    z-index: 1000;
+    z-index: 10000;
     display: none;
     scroll-behavior: smooth;
 }
@@ -1062,6 +1073,9 @@ nav[role="navigation"] svg {
     align-items: center;
     position: relative;
     min-height: 35px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .searchable-dropdown-option:last-child {
@@ -1105,6 +1119,7 @@ nav[role="navigation"] svg {
 .searchable-dropdown-options::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.3);
 }
+
 </style>
 
 <script>
