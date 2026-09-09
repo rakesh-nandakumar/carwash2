@@ -906,13 +906,10 @@ function loadVehicleCategoriesForModal() {
             { id: 'SUV', label: 'SUV' },
             { id: 'Luxury', label: 'Luxury' },
             { id: 'Van', label: 'Van' },
-            { id: 'Pickup', label: 'Pickup' },
-            { id: 'Jeep', label: 'Jeep' },
-            { id: 'Three-wheeler', label: 'Three-wheeler' },
-            { id: 'Motorcycle', label: 'Motorcycle' },
-            { id: 'Commercial', label: 'Commercial' },
             { id: 'Bus', label: 'Bus' },
-            { id: 'JCB Truck', label: 'JCB Truck' }
+            { id: 'Three-wheeler', label: 'Three-wheeler' },
+            { id: 'JCB Truck', label: 'JCB Truck' },
+            { id: 'Bomb Truck', label: 'Bomb Truck' }
         ];
 
         vehicleCategoryDropdown = new SearchableDropdown(categoryDropdownContainer, {
@@ -2979,7 +2976,7 @@ document.addEventListener('click', (e) => {
     width: 100%;
     max-width: 600px;
     max-height: 92vh;
-    overflow-y: auto;
+    overflow: visible;
     backdrop-filter: blur(30px) saturate(145%);
     -webkit-backdrop-filter: blur(30px) saturate(145%);
     box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55);
@@ -3036,6 +3033,7 @@ document.addEventListener('click', (e) => {
 
 .modal-body {
     padding: 16px;
+    overflow: visible;
 }
 
 .modal-footer {
@@ -3050,6 +3048,7 @@ document.addEventListener('click', (e) => {
 
 .form-group {
     margin-bottom: 14px;
+    overflow: visible;
 }
 
 .form-group label {
@@ -3097,15 +3096,115 @@ document.addEventListener('click', (e) => {
 .customer-select-wrapper .searchable-dropdown {
     flex: 1;
     z-index: 1;
+    position: relative;
 }
 
 .customer-select-wrapper .searchable-dropdown.open {
-    z-index: 100;
+    z-index: 10002;
+    position: relative;
 }
 
-/* Ensure customer dropdown input matches category dropdown height */
-#modalVehicleCustomerInput {
+/* Ensure customer dropdown matches category dropdown styles */
+.customer-select-wrapper .searchable-dropdown .searchable-dropdown-input {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid rgba(186, 230, 253, 0.25) !important;
+    color: #bae6fd !important;
     height: 46px !important;
+    padding: 12px 14px !important;
+    box-sizing: border-box !important;
+}
+
+.customer-select-wrapper .searchable-dropdown .searchable-dropdown-input::placeholder {
+    color: rgba(186, 230, 253, 0.55) !important;
+}
+
+.customer-select-wrapper .searchable-dropdown .searchable-dropdown-input:focus {
+    border-color: rgba(125, 211, 252, 0.75) !important;
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.12) !important;
+}
+
+.customer-select-wrapper .searchable-dropdown.open .searchable-dropdown-input {
+    border-color: rgba(125, 211, 252, 0.75) !important;
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.12) !important;
+}
+
+.customer-select-wrapper .searchable-dropdown .searchable-dropdown-options {
+    background: rgba(30, 41, 59, 0.95) !important;
+    border: 1px solid rgba(186, 230, 253, 0.25) !important;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2) !important;
+    backdrop-filter: blur(10px) !important;
+    max-height: 120px !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    scroll-behavior: smooth !important;
+    z-index: 10003 !important;
+    position: absolute !important;
+    top: 100% !important;
+    left: 0 !important;
+    right: 0 !important;
+    margin-top: 4px !important;
+}
+
+.customer-select-wrapper .searchable-dropdown .searchable-dropdown-option {
+    color: #bae6fd !important;
+    border-bottom: 1px solid rgba(186, 230, 253, 0.1) !important;
+    min-height: 35px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+
+.customer-select-wrapper .searchable-dropdown .searchable-dropdown-option:hover {
+    background: rgba(56, 189, 248, 0.15) !important;
+    color: #e0f2fe !important;
+}
+
+.customer-select-wrapper .searchable-dropdown .searchable-dropdown-option.selected {
+    background: rgba(56, 189, 248, 0.25) !important;
+    color: #e0f2fe !important;
+}
+
+.customer-select-wrapper .searchable-dropdown .searchable-dropdown-option:hover::after {
+    color: #38bdf8 !important;
+}
+
+.customer-select-wrapper .searchable-dropdown .searchable-dropdown-option.selected::after {
+    color: #38bdf8 !important;
+}
+
+.customer-select-wrapper .searchable-dropdown .searchable-dropdown-no-results {
+    color: rgba(186, 230, 253, 0.55) !important;
+}
+
+.customer-select-wrapper .searchable-dropdown .searchable-dropdown-options::-webkit-scrollbar {
+    width: 12px !important;
+}
+
+.customer-select-wrapper .searchable-dropdown .searchable-dropdown-options::-webkit-scrollbar-track {
+    background: rgba(30, 41, 59, 0.5) !important;
+    border-radius: 6px !important;
+}
+
+.customer-select-wrapper .searchable-dropdown .searchable-dropdown-options::-webkit-scrollbar-thumb {
+    background: rgba(56, 189, 248, 0.6) !important;
+    border-radius: 6px !important;
+    border: 2px solid rgba(30, 41, 59, 0.5) !important;
+}
+
+.customer-select-wrapper .searchable-dropdown .searchable-dropdown-options::-webkit-scrollbar-thumb:hover {
+    background: rgba(56, 189, 248, 0.8) !important;
+}
+
+.customer-select-wrapper .searchable-dropdown .searchable-dropdown-options {
+    scrollbar-width: auto !important;
+    scrollbar-color: rgba(56, 189, 248, 0.6) rgba(30, 41, 59, 0.5) !important;
+}
+
+/* Responsive adjustments for customer dropdown */
+@media (max-width: 640px) {
+    .customer-select-wrapper .searchable-dropdown .searchable-dropdown-options {
+        max-height: 70px !important;
+    }
 }
 
 .btn-add-customer {
@@ -3276,6 +3375,7 @@ document.addEventListener('click', (e) => {
     display: grid;
     grid-template-columns: 1fr;
     gap: 16px;
+    overflow: visible;
 }
 
 @media (min-width: 768px) {
@@ -3336,14 +3436,25 @@ document.addEventListener('click', (e) => {
     border: 1px solid rgba(186, 230, 253, 0.25) !important;
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2) !important;
     backdrop-filter: blur(10px) !important;
-    max-height: 200px !important;
+    max-height: 80px !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
     scroll-behavior: smooth !important;
+    z-index: 10001 !important;
+}
+
+/* Override max-height for vehicle category dropdown to show 5 items */
+#vehicleCategoryDropdown .searchable-dropdown-options {
+    max-height: 200px !important;
 }
 
 .searchable-dropdown-option {
     color: #bae6fd !important;
     border-bottom: 1px solid rgba(186, 230, 253, 0.1) !important;
-    min-height: 40px !important;
+    min-height: 35px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
 }
 
 .searchable-dropdown-option:hover {
@@ -3397,7 +3508,7 @@ document.addEventListener('click', (e) => {
 /* Responsive adjustments for dropdown */
 @media (max-width: 640px) {
     .searchable-dropdown-options {
-        max-height: 160px !important;
+        max-height: 60px !important;
     }
 }
 </style>

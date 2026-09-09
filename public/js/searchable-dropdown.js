@@ -16,6 +16,7 @@
  * - data: Array of objects with {id, label} or {value, text}
  * - onSelect: Callback function when an option is selected
  * - searchThreshold: Minimum characters to trigger search (default: 0)
+ * - maxVisibleItems: Maximum number of items to display in dropdown (default: all)
  */
 
 class SearchableDropdown {
@@ -25,6 +26,7 @@ class SearchableDropdown {
             data: options.data || [],
             onSelect: options.onSelect || null,
             searchThreshold: options.searchThreshold || 0,
+            maxVisibleItems: options.maxVisibleItems || null,
             ...options
         };
         
@@ -139,7 +141,7 @@ class SearchableDropdown {
     
     renderOptions() {
         this.optionsContainer.innerHTML = '';
-        
+
         if (this.filteredData.length === 0) {
             const noResults = document.createElement('div');
             noResults.className = 'searchable-dropdown-no-results';
@@ -147,18 +149,22 @@ class SearchableDropdown {
             this.optionsContainer.appendChild(noResults);
             return;
         }
-        
-        this.filteredData.forEach((item, index) => {
+
+        const itemsToRender = this.options.maxVisibleItems
+            ? this.filteredData.slice(0, this.options.maxVisibleItems)
+            : this.filteredData;
+
+        itemsToRender.forEach((item, index) => {
             const option = document.createElement('div');
             option.className = 'searchable-dropdown-option';
             option.textContent = item.label || item.text || '';
             option.dataset.index = index;
-            
+
             option.addEventListener('click', (e) => {
                 e.preventDefault();
                 this.selectOption(item);
             });
-            
+
             this.optionsContainer.appendChild(option);
         });
     }

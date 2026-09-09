@@ -46,6 +46,11 @@
     scroll-behavior: smooth;
 }
 
+/* Increase max-height for vehicle category dropdown to show 5 items */
+#vehicleCategoryDropdown .searchable-dropdown-options {
+    max-height: 250px;
+}
+
 .searchable-dropdown.open .searchable-dropdown-options {
     display: block;
 }
