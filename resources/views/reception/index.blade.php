@@ -3393,5 +3393,12 @@ document.addEventListener('click', (e) => {
     scrollbar-width: auto !important;
     scrollbar-color: rgba(56, 189, 248, 0.6) rgba(30, 41, 59, 0.5) !important;
 }
+
+/* Responsive adjustments for dropdown */
+@media (max-width: 640px) {
+    .searchable-dropdown-options {
+        max-height: 160px !important;
+    }
+}
 </style>
 @endsection

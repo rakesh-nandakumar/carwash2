@@ -892,5 +892,12 @@ document.getElementById('filterModal').addEventListener('click', function(event)
 .searchable-dropdown-options::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.3);
 }
+
+/* Responsive adjustments for dropdown */
+@media (max-width: 640px) {
+    .searchable-dropdown-options {
+        max-height: 160px;
+    }
+}
 </style>
 @endsection
