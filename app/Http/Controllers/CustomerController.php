@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Customer;
+use App\Models\Vehicle;
 use Illuminate\Http\Request;
 
 class CustomerController extends Controller
@@ -23,6 +24,22 @@ class CustomerController extends Controller
                           ->orWhere('phone', 'like', '%' . $this->normalizePhoneNumber($v) . '%')
                           ->orWhere('whatsapp_number', 'like', '%' . $v . '%')
                           ->orWhere('whatsapp_number', 'like', '%' . $this->normalizePhoneNumber($v) . '%');
+                })
+            )
+            ->when($r->customer_name, fn ($q, $v) =>
+                $q->where('full_name', 'like', '%' . $v . '%')
+            )
+            ->when($r->customer_phone, fn ($q, $v) =>
+                $q->where(function ($query) use ($v) {
+                    $query->where('phone', 'like', '%' . $v . '%')
+                          ->orWhere('phone', 'like', '%' . $this->normalizePhoneNumber($v) . '%');
+                })
+            )
+            ->when($r->customer_vehicle, fn ($q, $v) =>
+                $q->whereHas('vehicles', function ($query) use ($v) {
+                    $query->where('registration_number', 'like', '%' . $v . '%')
+                          ->orWhere('make', 'like', '%' . $v . '%')
+                          ->orWhere('model', 'like', '%' . $v . '%');
                 })
             )
             ->latest()
@@ -80,6 +97,45 @@ class CustomerController extends Controller
         }
 
         return response()->json($query->get());
+    }
+
+    public function phoneNumbers(Request $request)
+    {
+        $phoneNumbers = Customer::where('business_id', auth()->user()->business_id)
+            ->whereNotNull('phone')
+            ->where('phone', '!=', '')
+            ->distinct()
+            ->pluck('phone')
+            ->sort()
+            ->values();
+
+        return response()->json($phoneNumbers);
+    }
+
+    public function vehicles(Request $request)
+    {
+        $vehicles = Vehicle::with('customer')
+            ->select('id', 'registration_number', 'make', 'model', 'customer_id')
+            ->orderBy('make')
+            ->orderBy('model')
+            ->get()
+            ->map(function ($vehicle) {
+                $makeModel = $vehicle->make && $vehicle->model 
+                    ? trim($vehicle->make . ' ' . $vehicle->model) 
+                    : $vehicle->registration_number;
+                    
+                return [
+                    'id' => $vehicle->id,
+                    'label' => $makeModel,
+                    'registration_number' => $vehicle->registration_number,
+                    'make' => $vehicle->make,
+                    'model' => $vehicle->model,
+                    'customer_id' => $vehicle->customer_id,
+                    'customer_name' => $vehicle->customer->full_name ?? 'Unknown'
+                ];
+            });
+
+        return response()->json($vehicles);
     }
 
     public function create()

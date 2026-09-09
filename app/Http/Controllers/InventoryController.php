@@ -471,5 +471,43 @@ class InventoryController extends Controller
             ->with('success', 'Stock adjusted successfully.');
     }
 
+    public function brands(Request $request)
+    {
+        $user = auth()->user();
+        
+        $brands = Product::where('tenant_id', $user->tenant_id)
+            ->where('business_id', $user->business_id)
+            ->whereNotNull('brand')
+            ->where('brand', '!=', '')
+            ->distinct()
+            ->pluck('brand')
+            ->sort()
+            ->values();
+
+        return response()->json($brands);
+    }
+
+    public function productList(Request $request)
+    {
+        $user = auth()->user();
+        
+        $products = Product::where('tenant_id', $user->tenant_id)
+            ->where('business_id', $user->business_id)
+            ->where('active', true)
+            ->select('id', 'name', 'sku', 'brand')
+            ->orderBy('name')
+            ->get()
+            ->map(function ($product) {
+                return [
+                    'id' => $product->id,
+                    'label' => $product->name,
+                    'sku' => $product->sku,
+                    'brand' => $product->brand
+                ];
+            });
+
+        return response()->json($products);
+    }
+
     // ... rest of the methods remain the same
 }

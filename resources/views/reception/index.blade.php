@@ -3096,6 +3096,11 @@ document.addEventListener('click', (e) => {
 
 .customer-select-wrapper .searchable-dropdown {
     flex: 1;
+    z-index: 1;
+}
+
+.customer-select-wrapper .searchable-dropdown.open {
+    z-index: 100;
 }
 
 /* Ensure customer dropdown input matches category dropdown height */

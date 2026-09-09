@@ -81,8 +81,14 @@ Route::prefix('{tenant}')
 
             // ==================== CUSTOMERS ====================
             Route::get('/customers/list', [CustomerController::class, 'list'])
-                ->name('customers.list')
-                ->middleware('permission:customers.access');
+                ->name('customers.list');
+
+            // API endpoints for dropdowns
+            Route::get('/customers/phone-numbers', [CustomerController::class, 'phoneNumbers'])
+                ->name('customers.phone-numbers');
+
+            Route::get('/customers/vehicles', [CustomerController::class, 'vehicles'])
+                ->name('customers.vehicles');
 
             Route::get('/customers', [CustomerController::class, 'index'])
                 ->name('customers.index')
@@ -127,6 +133,13 @@ Route::prefix('{tenant}')
             Route::get('/vehicles', [VehicleController::class, 'index'])
                 ->name('vehicles.index')
                 ->middleware('permission:vehicles.access');
+
+            // API endpoints for dropdowns (must come before parameterized routes)
+            Route::get('/vehicles/categories', [VehicleController::class, 'categories'])
+                ->name('vehicles.categories');
+
+            Route::get('/vehicles/list', [VehicleController::class, 'vehicleList'])
+                ->name('vehicles.list');
 
             Route::get('/vehicles/create', [VehicleController::class, 'create'])
                 ->name('vehicles.create')
@@ -275,9 +288,17 @@ Route::prefix('{tenant}')
                 ->name('inventory.store')
                 ->middleware('permission:inventory.create');
 
-            Route::get('/inventory/{product}', [InventoryController::class, 'show'])
-                ->name('inventory.show')
+            // Live inventory status updates
+            Route::get('/inventory/status', [InventoryController::class, 'getStatus'])
+                ->name('inventory.status')
                 ->middleware('permission:inventory.access');
+
+            // API endpoints for dropdowns
+            Route::get('/inventory/brands', [InventoryController::class, 'brands'])
+                ->name('inventory.brands');
+
+            Route::get('/inventory/products', [InventoryController::class, 'productList'])
+                ->name('inventory.products');
 
             Route::get('/inventory/{product}/edit', [InventoryController::class, 'edit'])
                 ->name('inventory.edit')
@@ -297,11 +318,6 @@ Route::prefix('{tenant}')
 
             Route::get('/inventory/{product}/stock', [InventoryController::class, 'stock'])
                 ->name('inventory.stock')
-                ->middleware('permission:inventory.access');
-
-            // Live inventory status updates
-            Route::get('/inventory/status', [InventoryController::class, 'getStatus'])
-                ->name('inventory.status')
                 ->middleware('permission:inventory.access');
             // ==================== END INVENTORY ====================
 

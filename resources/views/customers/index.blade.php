@@ -184,6 +184,23 @@ nav[role="navigation"] svg {
     padding: 0 14px;
 }
 
+/* Search bar styling */
+.search {
+    display: flex;
+    position: relative;
+    align-items: center;
+}
+
+.search input {
+    width: 100%;
+    height: 42px;
+    box-sizing: border-box;
+    padding: 0 16px;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    font-size: 14px;
+}
+
 /* ========== MOBILE ONLY ========== */
 @media (max-width: 768px) {
     .page-head {
@@ -198,12 +215,26 @@ nav[role="navigation"] svg {
     }
 
     .search {
-        display: flex;
-        gap: 8px;
+        position: relative;
     }
 
     .search input {
-        flex: 1;
+        height: 40px;
+    }
+
+    .filter-btn {
+        padding: 0 12px;
+        font-size: 13px;
+        height: 40px;
+    }
+
+    .modal-box {
+        max-width: 90%;
+        padding: 20px;
+    }
+
+    .modal-body {
+        overflow: visible;
     }
 
     /* Hide the normal table */
@@ -294,25 +325,16 @@ nav[role="navigation"] svg {
         grid-column: 1 / -1;
     }
 }
+
+
 </style>
 
 <script>
 function filterCustomers() {
-    const query = document.getElementById('customerSearch').value.toLowerCase().trim();
-    const tableRows = document.querySelectorAll('.customers-table tbody tr');
-    const mobileCards = document.querySelectorAll('.customer-card');
-
-    // Filter desktop table rows
-    tableRows.forEach(row => {
-        const text = row.textContent.toLowerCase();
-        row.style.display = text.includes(query) ? '' : 'none';
-    });
-
-    // Filter mobile cards
-    mobileCards.forEach(card => {
-        const text = card.textContent.toLowerCase();
-        card.style.display = text.includes(query) ? '' : 'none';
-    });
+    const query = document.getElementById('customerSearch').value.trim();
+    const params = new URLSearchParams();
+    if (query) params.set('q', query);
+    window.location.href = '{{ route('customers.index') }}?' + params.toString();
 }
 </script>
 @endsection

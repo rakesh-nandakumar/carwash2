@@ -156,6 +156,52 @@ class VehicleController extends Controller
         return back()->with('success', 'Vehicle updated.');
     }
 
+    public function categories(Request $request)
+    {
+        $categories = [
+            'Small Car',
+            'Sedan', 
+            'SUV',
+            'Luxury',
+            'Van',
+            'Pickup',
+            'Jeep',
+            'Three-wheeler',
+            'Motorcycle',
+            'Commercial',
+            'Bus',
+            'JCB Truck'
+        ];
+
+        return response()->json($categories);
+    }
+
+    public function vehicleList(Request $request)
+    {
+        $vehicles = Vehicle::with('customer')
+            ->select('id', 'registration_number', 'make', 'model', 'customer_id')
+            ->orderBy('make')
+            ->orderBy('model')
+            ->get()
+            ->map(function ($vehicle) {
+                $makeModel = $vehicle->make && $vehicle->model 
+                    ? trim($vehicle->make . ' ' . $vehicle->model) 
+                    : $vehicle->registration_number;
+                    
+                return [
+                    'id' => $vehicle->id,
+                    'label' => $makeModel,
+                    'registration_number' => $vehicle->registration_number,
+                    'make' => $vehicle->make,
+                    'model' => $vehicle->model,
+                    'customer_id' => $vehicle->customer_id,
+                    'customer_name' => $vehicle->customer->full_name ?? 'Unknown'
+                ];
+            });
+
+        return response()->json($vehicles);
+    }
+
     public function destroy()
     {
         abort(405);
