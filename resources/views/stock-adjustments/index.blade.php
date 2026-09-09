@@ -5,18 +5,19 @@
         <h1>Stock Adjustments</h1>
         <p>Correct physical stock quantities and maintain a complete adjustment history.</p>
     </div>
-    <div style="display:flex;gap:12px;align-items:center;">
-        <input type="text" id="adjustmentSearch" placeholder="Search adjustments..." oninput="filterAdjustments()" style="padding:10px 14px;border:1px solid #e5e7eb;border-radius:10px;font-size:14px;width:250px;">
-        @if(auth()->user()->hasPermissionTo('stock_adjustments.create'))
-            <button
-                type="button"
-                class="primary"
-                onclick="openAdjustmentModal()"
-            >
-                + New Adjustment
-            </button>
-        @endif
-    </div>
+    @if(auth()->user()->hasPermissionTo('stock_adjustments.create'))
+        <button
+            type="button"
+            class="primary"
+            onclick="openAdjustmentModal()"
+        >
+            + New Adjustment
+        </button>
+    @endif
+</div>
+
+<div class="search">
+    <input id="adjustmentSearch" placeholder="Search adjustments..." oninput="filterAdjustments()">
 </div>
 <div class="panel">
     <div class="table-wrap">
@@ -440,6 +441,16 @@
     color: #6b7280;
 }
 
+/* Search bar styling */
+.search {
+    display: flex;
+    gap: 8px;
+}
+
+.search input {
+    flex: 1;
+}
+
 /* Pagination styling */
 .pagination-wrap {
     margin-top: 28px;
@@ -528,6 +539,28 @@ nav[role="navigation"] svg {
     }
     .adjustment-table {
         min-width: 900px;
+    }
+}
+
+@media (max-width: 768px) {
+    .page-head {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .page-head button.primary {
+        width: 100%;
+        text-align: center;
+    }
+
+    .search {
+        display: flex;
+        gap: 8px;
+    }
+
+    .search input {
+        flex: 1;
     }
 }
 </style>

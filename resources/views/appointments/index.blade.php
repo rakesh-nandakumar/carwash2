@@ -6,10 +6,11 @@
         <h1>Appointments</h1>
         <p>Scheduled visits, reschedules and cancellations.</p>
     </div>
-    <div style="display:flex;gap:12px;align-items:center;">
-        <input type="text" id="appointmentSearch" placeholder="Search appointments..." oninput="filterAppointments()" style="padding:10px 14px;border:1px solid #e5e7eb;border-radius:10px;font-size:14px;width:250px;">
-        <a class="primary" href="{{ route('appointments.create') }}">+ Appointment</a>
-    </div>
+    <a class="primary" href="{{ route('appointments.create') }}">+ Appointment</a>
+</div>
+
+<div class="search">
+    <input id="appointmentSearch" placeholder="Search appointments..." oninput="filterAppointments()">
 </div>
 
 <div class="panel">
@@ -84,6 +85,16 @@
 
 .appointments-cards {
     display: none;
+}
+
+/* Search bar styling */
+.search {
+    display: flex;
+    gap: 8px;
+}
+
+.search input {
+    flex: 1;
 }
 
 /* Pagination styling */

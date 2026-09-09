@@ -6,10 +6,11 @@
         <h1>Item Master</h1>
         <p>Stock, valuation and traceable movements.</p>
     </div>
-    <div style="display:flex;gap:12px;align-items:center;">
-        <input type="text" id="inventorySearch" placeholder="Search products..." oninput="filterInventory()" style="padding:10px 14px;border:1px solid #e5e7eb;border-radius:10px;font-size:14px;width:250px;">
-        <a class="primary" href="{{ route('inventory.create') }}">+ New Product</a>
-    </div>
+    <a class="primary" href="{{ route('inventory.create') }}">+ New Product</a>
+</div>
+
+<div class="search">
+    <input id="inventorySearch" placeholder="Search products..." oninput="filterInventory()">
 </div>
 
 @if($lowStockItems->count() > 0)
@@ -428,6 +429,16 @@ function filterInventory() {
     display: none;
 }
 
+/* Search bar styling */
+.search {
+    display: flex;
+    gap: 8px;
+}
+
+.search input {
+    flex: 1;
+}
+
 /* Pagination styling */
 .pagination-wrap {
     margin-top: 28px;
@@ -592,6 +603,15 @@ nav[role="navigation"] svg {
     .page-head a.primary {
         width: 100%;
         text-align: center;
+    }
+
+    .search {
+        display: flex;
+        gap: 8px;
+    }
+
+    .search input {
+        flex: 1;
     }
 
     .inventory-table {

@@ -8,6 +8,10 @@
     <a class="primary" href="{{ route('categories.create') }}">+ New Main Category</a>
 </div>
 
+<div class="search">
+    <input id="categorySearch" placeholder="Search categories..." oninput="filterCategories()">
+</div>
+
 <div class="panel">
     <!-- Desktop List -->
     <div class="categories-list">
@@ -83,6 +87,16 @@
 
 .categories-cards {
     display: none;
+}
+
+/* Search bar styling */
+.search {
+    display: flex;
+    gap: 8px;
+}
+
+.search input {
+    flex: 1;
 }
 
 /* Pagination styling */
@@ -178,6 +192,15 @@ nav[role="navigation"] svg {
     .page-head a.primary {
         width: 100%;
         text-align: center;
+    }
+
+    .search {
+        display: flex;
+        gap: 8px;
+    }
+
+    .search input {
+        flex: 1;
     }
 
     /* Hide desktop list */
@@ -276,4 +299,24 @@ nav[role="navigation"] svg {
     }
 }
 </style>
+
+<script>
+function filterCategories() {
+    const query = document.getElementById('categorySearch').value.toLowerCase().trim();
+    const listRows = document.querySelectorAll('.categories-list .listrow');
+    const mobileCards = document.querySelectorAll('.category-card');
+
+    // Filter desktop list rows
+    listRows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(query) ? '' : 'none';
+    });
+
+    // Filter mobile cards
+    mobileCards.forEach(card => {
+        const text = card.textContent.toLowerCase();
+        card.style.display = text.includes(query) ? '' : 'none';
+    });
+}
+</script>
 @endsection

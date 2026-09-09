@@ -6,10 +6,11 @@
         <h1>Services</h1>
         <p>Manage service types and pricing</p>
     </div>
-    <div style="display:flex;gap:12px;align-items:center;">
-        <input type="text" id="serviceSearch" placeholder="Search services..." oninput="filterServices()" style="padding:10px 14px;border:1px solid #e5e7eb;border-radius:10px;font-size:14px;width:250px;">
-        <a class="primary" href="{{ route('services.create') }}">+ New Service</a>
-    </div>
+    <a class="primary" href="{{ route('services.create') }}">+ New Service</a>
+</div>
+
+<div class="search">
+    <input id="serviceSearch" placeholder="Search services..." oninput="filterServices()">
 </div>
 
 <div class="panel">

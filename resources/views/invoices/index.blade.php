@@ -6,9 +6,10 @@
         <h1>Invoices & Payments</h1>
         <p>Final invoices remain immutable and payments are recorded separately.</p>
     </div>
-    <div style="display:flex;gap:12px;align-items:center;">
-        <input type="text" id="invoiceSearch" placeholder="Search invoices..." oninput="filterInvoices()" style="padding:10px 14px;border:1px solid #e5e7eb;border-radius:10px;font-size:14px;width:250px;">
-    </div>
+</div>
+
+<div class="search">
+    <input id="invoiceSearch" placeholder="Search invoices..." oninput="filterInvoices()">
 </div>
 
 <div class="panel">
@@ -185,6 +186,15 @@ nav[role="navigation"] svg {
         flex-direction: column;
         align-items: flex-start;
         gap: 12px;
+    }
+
+    .search {
+        display: flex;
+        gap: 8px;
+    }
+
+    .search input {
+        flex: 1;
     }
 
     /* Hide the normal table */
