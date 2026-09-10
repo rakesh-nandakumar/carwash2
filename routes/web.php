@@ -9,6 +9,7 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ChequePaymentController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\InspectionController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\InvoiceController;
@@ -404,6 +405,12 @@ Route::prefix('{tenant}')
             Route::get('/cashier', [CashierController::class, 'index'])
                 ->name('cashier.index')
                 ->middleware('permission:cashier.access');
+
+            // ==================== NOTIFICATIONS ====================
+            Route::get('/notifications', [NotificationController::class, 'index'])
+                ->name('notifications.index')
+                ->middleware('permission:cashier.access');
+            // ==================== END NOTIFICATIONS ====================
 
             Route::get('/cashier/search', [CashierController::class, 'search'])
                 ->name('cashier.search')

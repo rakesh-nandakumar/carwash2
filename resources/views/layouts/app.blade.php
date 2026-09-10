@@ -246,6 +246,20 @@
         aside.sidebar nav a.cheque-payments-link.active {
             box-shadow: inset 3px 0 0 #f59e0b;
         }
+        aside.sidebar nav a.notifications-link {
+            background: rgba(239, 68, 68, 0.12);
+            position: relative;
+        }
+        aside.sidebar nav a.notifications-link:hover,
+        aside.sidebar nav a.notifications-link.active {
+            background: rgba(239, 68, 68, 0.25);
+        }
+        aside.sidebar nav a.notifications-link svg {
+            color: #ef4444;
+        }
+        aside.sidebar nav a.notifications-link.active {
+            box-shadow: inset 3px 0 0 #ef4444;
+        }
         aside.sidebar a.logout {
             flex: 0 0 auto;
         }
@@ -602,6 +616,28 @@
                         <span class="notification-badge">{{ $pendingChequesCount }}</span>
                     @elseif($bouncedChequesNeedingFollowUp > 0)
                         <span class="notification-badge alert-badge">{{ $bouncedChequesNeedingFollowUp }}</span>
+                    @endif
+                </a>
+            @endif
+            @if(auth()->user()->hasPermissionTo('cashier.access'))
+                <a href="{{ route('notifications.index') }}" class="notifications-link {{ request()->routeIs('notifications.*') ? 'active' : '' }}">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                    <span>Notifications</span>
+                    @php
+                        // Get partial payments (invoices with balance > 0 AND paid > 0)
+                        $partialPayments = \App\Models\Invoice::where('balance', '>', 0)->where('total', '>', 0)->where('paid', '>', 0)->get();
+                        $partialPaymentsCount = $partialPayments->count();
+                        $partialPaymentJobIds = $partialPayments->pluck('job_id')->toArray();
+                        
+                        // Get jobs ready for payment excluding those with partial payments
+                        $readyForPaymentCount = \App\Models\Job::where('status', \App\Enums\JobStatus::READY_FOR_PAYMENT->value)->whereNotIn('id', $partialPaymentJobIds)->count();
+                        
+                        $pendingChequesCount = \App\Models\Payment::where('method', 'cheque')->where('payment_received', false)->where('is_bounced', false)->count();
+                        $bouncedChequesNeedingFollowUp = \App\Models\Payment::where('method', 'cheque')->where('is_bounced', true)->where('follow_up_required', true)->where('replacement_payment_received', false)->count();
+                        $totalNotifications = $partialPaymentsCount + $pendingChequesCount + $bouncedChequesNeedingFollowUp + $readyForPaymentCount;
+                    @endphp
+                    @if($totalNotifications > 0)
+                        <span class="notification-badge">{{ $totalNotifications }}</span>
                     @endif
                 </a>
             @endif
