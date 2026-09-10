@@ -3,10 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Models\{Appointment, Customer, Vehicle, Branch};
+use App\Services\AuditService;
 use Illuminate\Http\Request;
 
 class AppointmentController extends Controller
 {
+    public function __construct(private readonly AuditService $auditService)
+    {
+    }
+
     public function index(Request $request)
     {
         $user = auth()->user();
@@ -59,7 +64,9 @@ class AppointmentController extends Controller
             'status' => 'confirmed',
         ];
 
-        $a = Appointment::create($d);
+        $appointment = Appointment::create($d);
+
+        $this->auditService->log('appointment_created', 'Appointment', $appointment->id, null, $d);
 
         return redirect()
             ->route('appointments.index')
@@ -68,23 +75,33 @@ class AppointmentController extends Controller
 
     public function show(Appointment $appointment)
     {
+        $appointment->load(['customer', 'vehicle']);
         return view('appointments.show', compact('appointment'));
     }
 
     public function edit(Appointment $appointment)
     {
-        return view('appointments.edit', compact('appointment'));
+        $customers = Customer::orderBy('full_name')->get();
+        $vehicles = Vehicle::select('id', 'registration_number', 'make', 'model', 'customer_id')
+            ->orderBy('registration_number')
+            ->get();
+        return view('appointments.edit', compact('appointment', 'customers', 'vehicles'));
     }
 
     public function update(Request $r, Appointment $appointment)
     {
         $data = $r->validate([
+            'customer_id' => 'required',
+            'vehicle_id' => 'required',
             'scheduled_at' => 'required|date',
             'status' => 'required',
             'notes' => 'nullable',
         ]);
 
+        $oldValues = $appointment->toArray();
         $appointment->update($data);
+
+        $this->auditService->log('appointment_updated', 'Appointment', $appointment->id, $oldValues, $data);
 
         return redirect()
             ->route('appointments.index')
@@ -93,7 +110,10 @@ class AppointmentController extends Controller
 
     public function destroy(Appointment $appointment)
     {
+        $oldStatus = $appointment->status;
         $appointment->update(['status' => 'cancelled']);
+
+        $this->auditService->log('appointment_cancelled', 'Appointment', $appointment->id, ['status' => $oldStatus], ['status' => 'cancelled']);
 
         return back()->with('success', 'Appointment cancelled.');
     }

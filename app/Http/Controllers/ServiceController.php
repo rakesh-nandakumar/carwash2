@@ -4,10 +4,15 @@ namespace App\Http\Controllers;
 
 use App\Models\Service;
 use App\Models\ServiceCategory;
+use App\Services\AuditService;
 use Illuminate\Http\Request;
 
 class ServiceController extends Controller
 {
+    public function __construct(private readonly AuditService $auditService)
+    {
+    }
+
     public function index(Request $request)
     {
         $user = auth()->user();
@@ -22,7 +27,7 @@ class ServiceController extends Controller
                   ->orWhere('description', 'like', "%{$search}%");
         }
 
-        $services = $query->get();
+        $services = $query->paginate(20);
         return view('services.index', compact('services', 'search'));
     }
 
@@ -54,7 +59,9 @@ class ServiceController extends Controller
         $validated['tax_rate'] = $validated['tax_rate'] ?? 0;
         $validated['duration_minutes'] = $validated['duration_minutes'] ?? 30;
 
-        Service::create($validated);
+        $service = Service::create($validated);
+
+        $this->auditService->log('service_created', 'Service', $service->id, null, $validated);
 
         return redirect()->route('services.index')->with('success', 'Service created successfully.');
     }
@@ -91,7 +98,10 @@ class ServiceController extends Controller
         $validated['tax_rate'] = $validated['tax_rate'] ?? 0;
         $validated['duration_minutes'] = $validated['duration_minutes'] ?? 30;
 
+        $oldValues = $service->toArray();
         $service->update($validated);
+
+        $this->auditService->log('service_updated', 'Service', $service->id, $oldValues, $validated);
 
         return redirect()->route('services.index')->with('success', 'Service updated successfully.');
     }
@@ -104,13 +114,23 @@ class ServiceController extends Controller
                 ->with('error', 'Cannot delete service that is used in jobs. Please deactivate it instead.');
         }
 
+        $serviceId = $service->id;
+        $serviceData = $service->toArray();
         $service->delete();
+
+        $this->auditService->log('service_deleted', 'Service', $serviceId, $serviceData, null);
+
         return redirect()->route('services.index')->with('success', 'Service deleted successfully.');
     }
 
     public function toggle(Request $request, Service $service)
     {
-        $service->update(['active' => $request->boolean('active')]);
+        $oldActive = $service->active;
+        $newActive = $request->boolean('active');
+        $service->update(['active' => $newActive]);
+
+        $this->auditService->log('service_toggled', 'Service', $service->id, ['active' => $oldActive], ['active' => $newActive]);
+
         return response()->json(['success' => true, 'active' => $service->active]);
     }
 }

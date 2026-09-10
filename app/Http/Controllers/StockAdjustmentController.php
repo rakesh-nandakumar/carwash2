@@ -8,12 +8,14 @@ use App\Models\Inventory;
 use App\Models\Product;
 use App\Models\StockAdjustment;
 use App\Services\InventoryService;
+use App\Services\AuditService;
 use Illuminate\Http\Request;
 
 class StockAdjustmentController extends Controller
 {
     public function __construct(
-        private InventoryService $inventoryService
+        private InventoryService $inventoryService,
+        private readonly AuditService $auditService
     ) {
     }
 
@@ -105,6 +107,12 @@ class StockAdjustmentController extends Controller
             abort(403, 'Invalid product.');
         }
 
+        // Get current stock quantity for audit logging
+        $inventory = Inventory::where('product_id', $product->id)
+            ->where('branch_id', $user->branch_id ?? null)
+            ->first();
+        $oldQuantity = $inventory ? (float) $inventory->quantity : 0;
+
         $adjustment = $this->inventoryService->createStockAdjustment(
             $product,
             $user->branch_id ?? null,
@@ -113,6 +121,16 @@ class StockAdjustmentController extends Controller
             $validated['reason'],
             $validated['notes'] ?? null
         );
+
+        $this->auditService->log('stock_adjustment_created', 'StockAdjustment', $adjustment->id, null, [
+            'product_id' => $product->id,
+            'product_name' => $product->name,
+            'branch_id' => $user->branch_id,
+            'old_quantity' => $oldQuantity,
+            'new_quantity' => $validated['new_quantity'],
+            'reason' => $validated['reason'],
+            'notes' => $validated['notes'] ?? null,
+        ]);
 
         return redirect()
             ->route('stock-adjustments.index')
@@ -147,10 +165,17 @@ class StockAdjustmentController extends Controller
             ],
         ]);
 
+        $originalAdjustmentData = $stockAdjustment->toArray();
+
         $this->inventoryService->reverseStockAdjustment(
             $stockAdjustment,
             $validated['reversal_reason']
         );
+
+        $this->auditService->log('stock_adjustment_reversed', 'StockAdjustment', $stockAdjustment->id, $originalAdjustmentData, [
+            'reversal_reason' => $validated['reversal_reason'],
+            'reversed_by' => $user->id,
+        ]);
 
         return redirect()
             ->route('stock-adjustments.index')

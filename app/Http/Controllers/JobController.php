@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\{Job, Customer, Vehicle, Service, Product, JobService as JS, JobPart};
-use App\Services\{JobService, InventoryService, CommunicationService, ApprovalService, PricingService};
+use App\Services\{JobService, InventoryService, CommunicationService, ApprovalService, PricingService, AuditService};
 use App\Enums\JobStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -16,10 +16,11 @@ class JobController extends Controller
         private CommunicationService $communication,
         private ApprovalService $approvals,
         private PricingService $pricing,
-        private \App\Services\InvoiceService $invoicing
+        private \App\Services\InvoiceService $invoicing,
+        private readonly AuditService $auditService
     ) {}
 
-    public function index()
+    public function index(Request $request)
     {
         $jobs = Job::with(['customer', 'vehicle', 'technician'])->latest()->paginate(20);
 
@@ -91,6 +92,8 @@ class JobController extends Controller
 
         $job = $this->jobs->create($d);
 
+        $this->auditService->log('job_created', 'Job', $job->id, null, $d);
+
         foreach ($serviceIds as $serviceId) {
             $service = Service::find($serviceId);
 
@@ -137,12 +140,17 @@ class JobController extends Controller
 
     public function update(Request $r, Job $job)
     {
-        $job->update($r->validate([
+        $validated = $r->validate([
             'priority' => 'required',
             'customer_complaint' => 'nullable',
             'notes' => 'nullable',
             'technician_id' => 'nullable',
-        ]));
+        ]);
+
+        $oldValues = $job->toArray();
+        $job->update($validated);
+
+        $this->auditService->log('job_updated', 'Job', $job->id, $oldValues, $validated);
 
         return redirect()->route('jobs.show', $job)->with('success', 'Job updated.');
     }
@@ -158,6 +166,7 @@ class JobController extends Controller
         ]);
 
         $newStatus = JobStatus::from($r->status);
+        $oldStatus = $job->status->value;
 
         if (!$job->status->canTransitionTo($newStatus)) {
             if ($r->expectsJson()) {
@@ -171,7 +180,7 @@ class JobController extends Controller
 
         if ($newStatus === JobStatus::READY_FOR_PAYMENT) {
             try {
-                DB::transaction(function () use ($job, $newStatus, $r) {
+                DB::transaction(function () use ($job, $newStatus, $r, $oldStatus) {
 
                     // Consume unapplied parts only when the job has a branch.
                     if ($job->branch_id !== null) {
@@ -183,6 +192,8 @@ class JobController extends Controller
                         auth()->user(),
                         $r->reason
                     );
+
+                    $this->auditService->log('job_status_changed', 'Job', $job->id, ['status' => $oldStatus], ['status' => $newStatus->value], $r->reason);
 
                     $this->invoicing->generate($job->id);
                 });
@@ -207,6 +218,8 @@ class JobController extends Controller
                 auth()->user(),
                 $r->reason
             );
+
+            $this->auditService->log('job_status_changed', 'Job', $job->id, ['status' => $oldStatus], ['status' => $newStatus->value], $r->reason);
         }
 
         if ($newStatus === JobStatus::PAID && $job->invoice) {
@@ -262,12 +275,17 @@ class JobController extends Controller
 
         $this->approvals->requestAdditionalWork($job->id, $d);
 
+        $this->auditService->log('additional_work_requested', 'Job', $job->id, null, ['title' => $d['title'], 'estimated_cost' => $d['estimated_cost']]);
+
         return back()->with('success', 'Additional work requested.');
     }
 
     public function approve(Request $r, Job $job)
     {
+        $oldStatus = $job->status->value;
         $job->transitionTo(JobStatus::APPROVED, auth()->user());
+
+        $this->auditService->log('job_approved', 'Job', $job->id, ['status' => $oldStatus], ['status' => JobStatus::APPROVED->value]);
 
         return back()->with('success', 'Job approved.');
     }
@@ -289,7 +307,7 @@ class JobController extends Controller
             );
         }
 
-        JobPart::create([
+        $jobPart = JobPart::create([
             'job_id' => $job->id,
             'product_id' => $d['product_id'],
             'quantity' => $d['quantity'],
@@ -298,6 +316,13 @@ class JobController extends Controller
             'source' => 'inventory',
             'approved' => true,
             'applied' => false,
+        ]);
+
+        $this->auditService->log('part_added_to_job', 'JobPart', $jobPart->id, null, [
+            'job_id' => $job->id,
+            'product_id' => $d['product_id'],
+            'quantity' => $d['quantity'],
+            'unit_price' => $product->selling_price,
         ]);
 
         $this->syncJobInvoice($job);
@@ -357,14 +382,20 @@ class JobController extends Controller
 
     public function applyService(Request $r, Job $job, JS $service)
     {
+        $oldStatus = $service->approval_status;
         $service->update(['approval_status' => 'approved']);
+
+        $this->auditService->log('service_approved', 'JobService', $service->id, ['approval_status' => $oldStatus], ['approval_status' => 'approved']);
 
         return back()->with('success', 'Service applied successfully.');
     }
 
     public function removeService(Request $r, Job $job, JS $service)
     {
+        $serviceData = $service->toArray();
         $service->delete();
+
+        $this->auditService->logServiceRemoval($service->id, $serviceData, 'Service removed from job');
 
         return response()->json(['success' => true, 'message' => 'Service closed successfully']);
     }
@@ -385,7 +416,7 @@ class JobController extends Controller
             return back()->with('error', 'This service is already added to the job.');
         }
 
-        JS::create([
+        $jobService = JS::create([
             'job_id' => $job->id,
             'service_id' => $service->id,
             'name_snapshot' => $service->name,
@@ -394,12 +425,22 @@ class JobController extends Controller
             'approval_status' => 'pending',
         ]);
 
+        $this->auditService->log('service_added_to_job', 'JobService', $jobService->id, null, [
+            'job_id' => $job->id,
+            'service_id' => $service->id,
+            'name_snapshot' => $service->name,
+            'unit_price' => $service->base_price,
+        ]);
+
         return back()->with('success', 'Service added. Please confirm to apply.');
     }
 
     public function destroy(Job $job)
     {
+        $jobData = $job->toArray();
         $job->delete();
+
+        $this->auditService->log('job_deleted', 'Job', $job->id, $jobData, null);
 
         return redirect()->route('jobs.index')->with('success', 'Job deleted.');
     }

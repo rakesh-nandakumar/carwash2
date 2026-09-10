@@ -3,6 +3,7 @@
 use App\Http\Controllers\AppointmentController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Auth\ImpersonationSessionController;
+use App\Http\Controllers\AuditController;
 use App\Http\Controllers\CashierController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ChequePaymentController;
@@ -649,6 +650,17 @@ Route::prefix('{tenant}')
                 ->name('tills.destroy')
                 ->middleware('permission:settings.access');
             // ==================== END TILL MANAGEMENT ====================
+
+            // ==================== AUDIT LOGS ====================
+            Route::get('/audit-logs', [AuditController::class, 'index'])
+                ->name('audit-logs.index')
+                ->middleware('permission:audit_logs.access');
+
+            Route::get('/audit-logs/{id}', [AuditController::class, 'show'])
+                ->name('audit-logs.show')
+                ->middleware('permission:audit_logs.access')
+                ->where('id', '[0-9]+');
+            // ==================== END AUDIT LOGS ====================
 
             // ==================== SETTINGS ====================
             Route::get('/settings/till', [TillController::class, 'edit'])

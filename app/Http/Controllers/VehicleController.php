@@ -3,10 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Models\{Vehicle, Customer};
+use App\Services\AuditService;
 use Illuminate\Http\Request;
 
 class VehicleController extends Controller
 {
+    public function __construct(private readonly AuditService $auditService)
+    {
+    }
+
     public function index(Request $r)
     {
         $vehicles = Vehicle::with('customer')
@@ -22,7 +27,7 @@ class VehicleController extends Controller
                 })
             )
             ->latest()
-            ->paginate(15);
+            ->paginate(20);
 
         return view('vehicles.index', compact('vehicles'));
     }
@@ -67,6 +72,8 @@ class VehicleController extends Controller
 
             $vehicle = Vehicle::create($validated);
 
+            $this->auditService->log('vehicle_created', 'Vehicle', $vehicle->id, null, $validated);
+
             if ($r->wantsJson()) {
                 return response()->json([
                     'id' => $vehicle->id,
@@ -109,7 +116,10 @@ class VehicleController extends Controller
             'customer_id' => 'required|exists:customers,id',
         ]);
 
+        $oldCustomer = $vehicle->customer_id;
         $vehicle->update(['customer_id' => $validated['customer_id']]);
+
+        $this->auditService->log('vehicle_ownership_transferred', 'Vehicle', $vehicle->id, ['customer_id' => $oldCustomer], ['customer_id' => $validated['customer_id']]);
 
         return back()->with('success', 'Vehicle ownership transferred successfully.');
     }
@@ -143,6 +153,8 @@ class VehicleController extends Controller
                 ->withInput();
         }
 
+        $oldValues = $vehicle->toArray();
+
         // Replace image if a new one is uploaded
         if ($r->hasFile('image')) {
             if ($vehicle->image) {
@@ -152,6 +164,8 @@ class VehicleController extends Controller
         }
 
         $vehicle->update($validated);
+
+        $this->auditService->log('vehicle_updated', 'Vehicle', $vehicle->id, $oldValues, $validated);
 
         return back()->with('success', 'Vehicle updated.');
     }

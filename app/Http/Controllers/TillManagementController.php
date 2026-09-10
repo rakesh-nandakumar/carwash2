@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Auth;
 
 class TillManagementController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $tills = Till::with('currentUser')
             ->where('tenant_id', Auth::user()->tenant_id)

@@ -169,6 +169,13 @@ class PermissionCatalog
                 ],
             ],
 
+            'audit_logs' => [
+                'label' => 'Audit Logs',
+                'actions' => [
+                    'access',
+                ],
+            ],
+
             'users' => [
                 'label' => 'Users',
                 'actions' => [

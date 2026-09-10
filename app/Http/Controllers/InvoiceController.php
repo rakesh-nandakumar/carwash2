@@ -4,11 +4,16 @@ namespace App\Http\Controllers;
 
 use App\Models\{Invoice, Payment};
 use App\Services\CashMovementService;
+use App\Services\AuditService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class InvoiceController extends Controller
 {
+    public function __construct(private readonly AuditService $auditService)
+    {
+    }
+
     public function index(Request $request)
     {
         $user = auth()->user();
@@ -86,6 +91,10 @@ class InvoiceController extends Controller
         DB::transaction(function () use ($invoice, $d, $cashMovements) {
             // Allow overpayments - remove validation that prevented payments exceeding balance
 
+            $oldStatus = $invoice->status;
+            $oldPaid = $invoice->paid;
+            $oldBalance = $invoice->balance;
+
             $payment = Payment::create([
                 'invoice_id' => $invoice->id,
                 'method' => $d['method'],
@@ -98,12 +107,29 @@ class InvoiceController extends Controller
             $invoice->status = $invoice->balance <= 0 ? 'paid' : 'partially_paid';
             $invoice->save();
 
+            $this->auditService->logPayment($payment->id, [
+                'invoice_id' => $invoice->id,
+                'method' => $d['method'],
+                'amount' => $d['amount'],
+                'received_by' => auth()->id(),
+            ]);
+
+            $this->auditService->log('invoice_payment_updated', 'Invoice', $invoice->id, [
+                'status' => $oldStatus,
+                'paid' => $oldPaid,
+                'balance' => $oldBalance,
+            ], [
+                'status' => $invoice->status,
+                'paid' => $invoice->paid,
+                'balance' => $invoice->balance,
+            ]);
+
             if ($d['method'] === 'cash') {
                 // Record only the net cash amount that stays in the till
                 // If customer overpaid (balance < 0), record the invoice total since change is given back
                 // Otherwise record the full payment amount
                 $netCashAmount = $invoice->balance < 0 ? $invoice->total : (float) $d['amount'];
-                
+
                 $cashMovements->recordSale(
                     amount: $netCashAmount,
                     reference: $payment,

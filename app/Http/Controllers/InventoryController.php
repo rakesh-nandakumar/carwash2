@@ -4,13 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Models\{Product, Inventory, InventoryMovement};
 use App\Services\InventoryService;
+use App\Services\AuditService;
 use App\Enums\InventoryMovementType;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class InventoryController extends Controller
 {
-    public function __construct(private InventoryService $service)
+    public function __construct(private InventoryService $service, private readonly AuditService $auditService)
     {
     }
 
@@ -271,6 +272,8 @@ class InventoryController extends Controller
                     'notes' => 'Initial stock from product creation',
                 ]);
             }
+
+            $this->auditService->log('product_created', 'Product', $product->id, null, $validated);
         });
 
         return redirect()
@@ -322,6 +325,7 @@ class InventoryController extends Controller
         ]);
 
         DB::transaction(function () use ($validated, $request, $product) {
+            $oldValues = $product->toArray();
             $product->update([
                 'name' => $validated['name'],
                 'sku' => $validated['sku'],
@@ -339,6 +343,8 @@ class InventoryController extends Controller
                 $imagePath = $request->file('image')->store('products', 'public');
                 $product->update(['image' => $imagePath]);
             }
+
+            $this->auditService->log('product_updated', 'Product', $product->id, $oldValues, $validated);
         });
 
         return redirect()
@@ -355,6 +361,8 @@ class InventoryController extends Controller
             ->firstOrFail();
 
         DB::transaction(function () use ($product, $user) {
+            $productData = $product->toArray();
+
             // Delete related inventory records
             Inventory::where('tenant_id', $user->tenant_id)
                 ->where('product_id', $product->id)->delete();
@@ -383,6 +391,8 @@ class InventoryController extends Controller
 
             // Delete the product
             $product->delete();
+
+            $this->auditService->log('product_deleted', 'Product', $product->id, $productData, null);
         });
 
         return redirect()
@@ -434,13 +444,13 @@ class InventoryController extends Controller
                 ->where('branch_id', $user->branch_id)
                 ->first();
 
+            $oldQuantity = $inventory ? (float) $inventory->quantity : 0;
+
             if ($inventory) {
                 // Update existing inventory
-                $oldQuantity = (float) $inventory->quantity;
                 $inventory->increment('quantity', $quantityToAdd);
             } else {
                 // Create new inventory record
-                $oldQuantity = 0;
                 $inventory = Inventory::create([
                     'product_id' => $product->id,
                     'tenant_id' => $user->tenant_id,
@@ -464,6 +474,9 @@ class InventoryController extends Controller
                 'user_id' => auth()->id(),
                 'notes' => $reason,
             ]);
+
+            $newQuantity = $inventory->fresh()->quantity;
+            $this->auditService->logStockAdjustment($product->id, $user->branch_id, $oldQuantity, $newQuantity, $reason);
         });
 
         return redirect()

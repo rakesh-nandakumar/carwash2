@@ -10,7 +10,7 @@ use Illuminate\Support\Str;
 
 class RoleController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $this->authorize('viewAny', Role::class);
 

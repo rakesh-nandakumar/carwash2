@@ -234,7 +234,7 @@ class TillClosureController extends Controller
         }
     }
 
-    public function history()
+    public function history(Request $request)
     {
         $till = $this->cashMovements->getSelectedTill();
         $closures = $till->closures()

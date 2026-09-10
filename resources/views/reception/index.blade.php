@@ -2976,7 +2976,9 @@ document.addEventListener('click', (e) => {
     width: 100%;
     max-width: 600px;
     max-height: 92vh;
-    overflow: visible;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
     backdrop-filter: blur(30px) saturate(145%);
     -webkit-backdrop-filter: blur(30px) saturate(145%);
     box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55);
@@ -2985,6 +2987,19 @@ document.addEventListener('click', (e) => {
 
 .job-modal-content {
     max-width: 960px;
+    display: flex;
+    flex-direction: column;
+}
+
+.job-modal-content .modal-body {
+    overflow-y: auto;
+    flex: 1;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+}
+
+.job-modal-content .modal-body::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, and Opera */
 }
 
 @keyframes modalGlassIn {
@@ -3033,7 +3048,14 @@ document.addEventListener('click', (e) => {
 
 .modal-body {
     padding: 16px;
-    overflow: visible;
+    overflow-y: auto;
+    flex: 1;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+}
+
+.modal-body::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, and Opera */
 }
 
 .modal-footer {
@@ -3044,6 +3066,7 @@ document.addEventListener('click', (e) => {
     background: linear-gradient(135deg, rgba(125, 211, 252, 0.07), rgba(59, 130, 246, 0.04));
     position: sticky;
     bottom: 0;
+    flex-shrink: 0;
 }
 
 .form-group {

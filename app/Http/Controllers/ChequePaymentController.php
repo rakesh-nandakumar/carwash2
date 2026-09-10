@@ -4,19 +4,21 @@ namespace App\Http\Controllers;
 
 use App\Models\Payment;
 use App\Services\CashMovementService;
+use App\Services\AuditService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class ChequePaymentController extends Controller
 {
     public function __construct(
-        private CashMovementService $cashMovements
+        private CashMovementService $cashMovements,
+        private AuditService $audit
     ) {}
 
     /**
      * Display a listing of pending cheques
      */
-    public function index()
+    public function index(Request $request)
     {
         $pendingCheques = Payment::with(['invoice.job.customer', 'invoice.job.vehicle', 'receivedBy'])
             ->where('method', 'cheque')
@@ -86,6 +88,16 @@ class ChequePaymentController extends Controller
                 // Mark cheque as received/cleared
                 $payment->markAsReceived();
 
+                // Log cheque confirmation in audit logs
+                $this->audit->log('cheque_confirmed', 'Payment', $payment->id, null, [
+                    'payment_id' => $payment->id,
+                    'invoice_id' => $payment->invoice_id,
+                    'amount' => $payment->amount,
+                    'cheque_number' => $payment->cheque_number,
+                    'bank_name' => $payment->bank_name,
+                    'cheque_due_date' => $payment->cheque_due_date,
+                ], 'Cheque payment confirmed and cleared');
+
                 // Record the cash movement in till since payment is now received
                 $invoice = $payment->invoice;
                 $netAmount = $payment->amount;
@@ -103,6 +115,16 @@ class ChequePaymentController extends Controller
             } elseif ($request->action === 'bounce') {
                 // Mark cheque as bounced
                 $payment->markAsBounced($request->bounce_reason);
+
+                // Log cheque bounce in audit logs
+                $this->audit->log('cheque_bounced', 'Payment', $payment->id, null, [
+                    'payment_id' => $payment->id,
+                    'invoice_id' => $payment->invoice_id,
+                    'amount' => $payment->amount,
+                    'cheque_number' => $payment->cheque_number,
+                    'bank_name' => $payment->bank_name,
+                    'bounce_reason' => $request->bounce_reason,
+                ], 'Cheque bounced: ' . $request->bounce_reason);
 
                 // Reverse the invoice payment status
                 $invoice = $payment->invoice;
@@ -285,6 +307,17 @@ class ChequePaymentController extends Controller
 
             // Create replacement payment
             $replacementPayment = Payment::create($replacementData);
+
+            // Log replacement payment in audit logs
+            $this->audit->logPayment($replacementPayment->id, [
+                'invoice_id' => $invoice->id,
+                'original_payment_id' => $payment->id,
+                'payment_method' => $request->replacement_payment_method,
+                'amount' => $replacementData['amount'],
+                'reason' => 'Replacement for bounced cheque',
+                'cheque_number' => $request->cheque_number,
+                'bank_name' => $request->bank_name,
+            ]);
 
             // Link original bounced cheque to replacement payment
             $payment->update([

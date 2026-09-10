@@ -327,6 +327,66 @@
         padding: 0 14px;
     }
 
+    /* Responsive pagination for mobile */
+    @media (max-width: 768px) {
+        .pagination-wrap {
+            margin-top: 20px;
+            gap: 8px;
+        }
+
+        .pagination-wrap .pagination,
+        .pagination-wrap nav > div {
+            gap: 4px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .pagination-wrap a,
+        .pagination-wrap span {
+            min-width: 32px;
+            height: 32px;
+            padding: 0 8px;
+            font-size: 13px;
+            border-radius: 8px;
+        }
+
+        .pagination-wrap a[rel="prev"],
+        .pagination-wrap a[rel="next"] {
+            padding: 0 10px;
+            font-size: 12px;
+        }
+
+        .pagination-wrap svg,
+        .pagination-wrap .pagination svg,
+        nav[role="navigation"] svg {
+            width: 14px !important;
+            height: 14px !important;
+            max-width: 14px !important;
+            max-height: 14px !important;
+        }
+
+        /* Hide some page numbers on very small screens */
+        @media (max-width: 480px) {
+            .pagination-wrap .pagination {
+                gap: 2px;
+            }
+
+            .pagination-wrap a,
+            .pagination-wrap span {
+                min-width: 28px;
+                height: 28px;
+                padding: 0 6px;
+                font-size: 12px;
+            }
+
+            .pagination-wrap a[rel="prev"],
+            .pagination-wrap a[rel="next"] {
+                padding: 0 8px;
+                font-size: 11px;
+            }
+        }
+    }
+
 
     /* =========================================================
        FOOTER
@@ -817,9 +877,12 @@
 
 
         <!-- Pagination -->
+        @php $paginationThreshold = request()->isMobile() ? 10 : 50; @endphp
+        @if($movements->total() > $paginationThreshold)
         <div class="pagination-wrap">
             {{ $movements->links() }}
         </div>
+        @endif
 
 
         <!-- Footer -->

@@ -8,6 +8,7 @@ use App\Enums\JobStatus;
 use App\Services\PricingService;
 use App\Services\CashMovementService;
 use App\Services\CommunicationService;
+use App\Services\AuditService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -16,7 +17,8 @@ class CashierController extends Controller
     public function __construct(
         private PricingService $pricing,
         private CashMovementService $cashMovements,
-        private CommunicationService $communication
+        private CommunicationService $communication,
+        private AuditService $audit
     ) {}
 
     public function index()
@@ -702,6 +704,21 @@ class CashierController extends Controller
             }
 
             $payment = Payment::create($paymentData);
+
+            // Log payment completion in audit logs
+            $this->audit->logPayment($payment->id, [
+                'invoice_id' => $invoice->id,
+                'job_id' => $job->id,
+                'job_number' => $job->job_number,
+                'customer_name' => $job->customer->full_name,
+                'vehicle_registration' => $job->vehicle->registration_number,
+                'payment_method' => $request->payment_method,
+                'amount' => $amountReceived,
+                'discount_amount' => $discountAmount,
+                'discount_type' => $discountType,
+                'final_total' => $finalTotal,
+                'balance_due' => $invoiceBalance,
+            ]);
 
             /*
             |--------------------------------------------------------------------------

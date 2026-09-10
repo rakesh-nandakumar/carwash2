@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 
 class CategoryController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $categories = Category::where('business_id', auth()->user()->business_id)
             ->whereNull('parent_id')

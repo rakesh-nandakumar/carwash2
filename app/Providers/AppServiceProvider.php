@@ -8,6 +8,7 @@ use App\Policies\RolePolicy;
 use App\Policies\UserPolicy;
 use App\Services\CurrentContext;
 use Illuminate\Auth\Middleware\Authenticate;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
@@ -45,6 +46,23 @@ class AppServiceProvider extends ServiceProvider
             }
 
             return null;
+        });
+
+        // Add isMobile() macro to Request class
+        Request::macro('isMobile', function () {
+            $userAgent = $this->userAgent();
+            $mobileAgents = [
+                'android', 'iphone', 'ipad', 'ipod', 'opera mini', 'iemobile',
+                'blackberry', 'mobile', 'webos', 'windows phone', 'kindle'
+            ];
+            
+            foreach ($mobileAgents as $agent) {
+                if (stripos($userAgent, $agent) !== false) {
+                    return true;
+                }
+            }
+            
+            return false;
         });
     }
 }

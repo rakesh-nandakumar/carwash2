@@ -4,10 +4,15 @@ namespace App\Http\Controllers;
 
 use App\Models\Customer;
 use App\Models\Vehicle;
+use App\Services\AuditService;
 use Illuminate\Http\Request;
 
 class CustomerController extends Controller
 {
+    public function __construct(private readonly AuditService $auditService)
+    {
+    }
+
     public function index(Request $r)
     {
         $customers = Customer::with('vehicles')
@@ -43,7 +48,7 @@ class CustomerController extends Controller
                 })
             )
             ->latest()
-            ->paginate(15);
+            ->paginate(20);
 
         return view('customers.index', compact('customers'));
     }
@@ -180,6 +185,8 @@ class CustomerController extends Controller
 
             $customer = Customer::create($validated);
 
+            $this->auditService->log('customer_created', 'Customer', $customer->id, null, $validated);
+
             if ($r->transfer_vehicle_id) {
                 $vehicle = \App\Models\Vehicle::find($r->transfer_vehicle_id);
                 if ($vehicle) {
@@ -228,13 +235,18 @@ class CustomerController extends Controller
 
     public function update(Request $r, Customer $customer)
     {
-        $customer->update($r->validate([
+        $validated = $r->validate([
             'full_name' => 'required',
             'phone' => 'required',
             'whatsapp_number' => 'nullable',
             'email' => 'nullable|email',
             'address' => 'nullable',
-        ]));
+        ]);
+
+        $oldValues = $customer->toArray();
+        $customer->update($validated);
+
+        $this->auditService->log('customer_updated', 'Customer', $customer->id, $oldValues, $validated);
 
         return back()->with('success', 'Customer updated.');
     }

@@ -188,7 +188,7 @@ class TenantController extends Controller
             ->where('tenant_id', $tenant->id)
             ->with('user:id,name,email')
             ->latest('created_at')
-            ->paginate(50);
+            ->paginate(20);
 
         return view('central.tenants.audit', compact('tenant', 'logs'));
     }
