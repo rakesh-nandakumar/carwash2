@@ -57,7 +57,7 @@
                 'tax_id' => '',
                 'invoice_prefix' => 'INV-',
                 'receipt_prefix' => 'REC-',
-                'footer_text' => 'Thank you for your business!',
+                'footer_text' => "Thank you for your business!!\nFor any enquiries, Email us on prasadauticare@gmail.com or call us on 0115 66 88 88",
                 'terms_conditions' => 'Payment due upon receipt. Valid for 30 days.',
                 'logo_path' => '',
                 'a4_enabled' => true,
@@ -69,7 +69,7 @@
         <div class="header">
             <div class="company-info">
                 @if($settings['logo_path'])
-                    <img src="{{ asset($settings['logo_path']) }}" alt="Logo" style="max-height: {{ $settings['logo_size_a4'] ?? 60 }}px; margin-bottom: 10px;">
+                    <img src="{{ \App\Support\Media::url($settings['logo_path']) }}" alt="Logo" style="max-height: {{ $settings['logo_size_a4'] ?? 60 }}px; margin-bottom: 10px;">
                 @endif
                 <h1>{{ $settings['company_name'] }}</h1>
                 @if($settings['address'])<p>{{ $settings['address'] }}</p>@endif
@@ -199,7 +199,7 @@
         </div>
 
         <div class="footer">
-            <p>{{ $settings['footer_text'] }}</p>
+            <p>{!! nl2br(e($settings['footer_text'])) !!}</p>
             <p>Generated on {{ now()->format('d M Y H:i') }} · {{ $settings['company_name'] }}</p>
             <p style="font-weight: bold; margin-top: 15px;">Powered by Vellix Global - 0773208478</p>
         </div>

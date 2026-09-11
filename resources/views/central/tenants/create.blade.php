@@ -11,10 +11,10 @@
             @csrf
             <div class="form-grid">
                 <label>Company name
-                    <input type="text" name="name" value="{{ old('name') }}" required>
+                    <input type="text" name="name" id="company_name" value="{{ old('name') }}" required>
                 </label>
                 <label>URL prefix (slug)
-                    <input type="text" name="slug" value="{{ old('slug') }}" required pattern="[a-z0-9]([a-z0-9\-]{0,61}[a-z0-9])?">
+                    <input type="text" name="slug" id="slug" value="{{ old('slug') }}" required pattern="[a-z0-9]([a-z0-9\-]{0,61}[a-z0-9])?">
                     <small style="color:#64748b;font-weight:400;">lowercase letters, digits and dashes; e.g. acme → /acme/…</small>
                 </label>
             </div>
@@ -25,16 +25,13 @@
                         <option value="trial">Trial</option>
                     </select>
                 </label>
-                <label>Trial ends at
-                    <input type="date" name="trial_ends_at">
-                </label>
             </div>
             <div class="form-grid">
                 <label>Admin email
-                    <input type="email" name="admin_email" required>
+                    <input type="email" name="admin_email" id="admin_email" required>
                 </label>
                 <label>Admin name
-                    <input type="text" name="admin_name">
+                    <input type="text" name="admin_name" id="admin_name">
                 </label>
             </div>
 
@@ -60,4 +57,27 @@
             <button class="btn btn-primary" type="submit">Provision</button>
         </form>
     </div>
+
+    <script>
+        document.getElementById('company_name').addEventListener('input', function() {
+            const companyName = this.value;
+            const slug = companyName
+                .toLowerCase()
+                .replace(/[^a-z0-9\s-]/g, '')
+                .trim()
+                .replace(/\s+/g, '-')
+                .replace(/-+/g, '-');
+            document.getElementById('slug').value = slug;
+
+            const emailSlug = companyName
+                .toLowerCase()
+                .replace(/[^a-z0-9\s-]/g, '')
+                .trim()
+                .replace(/\s+/g, '.')
+                .replace(/-+/g, '.');
+            document.getElementById('admin_email').value = emailSlug + '@autocare.com';
+
+            document.getElementById('admin_name').value = companyName;
+        });
+    </script>
 @endsection

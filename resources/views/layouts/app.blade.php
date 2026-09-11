@@ -83,10 +83,10 @@
             gap: 10px !important;
         }
         .brand-logo {
-            max-height: 80px;
-            max-width: 80px;
+            max-height: 120px;
+            max-width: 200px;
             object-fit: contain;
-            border-radius: 50%;
+            border-radius: 8px;
             display: block;
             margin: 0 auto;
         }
@@ -341,8 +341,8 @@
                 padding-left: 62px !important;
             }
             .brand-logo {
-                max-height: 56px;
-                max-width: 56px;
+                max-height: 80px;
+                max-width: 140px;
             }
         }
         @media (max-width: 480px) {
@@ -366,8 +366,8 @@
                 padding-left: 62px !important;
             }
             .brand-logo {
-                max-height: 48px;
-                max-width: 48px;
+                max-height: 60px;
+                max-width: 100px;
             }
         }
         /* Open state for tablet/mobile */
@@ -488,7 +488,7 @@
         @endphp
         <div class="brand" id="sidebarBrand">
             @if($settings['logo_path'])
-                <img src="{{ asset($settings['logo_path']) }}" alt="{{ $settings['company_name'] }}" class="brand-logo">
+                <img src="{{ \App\Support\Media::url($settings['logo_path']) }}" alt="{{ $settings['company_name'] }}" class="brand-logo">
             @else
                 <span class="brand-text">AUTO<span>CARE</span><small>PRO</small></span>
             @endif

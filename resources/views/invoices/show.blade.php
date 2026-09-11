@@ -30,19 +30,7 @@
         <div class="invoice-header">
             <div>
                 @if(!empty($settings['logo_path']))
-                    @php
-                        $logoPath = $settings['logo_path'];
-                        if(!str_starts_with($logoPath, 'http')) {
-                            if(str_starts_with($logoPath, '/storage/')) {
-                                $logoPath = asset($logoPath);
-                            } elseif(str_starts_with($logoPath, 'storage/')) {
-                                $logoPath = asset('/' . $logoPath);
-                            } else {
-                                $logoPath = asset('storage/' . $logoPath);
-                            }
-                        }
-                    @endphp
-                    <img src="{{ $logoPath }}" alt="Logo" class="invoice-logo" onerror="this.style.display='none';">
+                    <img src="{{ \App\Support\Media::url($settings['logo_path']) }}" alt="Logo" class="invoice-logo" onerror="this.style.display='none';">
                 @else
                     <h2 class="company-name">{{ $settings['company_name'] ?? 'AutoCare Pro' }}</h2>
                 @endif

@@ -57,6 +57,7 @@
                         <input type="file" name="reception_background" id="bg-input" accept="image/*" style="display: none;">
                     </div>
                     <input type="hidden" name="s[reception.background_image]" value="{{ $val('reception.background_image', '') }}" id="bg-path-hidden">
+                    <input type="hidden" name="remove_background" value="0" id="remove-background-hidden">
                 </div>
 
                 <div class="bg-color-section" id="bg-color-section" {{ $val('reception.background_type', 'image') === 'image' ? 'style="display:none;"' : '' }}>
@@ -119,7 +120,7 @@
                 </div>
 
                 <div class="settings-save-bar">
-                    <button class="primary">Save Reception Settings</button>
+                    <button type="submit" class="primary">Save Reception Settings</button>
                 </div>
             </form>
         </div>
@@ -194,7 +195,10 @@
                     </div>
 
                     <h2>📝 Document Content</h2>
-                    <label>Footer Text<textarea name="s[billing.footer_text]" rows="2" id="footer-text">{{ $val('billing.footer_text', '') }}</textarea></label>
+                    <label>Footer Text
+                        <textarea name="s[billing.footer_text]" rows="4" id="footer-text">{{ $val('billing.footer_text', '') }}</textarea>
+                        <small>Example: Thank you for your business! For any enquiries, Email us on prasadauticare@gmail.com or call us on 0115 66 88 88</small>
+                    </label>
                     <label>Terms & Conditions<textarea name="s[billing.terms_conditions]" rows="4" id="terms-conditions">{{ $val('billing.terms_conditions', '') }}</textarea></label>
 
                     <h2>🖼️ Logo <span class="override-badge {{ $ovr('branding.logo_path') }}">{{ $ovr('branding.logo_path') === 'overridden' ? 'Overridden' : 'Default' }}</span></h2>
@@ -210,6 +214,7 @@
                         <input type="file" name="logo" id="logo-input" accept="image/*" style="display: none;">
                     </div>
                     <input type="hidden" name="s[branding.logo_path]" value="{{ $val('branding.logo_path', '') }}" id="logo-path-hidden">
+                    <input type="hidden" name="remove_logo" value="0" id="remove-logo-hidden">
 
                     <label class="range-label">
                         Logo Size (A4 Invoice)
@@ -223,7 +228,7 @@
                     </label>
 
                     <div class="settings-save-bar">
-                        <button class="primary">Save Billing Settings</button>
+                        <button type="submit" class="primary">Save Billing Settings</button>
                     </div>
                 </form>
             </div>
@@ -282,7 +287,7 @@
                             @if($val('business.phone', ''))<p>For inquiries: {{ $val('business.phone') }}</p>@endif
                         </div>
                         <div class="invoice-footer">
-                            <p id="preview-footer-a4">{{ $val('billing.footer_text', '') }}</p>
+                            <p id="preview-footer-a4">{!! nl2br(e($val('billing.footer_text', ''))) !!}</p>
                             <p>Generated on {{ now()->format('d M Y H:i') }} · {{ $val('business.company_name', '') }}</p>
                             <p class="powered">Powered by Vellix Global - 0773208478</p>
                         </div>
@@ -322,9 +327,8 @@
                         <div class="thermal-paid">PAID</div>
                         <div class="thermal-divider"></div>
                         <div class="thermal-footer">
-                            <div id="preview-footer-thermal">{{ $val('billing.footer_text', '') }}</div>
+                            <div id="preview-footer-thermal">{!! nl2br(e($val('billing.footer_text', ''))) !!}</div>
                             <div>{{ now()->format('d/m/Y H:i') }}</div>
-                            <div>Thank you for your business!</div>
                             <div class="powered">Powered by Vellix Global - 0773208478</div>
                         </div>
                     </div>
@@ -385,7 +389,7 @@
                     @endforeach
                 </div>
                 <div class="settings-save-bar">
-                    <button class="primary">Save All Settings</button>
+                    <button type="submit" class="primary">Save All Settings</button>
                 </div>
             </form>
         </div>
@@ -402,6 +406,7 @@
         const bgDropzone = document.getElementById('bg-dropzone');
         const bgInput = document.getElementById('bg-input');
         const bgPathHidden = document.getElementById('bg-path-hidden');
+        const removeBackgroundHidden = document.getElementById('remove-background-hidden');
         const previewContainer = document.getElementById('reception-preview');
 
         if (bgDropzone) {
@@ -418,6 +423,7 @@
 
         function removeBackground() {
             bgPathHidden.value = '';
+            removeBackgroundHidden.value = '1';
             bgInput.value = '';
             bgDropzone.innerHTML = `<div class="upload-placeholder"><span class="upload-icon">📁</span><span class="upload-text">Click to upload or drag and drop</span><span class="upload-subtext">JPEG, PNG, JPG, GIF (Max 5MB)</span></div>`;
             bgDropzone.appendChild(bgInput);
@@ -430,6 +436,8 @@
             reader.onload = (e) => {
                 dropzone.innerHTML = `<div class="current-image"><img src="${e.target.result}" alt="Current Background"><button type="button" onclick="removeBackground()" class="remove-btn">Remove Image</button></div>`;
                 dropzone.appendChild(bgInput);
+                // Reset remove_background flag since we're uploading a new image
+                removeBackgroundHidden.value = '0';
             };
             reader.readAsDataURL(file);
         }
@@ -491,6 +499,7 @@
         const dropzone = document.getElementById('logo-dropzone');
         const fileInput = document.getElementById('logo-input');
         const logoPathHidden = document.getElementById('logo-path-hidden');
+        const removeLogoHidden = document.getElementById('remove-logo-hidden');
 
         if (dropzone) {
             dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.style.borderColor = '#3498db'; dropzone.style.backgroundColor = '#f0f8ff'; });
@@ -506,6 +515,7 @@
 
         function removeLogo() {
             logoPathHidden.value = '';
+            removeLogoHidden.value = '1';
             fileInput.value = '';
             dropzone.innerHTML = `<div class="upload-placeholder"><span class="upload-icon">📁</span><span class="upload-text">Click to upload or drag and drop</span><span class="upload-subtext">JPEG, PNG, JPG, GIF (Max 2MB)</span></div>`;
             dropzone.appendChild(fileInput);
@@ -517,6 +527,10 @@
             reader.onload = (e) => {
                 dropzone.innerHTML = `<div class="current-image"><img src="${e.target.result}" alt="Current Logo" style="max-height:100px;margin-bottom:10px;"><button type="button" onclick="removeLogo()" class="remove-btn">Remove Logo</button></div>`;
                 dropzone.appendChild(fileInput);
+                // Clear the hidden field so the controller knows to use the uploaded file
+                logoPathHidden.value = '';
+                // Reset remove_logo flag since we're uploading a new logo
+                removeLogoHidden.value = '0';
             };
             reader.readAsDataURL(file);
         }
@@ -567,12 +581,15 @@
 
         document.getElementById('footer-text')?.addEventListener('input', (e) => {
             const val = e.target.value || '';
-            document.getElementById('preview-footer-a4').textContent = val;
-            document.getElementById('preview-footer-thermal').textContent = val;
+            const formattedVal = val.replace(/\n/g, '<br>');
+            document.getElementById('preview-footer-a4').innerHTML = formattedVal;
+            document.getElementById('preview-footer-thermal').innerHTML = formattedVal;
         });
 
         document.getElementById('terms-conditions')?.addEventListener('input', (e) => {
-            document.getElementById('preview-terms-a4').textContent = e.target.value || '';
+            const val = e.target.value || '';
+            const formattedVal = val.replace(/\n/g, '<br>');
+            document.getElementById('preview-terms-a4').innerHTML = formattedVal;
         });
 
         function showPreview(format) {

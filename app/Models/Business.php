@@ -51,7 +51,7 @@ class Business extends Model
             'tax_id' => ['business.tax_id', '', 'string'],
             'invoice_prefix' => ['billing.invoice_prefix', 'INV-', 'string'],
             'receipt_prefix' => ['billing.receipt_prefix', 'REC-', 'string'],
-            'footer_text' => ['billing.footer_text', 'Thank you for your business!', 'string'],
+            'footer_text' => ['billing.footer_text', "Thank you for your business!!\nFor any enquiries, Email us on prasadauticare@gmail.com or call us on 0115 66 88 88", 'string'],
             'terms_conditions' => ['billing.terms_conditions', 'Payment due upon receipt. Valid for 30 days.', 'string'],
             'logo_path' => ['branding.logo_path', '', 'string'],
             'reception_background_image' => ['reception.background_image', '', 'string'],

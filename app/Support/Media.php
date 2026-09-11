@@ -21,6 +21,7 @@ class Media
             return asset($path);
         }
 
-        return Storage::disk('public')->url($path);
+        // Use Laravel route to serve files directly (bypasses Windows symlink issues)
+        return url('/storage/' . $path);
     }
 }

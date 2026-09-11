@@ -214,7 +214,7 @@
                     'address' => '',
                     'phone' => '',
                     'tax_id' => '',
-                    'footer_text' => 'Thank you for your business!',
+                    'footer_text' => "Thank you for your business!!\nFor any enquiries, Email us on prasadauticare@gmail.com or call us on 0115 66 88 88",
                     'logo_path' => ''
                 ];
         @endphp
@@ -222,7 +222,7 @@
         {{-- Company Logo --}}
         @if($settings['logo_path'])
             <img
-                src="{{ asset($settings['logo_path']) }}"
+                src="{{ \App\Support\Media::url($settings['logo_path']) }}"
                 alt="Logo"
                 style="
                     max-width: 50mm;
@@ -412,13 +412,11 @@
 
         {{-- Footer --}}
         <div class="footer">
-            {{ $settings['footer_text'] }}<br>
+            {!! nl2br(e($settings['footer_text'])) !!}<br>
 
             {{ now()->format('d/m/Y H:i') }}<br>
 
-            Thank you for your business!<br>
-
-            <span style="font-weight: bold;">
+            <span class="powered">
                 Powered by Vellix Global - 0773208478
             </span>
         </div>

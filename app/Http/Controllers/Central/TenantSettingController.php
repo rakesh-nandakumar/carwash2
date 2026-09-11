@@ -58,6 +58,11 @@ class TenantSettingController extends Controller
         $submitted = $request->input('s', []);
 
         foreach ($submitted as $key => $value) {
+            // Skip logo_path in the regular loop - it's handled by storeUploads
+            if ($key === 'branding.logo_path') {
+                continue;
+            }
+
             // Unknown keys are never created — Settings::set throws (404) on
             // them, so a hand-crafted POST cannot invent rows.
             $definition = collect(SettingsSeeder::definitions())->firstWhere('key', $key);
@@ -72,37 +77,41 @@ class TenantSettingController extends Controller
 
         Settings::invalidate($tenant->id);
 
-        // Log settings change
-        app(CurrentContext::class)->runForTenant($tenant->id, function () use ($tenant, $request) {
-            app(AuditService::class)->log(
-                'tenant.settings_changed',
-                "Settings updated for tenant '{$tenant->name}'",
-                'info',
-                'central_admin',
-                $request->user('central')->email,
-                [
-                    'tenant_id' => $tenant->id,
-                    'tenant_name' => $tenant->name,
-                    'changed_keys' => array_keys($request->input('s', [])),
-                ]
-            );
-        });
+        // Log settings change in central context only
+        app(AuditService::class)->log(
+            'tenant.settings_changed',
+            "Settings updated for tenant '{$tenant->name}'",
+            'info',
+            'central_admin',
+            $request->user('central')->email,
+            [
+                'tenant_id' => $tenant->id,
+                'tenant_name' => $tenant->name,
+                'changed_keys' => array_keys($request->input('s', [])),
+            ]
+        );
 
         return back()->with('success', 'Settings saved for '.$tenant->name.'.');
     }
 
     private function storeUploads(Request $request, Tenant $tenant): void
     {
+        // Handle logo upload - always process if file is present
         if ($request->hasFile('logo')) {
             $path = $request->file('logo')->store("tenants/{$tenant->id}/branding", 'public');
             Settings::set('branding.logo_path', $path, null, $tenant->id);
-        } elseif ($request->filled('remove_logo') || $request->input('s.branding.logo_path') === '') {
+        } elseif ($request->filled('remove_logo') && $request->input('remove_logo') == '1') {
+            // Only remove if explicitly requested
             Settings::set('branding.logo_path', '', null, $tenant->id);
         }
+        // If neither file upload nor remove_logo is present, keep existing value
+        // (don't clear it based on empty hidden field) - do nothing here
 
         if ($request->hasFile('reception_background')) {
             $path = $request->file('reception_background')->store("tenants/{$tenant->id}/reception", 'public');
             Settings::set('reception.background_image', $path, null, $tenant->id);
+        } elseif ($request->filled('remove_background') && $request->input('remove_background') == '1') {
+            Settings::set('reception.background_image', '', null, $tenant->id);
         }
     }
 

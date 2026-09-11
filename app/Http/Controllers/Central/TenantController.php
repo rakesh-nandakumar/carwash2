@@ -115,22 +115,20 @@ class TenantController extends Controller
             ]);
         });
 
-        // Log till creation
-        app(CurrentContext::class)->runForTenant($tenant->id, function () use ($tenant, $data, $request) {
-            app(AuditService::class)->log(
-                'till.created',
-                "Till '{$data['name']}' created for tenant '{$tenant->name}'",
-                'info',
-                'central_admin',
-                $request->user('central')->email,
-                [
-                    'tenant_id' => $tenant->id,
-                    'tenant_name' => $tenant->name,
-                    'till_name' => $data['name'],
-                    'till_code' => $data['code'],
-                ]
-            );
-        });
+        // Log till creation in central context only
+        app(AuditService::class)->log(
+            'till.created',
+            "Till '{$data['name']}' created for tenant '{$tenant->name}'",
+            'info',
+            'central_admin',
+            $request->user('central')->email,
+            [
+                'tenant_id' => $tenant->id,
+                'tenant_name' => $tenant->name,
+                'till_name' => $data['name'],
+                'till_code' => $data['code'],
+            ]
+        );
 
         return back()->with('success', 'Till created successfully.');
     }
@@ -145,21 +143,19 @@ class TenantController extends Controller
 
         $tenant->update([...$data, 'updated_by' => $request->user('central')->id]);
 
-        // Log tenant update
-        app(CurrentContext::class)->runForTenant($tenant->id, function () use ($tenant, $data, $request) {
-            app(AuditService::class)->log(
-                'tenant.updated',
-                "Tenant '{$tenant->name}' updated",
-                'info',
-                'central_admin',
-                $request->user('central')->email,
-                [
-                    'tenant_id' => $tenant->id,
-                    'tenant_name' => $tenant->name,
-                    'changes' => $data,
-                ]
-            );
-        });
+        // Log tenant update in central context only
+        app(AuditService::class)->log(
+            'tenant.updated',
+            "Tenant '{$tenant->name}' updated",
+            'info',
+            'central_admin',
+            $request->user('central')->email,
+            [
+                'tenant_id' => $tenant->id,
+                'tenant_name' => $tenant->name,
+                'changes' => $data,
+            ]
+        );
 
         return back()->with('success', 'Tenant updated.');
     }
@@ -173,20 +169,18 @@ class TenantController extends Controller
             'updated_by' => $request->user('central')->id,
         ]);
 
-        // Log tenant suspension
-        app(CurrentContext::class)->runForTenant($tenant->id, function () use ($tenant, $request) {
-            app(AuditService::class)->log(
-                'tenant.suspended',
-                "Tenant '{$tenant->name}' suspended",
-                'warning',
-                'central_admin',
-                $request->user('central')->email,
-                [
-                    'tenant_id' => $tenant->id,
-                    'tenant_name' => $tenant->name,
-                ]
-            );
-        });
+        // Log tenant suspension in central context only
+        app(AuditService::class)->log(
+            'tenant.suspended',
+            "Tenant '{$tenant->name}' suspended",
+            'warning',
+            'central_admin',
+            $request->user('central')->email,
+            [
+                'tenant_id' => $tenant->id,
+                'tenant_name' => $tenant->name,
+            ]
+        );
 
         return back()->with('success', 'Tenant suspended.');
     }
@@ -200,20 +194,18 @@ class TenantController extends Controller
             'updated_by' => $request->user('central')->id,
         ]);
 
-        // Log tenant resume
-        app(CurrentContext::class)->runForTenant($tenant->id, function () use ($tenant, $request) {
-            app(AuditService::class)->log(
-                'tenant.resumed',
-                "Tenant '{$tenant->name}' resumed",
-                'info',
-                'central_admin',
-                $request->user('central')->email,
-                [
-                    'tenant_id' => $tenant->id,
-                    'tenant_name' => $tenant->name,
-                ]
-            );
-        });
+        // Log tenant resume in central context only
+        app(AuditService::class)->log(
+            'tenant.resumed',
+            "Tenant '{$tenant->name}' resumed",
+            'info',
+            'central_admin',
+            $request->user('central')->email,
+            [
+                'tenant_id' => $tenant->id,
+                'tenant_name' => $tenant->name,
+            ]
+        );
 
         return back()->with('success', 'Tenant resumed.');
     }

@@ -112,8 +112,13 @@ class Settings
 
         $setting ??= self::createFromCatalog($key, $tenantId);
 
+        // Only JSON encode arrays/objects, leave strings as-is
+        $encodedValue = is_array($value) || is_object($value) 
+            ? json_encode($value, JSON_UNESCAPED_SLASHES) 
+            : $value;
+
         $setting->update([
-            'value' => json_encode($value),
+            'value' => $encodedValue,
             'updated_by' => $updatedBy,
         ]);
 
@@ -162,10 +167,15 @@ class Settings
         // Explicit tenant always; an ambient binding is never required here
         // (central admins have none), and a console call (seeders/tests)
         // would trip TenantScope's fail-loud rule otherwise.
+        // Only JSON encode arrays/objects, leave strings as-is
+        $encodedValue = is_array($definition['value']) || is_object($definition['value'])
+            ? json_encode($definition['value'], JSON_UNESCAPED_SLASHES)
+            : $definition['value'];
+
         return Setting::query()->withoutTenantScope()->create([
             'tenant_id' => $tenantId ?? app(CurrentContext::class)->tenantId(),
             'key' => $key,
-            'value' => json_encode($definition['value']),
+            'value' => $encodedValue,
             'type' => $definition['type'],
             'category' => $definition['category'],
             'label' => $definition['label'],

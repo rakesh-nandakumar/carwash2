@@ -30,6 +30,15 @@ use App\Http\Controllers\StockAdjustmentController;
 
 Route::pattern('tenant', '[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?');
 
+// Serve storage files directly to bypass Windows symlink issues
+Route::get('/storage/{path}', function ($path) {
+    $fullPath = storage_path('app/public/' . $path);
+    if (!file_exists($fullPath)) {
+        abort(404);
+    }
+    return response()->file($fullPath);
+})->where('path', '.*');
+
 // Central first, so it wins on /admin/*. IdentifyTenant runs at the end of
 // the web group (see bootstrap/app.php), so no per-route wiring is needed.
 Route::prefix(config('tenancy.central_prefix'))

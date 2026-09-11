@@ -65,7 +65,7 @@ class SettingsSeeder extends Seeder
             // ----- Billing -----
             ['key' => 'billing.invoice_prefix', 'value' => 'INV-', 'type' => SettingType::TEXT, 'category' => 'billing', 'label' => 'Invoice Number Prefix'],
             ['key' => 'billing.receipt_prefix', 'value' => 'REC-', 'type' => SettingType::TEXT, 'category' => 'billing', 'label' => 'Receipt Number Prefix'],
-            ['key' => 'billing.footer_text', 'value' => 'Thank you for your business!', 'type' => SettingType::TEXT, 'category' => 'billing', 'label' => 'Invoice Footer Text'],
+            ['key' => 'billing.footer_text', 'value' => "Thank you for your business!!\nFor any enquiries, Email us on prasadauticare@gmail.com or call us on 0115 66 88 88", 'type' => SettingType::TEXTAREA, 'category' => 'billing', 'label' => 'Invoice Footer Text'],
             ['key' => 'billing.terms_conditions', 'value' => 'Payment due upon receipt. Valid for 30 days.', 'type' => SettingType::TEXTAREA, 'category' => 'billing', 'label' => 'Terms & Conditions'],
             ['key' => 'billing.default_print_format', 'value' => 'a4', 'type' => SettingType::SELECT, 'category' => 'billing', 'label' => 'Default Print Format', 'hint' => 'a4 or thermal.'],
             ['key' => 'billing.a4_enabled', 'value' => true, 'type' => SettingType::BOOLEAN, 'category' => 'billing', 'label' => 'Enable A4 Printing'],
