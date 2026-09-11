@@ -6,7 +6,11 @@
         <h1>Cheque Payment Details</h1>
         <p>View complete cheque payment information and status.</p>
     </div>
-    <a href="{{ route('cheque-payments.index') }}" class="secondary">Back to List</a>
+    @if($from === 'notifications')
+        <a href="{{ route('notifications.index') }}" class="secondary">Back to Notifications</a>
+    @else
+        <a href="{{ route('cheque-payments.index') }}" class="secondary">Back to List</a>
+    @endif
 </div>
 
 <div class="panel">
@@ -169,7 +173,7 @@
     @if(!$payment->payment_received && !$payment->is_bounced)
         <div class="action-alert warning">
             <strong>Action Required:</strong> This cheque is pending confirmation.
-            <a href="{{ route('cheque-payments.confirm', $payment) }}" class="btn-action">Process Now</a>
+            <a href="{{ route('cheque-payments.confirm', $payment) }}?from={{ $from }}" class="btn-action">Process Now</a>
         </div>
     @endif
 
@@ -180,7 +184,7 @@
                 @if($payment->needsFollowUp())
                     <a href="{{ route('cheque-payments.edit-bounce', $payment) }}" class="btn-action warning">Manage Follow-up</a>
                 @endif
-                <a href="{{ route('cheque-payments.replacement', $payment) }}" class="btn-action success">Record Replacement Payment</a>
+                <a href="{{ route('cheque-payments.replacement', $payment) }}?from={{ $from }}" class="btn-action success">Record Replacement Payment</a>
             </div>
         </div>
     @endif

@@ -136,13 +136,13 @@
         <!-- Payment Section -->
         <div class="payment-section">
             <h3>Record Payment</h3>
-            @if($invoice->balance > 0)
-                <form method="post" action="{{ route('invoices.pay', $invoice) }}" class="payment-form">
+            @if($invoice->balance > 0.01)
+                <form method="post" action="{{ route('invoices.pay', $invoice) }}?from={{ request()->input('from') }}" class="payment-form">
                     @csrf
                     <div>
                         <label>Amount</label>
                         <input name="amount" type="number" step=".01" max="{{ $invoice->balance }}"
-                               value="{{ $invoice->balance }}" required>
+                               value="{{ $invoice->balance > 0.01 ? $invoice->balance : $invoice->total }}" required>
                     </div>
                     <div>
                         <label>Payment Method</label>
@@ -156,13 +156,31 @@
                     <button type="submit" class="primary">Receive Payment</button>
                 </form>
                 <div class="payment-back">
-                    <a href="javascript:history.back()" class="btn-back">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <line x1="19" y1="12" x2="5" y2="12"></line>
-                            <polyline points="12 19 5 12 12 5"></polyline>
-                        </svg>
-                        Back
-                    </a>
+                    @if(request()->input('from') === 'notifications' || session('payment_from_notifications'))
+                        <a href="{{ route('notifications.index') }}" class="btn-back">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="19" y1="12" x2="5" y2="12"></line>
+                                <polyline points="12 19 5 12 12 5"></polyline>
+                            </svg>
+                            Back to Notifications
+                        </a>
+                    @elseif(request()->input('from') === 'invoices')
+                        <a href="{{ route('invoices.index') }}" class="btn-back">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="19" y1="12" x2="5" y2="12"></line>
+                                <polyline points="12 19 5 12 12 5"></polyline>
+                            </svg>
+                            Back to Invoices
+                        </a>
+                    @else
+                        <a href="javascript:history.back()" class="btn-back">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="19" y1="12" x2="5" y2="12"></line>
+                                <polyline points="12 19 5 12 12 5"></polyline>
+                            </svg>
+                            Back
+                        </a>
+                    @endif
                 </div>
             @else
                 <div class="paid-full">
@@ -173,13 +191,31 @@
                     <span>Paid in full</span>
                 </div>
                 <div class="payment-back">
-                    <a href="javascript:history.back()" class="btn-back">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <line x1="19" y1="12" x2="5" y2="12"></line>
-                            <polyline points="12 19 5 12 12 5"></polyline>
-                        </svg>
-                        Back
-                    </a>
+                    @if(request()->input('from') === 'notifications' || session('payment_from_notifications'))
+                        <a href="{{ route('notifications.index') }}" class="btn-back">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="19" y1="12" x2="5" y2="12"></line>
+                                <polyline points="12 19 5 12 12 5"></polyline>
+                            </svg>
+                            Back to Notifications
+                        </a>
+                    @elseif(request()->input('from') === 'invoices')
+                        <a href="{{ route('invoices.index') }}" class="btn-back">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="19" y1="12" x2="5" y2="12"></line>
+                                <polyline points="12 19 5 12 12 5"></polyline>
+                            </svg>
+                            Back to Invoices
+                        </a>
+                    @else
+                        <a href="javascript:history.back()" class="btn-back">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="19" y1="12" x2="5" y2="12"></line>
+                                <polyline points="12 19 5 12 12 5"></polyline>
+                            </svg>
+                            Back
+                        </a>
+                    @endif
                 </div>
             @endif
         </div>
@@ -556,3 +592,15 @@
 }
 </style>
 @endsection
+
+<script>
+    // Set localStorage flag when payment is completed
+    @if(session('payment_completed'))
+        localStorage.setItem('paymentCompleted', 'true');
+        // Clear the session flags
+        @php
+            session()->forget('payment_completed');
+            session()->forget('payment_from_notifications');
+        @endphp
+    @endif
+</script>

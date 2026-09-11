@@ -6,7 +6,11 @@
         <h1>Record Replacement Payment</h1>
         <p>Document the replacement payment for a bounced cheque.</p>
     </div>
-    <a href="{{ route('cheque-payments.show', $payment) }}" class="secondary">Back to Details</a>
+    @if($from === 'notifications')
+        <a href="{{ route('notifications.index') }}" class="secondary">Back to Notifications</a>
+    @else
+        <a href="{{ route('cheque-payments.show', $payment) }}" class="secondary">Back to Details</a>
+    @endif
 </div>
 
 <div class="panel">
@@ -56,6 +60,7 @@
 
     <form method="POST" action="{{ route('cheque-payments.process-replacement', $payment) }}" class="action-form">
         @csrf
+        <input type="hidden" name="from" value="{{ $from }}">
 
         <div class="alert-box info">
             <strong>Important:</strong> Record the replacement payment method and amount. This will update the invoice and till accordingly.
@@ -113,7 +118,11 @@
 
         <div class="form-actions">
             <button type="submit" class="primary success">Record Replacement Payment</button>
-            <a href="{{ route('cheque-payments.show', $payment) }}" class="secondary">Cancel</a>
+            @if($from === 'notifications')
+                <a href="{{ route('notifications.index') }}" class="secondary">Cancel</a>
+            @else
+                <a href="{{ route('cheque-payments.show', $payment) }}" class="secondary">Cancel</a>
+            @endif
         </div>
     </form>
 </div>

@@ -47,7 +47,7 @@
             @foreach($partialInvoices as $i)
             <tr class="partial-row">
                 <td>
-                    <a href="{{ route('invoices.show',$i) }}">
+                    <a href="{{ route('invoices.show',$i) }}?from=invoices">
                         <b>{{ $i->invoice_number }}</b>
                     </a>
                 </td>
@@ -64,7 +64,7 @@
     <!-- Mobile Cards -->
     <div class="invoices-cards partial-cards" data-section="partial">
         @foreach($partialInvoices as $i)
-        <a href="{{ route('invoices.show',$i) }}" class="invoice-card partial-card">
+        <a href="{{ route('invoices.show',$i) }}?from=invoices" class="invoice-card partial-card">
             <div class="card-top">
                 <div class="card-name">
                     <strong>{{ $i->invoice_number }}</strong>
@@ -118,7 +118,7 @@
             @foreach($paidInvoices as $i)
             <tr class="paid-row">
                 <td>
-                    <a href="{{ route('invoices.show',$i) }}">
+                    <a href="{{ route('invoices.show',$i) }}?from=invoices">
                         <b>{{ $i->invoice_number }}</b>
                     </a>
                 </td>
@@ -135,7 +135,7 @@
     <!-- Mobile Cards -->
     <div class="invoices-cards paid-cards" data-section="paid">
         @foreach($paidInvoices as $i)
-        <a href="{{ route('invoices.show',$i) }}" class="invoice-card paid-card">
+        <a href="{{ route('invoices.show',$i) }}?from=invoices" class="invoice-card paid-card">
             <div class="card-top">
                 <div class="card-name">
                     <strong>{{ $i->invoice_number }}</strong>
@@ -189,7 +189,7 @@
             @foreach($issuedInvoices as $i)
             <tr class="issued-row">
                 <td>
-                    <a href="{{ route('invoices.show',$i) }}">
+                    <a href="{{ route('invoices.show',$i) }}?from=invoices">
                         <b>{{ $i->invoice_number }}</b>
                     </a>
                 </td>
@@ -206,7 +206,7 @@
     <!-- Mobile Cards -->
     <div class="invoices-cards issued-cards" data-section="issued">
         @foreach($issuedInvoices as $i)
-        <a href="{{ route('invoices.show',$i) }}" class="invoice-card issued-card">
+        <a href="{{ route('invoices.show',$i) }}?from=invoices" class="invoice-card issued-card">
             <div class="card-top">
                 <div class="card-name">
                     <strong>{{ $i->invoice_number }}</strong>
@@ -1183,6 +1183,30 @@ nav[role="navigation"] svg {
 }
 
 </style>
+
+<script>
+    // Auto-refresh if payment was just completed
+    @if(session('payment_completed'))
+        console.log('Payment completed flag detected on invoices page');
+        // Clear the session flag for next time
+        @php
+            session()->forget('payment_completed');
+        @endphp
+        setTimeout(function() {
+            console.log('Refreshing invoices page...');
+            location.reload();
+        }, 100);
+    @endif
+
+    // Also check localStorage as backup
+    if (localStorage.getItem('paymentCompleted') === 'true') {
+        console.log('Payment completed from localStorage on invoices page, refreshing...');
+        localStorage.removeItem('paymentCompleted');
+        setTimeout(function() {
+            location.reload();
+        }, 100);
+    }
+</script>
 
 <script>
 let customerDropdown = null;

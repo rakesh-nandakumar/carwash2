@@ -12,12 +12,18 @@ class NotificationController extends Controller
 {
     public function index()
     {
-        // Get partial payments (invoices with balance > 0 AND paid > 0)
+        // Get partial payments (invoices with balance > 0.01 OR status 'partially_paid')
         // This includes jobs that are ready for payment but have partial payments
         $partialPayments = Invoice::with(['job.customer', 'job.vehicle'])
-            ->where('balance', '>', 0)
             ->where('total', '>', 0)
             ->where('paid', '>', 0) // Must have some payments already
+            ->where(function($query) {
+                $query->where('balance', '>', 0.01) // Use small threshold for floating point errors
+                      ->orWhere('status', 'partially_paid'); // Also check status to catch data inconsistencies
+            })
+            ->whereHas('job', function($query) {
+                $query->where('status', '!=', 'paid'); // Exclude jobs that are already paid
+            })
             ->orderBy('created_at', 'desc')
             ->get()
             ->map(function ($invoice) {
@@ -82,6 +88,7 @@ class NotificationController extends Controller
                     'vehicle_registration' => $payment->invoice->job->vehicle->registration_number,
                     'payment_id' => $payment->id,
                     'is_overdue' => $payment->follow_up_date && $payment->follow_up_date->isPast(),
+                    'replacement_payment_received' => $payment->replacement_payment_received,
                     'created_at' => $payment->created_at,
                 ];
             });
@@ -90,6 +97,11 @@ class NotificationController extends Controller
         $readyForPayment = Job::with(['customer', 'vehicle', 'invoice'])
             ->where('status', JobStatus::READY_FOR_PAYMENT->value)
             ->whereNotIn('id', $partialPaymentJobIds) // Exclude jobs with partial payments
+            ->whereDoesntHave('invoice', function ($query) {
+                // Exclude jobs with partial payments (have some payments but still have balance)
+                $query->where('paid', '>', 0)
+                      ->where('balance', '>', 0.01);
+            })
             ->orderBy('updated_at', 'desc')
             ->get()
             ->map(function ($job) {

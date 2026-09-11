@@ -217,7 +217,7 @@
                         <a href="{{ route('cheque-payments.edit-bounce', $payment) }}" class="action-link followup">Follow-up</a>
                     @endif
                     @if(!$payment->replacement_payment_received)
-                        <a href="{{ route('cheque-payments.replacement', $payment) }}" class="action-link replace">Replace</a>
+                        <a href="{{ route('cheque-payments.replacement', $payment) }}?from=cheque-payments" class="action-link replace">Replace</a>
                     @endif
                 </td>
             </tr>
@@ -274,7 +274,7 @@
                     <a href="{{ route('cheque-payments.edit-bounce', $payment) }}" class="btn-action followup">Follow-up</a>
                 @endif
                 @if(!$payment->replacement_payment_received)
-                    <a href="{{ route('cheque-payments.replacement', $payment) }}" class="btn-action replace">Replace</a>
+                    <a href="{{ route('cheque-payments.replacement', $payment) }}?from=cheque-payments" class="btn-action replace">Replace</a>
                 @endif
             </div>
         </div>

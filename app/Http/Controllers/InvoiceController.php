@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\{Invoice, Payment};
 use App\Services\CashMovementService;
 use App\Services\AuditService;
+use App\Enums\JobStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -86,7 +87,7 @@ class InvoiceController extends Controller
 
     public function pay(Request $r, Invoice $invoice, CashMovementService $cashMovements)
     {
-        $d = $r->validate(['amount' => 'required|numeric|min:.01', 'method' => 'required']);
+        $d = $r->validate(['amount' => 'required|numeric|min:.01', 'method' => 'required', 'from' => 'nullable|string']);
 
         DB::transaction(function () use ($invoice, $d, $cashMovements) {
             // Allow overpayments - remove validation that prevented payments exceeding balance
@@ -106,6 +107,14 @@ class InvoiceController extends Controller
             $invoice->balance = $invoice->total - $invoice->paid;
             $invoice->status = $invoice->balance <= 0 ? 'paid' : 'partially_paid';
             $invoice->save();
+
+            // Update job status when invoice is paid in full
+            if ($invoice->balance <= 0 && $invoice->job) {
+                $job = $invoice->job;
+                if ($job->status === JobStatus::READY_FOR_PAYMENT) {
+                    $job->transitionTo(JobStatus::PAID, auth()->user());
+                }
+            }
 
             $this->auditService->logPayment($payment->id, [
                 'invoice_id' => $invoice->id,
@@ -138,6 +147,14 @@ class InvoiceController extends Controller
             }
         });
 
-        return back()->with('success', 'Payment recorded.');
+        // Preserve the 'from' parameter for proper back button behavior
+        $redirectBack = back()->with('success', 'Payment recorded.')->with('payment_completed', true);
+
+        // If came from notifications, ensure the session knows for proper navigation
+        if ($r->input('from') === 'notifications') {
+            session(['payment_from_notifications' => true]);
+        }
+
+        return $redirectBack;
     }
 }

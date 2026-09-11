@@ -32,6 +32,11 @@ class CashierController extends Controller
                 'status',
                 JobStatus::READY_FOR_PAYMENT->value
             )
+            ->whereDoesntHave('invoice', function ($query) {
+                // Exclude jobs with partial payments (have some payments but still have balance)
+                $query->where('paid', '>', 0)
+                      ->where('balance', '>', 0.01);
+            })
             ->orderBy('updated_at', 'desc')
             ->get();
 
@@ -86,16 +91,23 @@ class CashierController extends Controller
     public function search(Request $request)
     {
         $query = $request->get('q');
-        
+
         $jobs = Job::with(['customer', 'vehicle', 'invoice'])
             ->where('status', JobStatus::READY_FOR_PAYMENT->value)
-            ->whereHas('vehicle', function ($q) use ($query) {
-                $q->where('registration_number', 'like', '%' . $query . '%');
+            ->whereDoesntHave('invoice', function ($query) {
+                // Exclude jobs with partial payments (have some payments but still have balance)
+                $query->where('paid', '>', 0)
+                      ->where('balance', '>', 0.01);
             })
-            ->orWhereHas('customer', function ($q) use ($query) {
-                $q->where('full_name', 'like', '%' . $query . '%');
+            ->where(function ($q) use ($query) {
+                $q->whereHas('vehicle', function ($q) use ($query) {
+                    $q->where('registration_number', 'like', '%' . $query . '%');
+                })
+                ->orWhereHas('customer', function ($q) use ($query) {
+                    $q->where('full_name', 'like', '%' . $query . '%');
+                })
+                ->orWhere('job_number', 'like', '%' . $query . '%');
             })
-            ->orWhere('job_number', 'like', '%' . $query . '%')
             ->orderBy('updated_at', 'desc')
             ->get();
 

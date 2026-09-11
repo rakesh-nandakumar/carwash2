@@ -50,7 +50,7 @@ class ChequePaymentController extends Controller
     /**
      * Show the form for confirming a cheque payment
      */
-    public function confirm(Payment $payment)
+    public function confirm(Request $request, Payment $payment)
     {
         if ($payment->method !== 'cheque') {
             return back()->with('error', 'This is not a cheque payment.');
@@ -62,7 +62,9 @@ class ChequePaymentController extends Controller
 
         $payment->load(['invoice.job.customer', 'invoice.job.vehicle']);
 
-        return view('cheque-payments.confirm', compact('payment'));
+        $from = $request->input('from', 'cheque-payments');
+
+        return view('cheque-payments.confirm', compact('payment', 'from'));
     }
 
     /**
@@ -73,6 +75,7 @@ class ChequePaymentController extends Controller
         $request->validate([
             'action' => 'required|in:confirm,bounce',
             'bounce_reason' => 'nullable|string|required_if:action,bounce',
+            'from' => 'nullable|string',
         ]);
 
         if ($payment->method !== 'cheque') {
@@ -108,9 +111,15 @@ class ChequePaymentController extends Controller
                     userId: auth()->id(),
                 );
 
+                // Determine redirect based on where the user came from
+                $redirectRoute = $request->input('from') === 'notifications'
+                    ? 'notifications.index'
+                    : 'cheque-payments.index';
+
                 return redirect()
-                    ->route('cheque-payments.index')
-                    ->with('success', 'Cheque payment confirmed and recorded in till.');
+                    ->route($redirectRoute)
+                    ->with('success', 'Cheque payment confirmed and recorded in till.')
+                    ->with('cheque_processed', true);
 
             } elseif ($request->action === 'bounce') {
                 // Mark cheque as bounced
@@ -140,8 +149,13 @@ class ChequePaymentController extends Controller
                     $job->update(['status' => 'ready_for_payment']);
                 }
 
+                // Determine redirect based on where the user came from
+                $redirectRoute = $request->input('from') === 'notifications'
+                    ? 'notifications.index'
+                    : 'cheque-payments.index';
+
                 return redirect()
-                    ->route('cheque-payments.index')
+                    ->route($redirectRoute)
                     ->with('success', 'Cheque marked as bounced. Invoice status has been updated.');
             }
         });
@@ -150,7 +164,7 @@ class ChequePaymentController extends Controller
     /**
      * Show details of a specific cheque payment
      */
-    public function show(Payment $payment)
+    public function show(Request $request, Payment $payment)
     {
         if ($payment->method !== 'cheque') {
             return back()->with('error', 'This is not a cheque payment.');
@@ -158,7 +172,9 @@ class ChequePaymentController extends Controller
 
         $payment->load(['invoice.job.customer', 'invoice.job.vehicle', 'receivedBy']);
 
-        return view('cheque-payments.show', compact('payment'));
+        $from = $request->input('from', 'cheque-payments');
+
+        return view('cheque-payments.show', compact('payment', 'from'));
     }
 
     /**
@@ -243,7 +259,7 @@ class ChequePaymentController extends Controller
     /**
      * Show form to record replacement payment for bounced cheque
      */
-    public function showReplacementForm(Payment $payment)
+    public function showReplacementForm(Request $request, Payment $payment)
     {
         if ($payment->method !== 'cheque' || !$payment->is_bounced) {
             return back()->with('error', 'This is not a bounced cheque payment.');
@@ -255,7 +271,9 @@ class ChequePaymentController extends Controller
 
         $payment->load(['invoice.job.customer', 'invoice.job.vehicle']);
 
-        return view('cheque-payments.replacement', compact('payment'));
+        $from = $request->input('from', 'cheque-payments');
+
+        return view('cheque-payments.replacement', compact('payment', 'from'));
     }
 
     /**
@@ -271,6 +289,7 @@ class ChequePaymentController extends Controller
             'cheque_number' => 'required_if:replacement_payment_method,cheque|nullable|string',
             'bank_name' => 'required_if:replacement_payment_method,cheque|nullable|string',
             'cheque_due_date' => 'required_if:replacement_payment_method,cheque|nullable|date',
+            'from' => 'nullable|string',
         ]);
 
         if ($payment->method !== 'cheque' || !$payment->is_bounced) {
@@ -308,6 +327,9 @@ class ChequePaymentController extends Controller
             // Create replacement payment
             $replacementPayment = Payment::create($replacementData);
 
+            // Get invoice for audit logging
+            $invoice = $payment->invoice;
+
             // Log replacement payment in audit logs
             $this->audit->logPayment($replacementPayment->id, [
                 'invoice_id' => $invoice->id,
@@ -327,7 +349,6 @@ class ChequePaymentController extends Controller
             ]);
 
             // Update invoice with replacement payment
-            $invoice = $payment->invoice;
             $invoice->update([
                 'paid' => $invoice->paid + $replacementPayment->amount,
                 'balance' => max(0, $invoice->total - ($invoice->paid + $replacementPayment->amount)),
@@ -344,13 +365,20 @@ class ChequePaymentController extends Controller
             }
 
             $message = 'Replacement payment of Rs. ' . number_format($replacementPayment->amount, 2) . ' recorded successfully via ' . ucfirst($request->replacement_payment_method);
-            
+
             if ($request->replacement_payment_method === 'cheque') {
                 $message .= '. The new cheque has been added to pending cheques and will need to be confirmed when cleared.';
             }
 
+            // Determine redirect based on where the user came from
+            $redirectRoute = $request->input('from') === 'notifications'
+                ? 'notifications.index'
+                : 'cheque-payments.show';
+
+            $params = $redirectRoute === 'cheque-payments.show' ? ['payment' => $payment] : [];
+
             return redirect()
-                ->route('cheque-payments.show', $payment)
+                ->route($redirectRoute, $params)
                 ->with('success', $message);
         });
     }

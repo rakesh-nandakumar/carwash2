@@ -6,7 +6,11 @@
         <h1>Process Cheque Payment</h1>
         <p>Confirm cheque status and update payment records.</p>
     </div>
-    <a href="{{ route('cheque-payments.index') }}" class="secondary">Back to List</a>
+    @if($from === 'notifications')
+        <a href="{{ route('notifications.index') }}" class="secondary">Back to Notifications</a>
+    @else
+        <a href="{{ route('cheque-payments.index') }}" class="secondary">Back to List</a>
+    @endif
 </div>
 
 <div class="panel">
@@ -54,7 +58,7 @@
         </div>
     </div>
 
-    <form method="POST" action="{{ route('cheque-payments.process', $payment) }}" class="action-form">
+    <form method="POST" action="{{ route('cheque-payments.process', $payment) }}?from={{ $from ?? 'cheque-payments' }}" class="action-form">
         @csrf
 
         <div class="alert-box info">
@@ -90,7 +94,11 @@
 
         <div class="form-actions">
             <button type="submit" class="primary">Process Cheque</button>
-            <a href="{{ route('cheque-payments.index') }}" class="secondary">Cancel</a>
+            @if($from === 'notifications')
+                <a href="{{ route('notifications.index') }}" class="secondary">Cancel</a>
+            @else
+                <a href="{{ route('cheque-payments.index') }}" class="secondary">Cancel</a>
+            @endif
         </div>
     </form>
 </div>
@@ -316,6 +324,15 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+
+    // Set localStorage flag when cheque is processed
+    @if(session('cheque_processed'))
+        localStorage.setItem('chequeProcessed', 'true');
+        // Clear the session flag
+        @php
+            session()->forget('cheque_processed');
+        @endphp
+    @endif
 });
 </script>
 @endsection
