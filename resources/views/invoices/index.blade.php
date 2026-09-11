@@ -20,9 +20,9 @@
 <div class="panel">
     <!-- Partial Payments Section -->
     @php
-        $partialInvoices = $invoices->filter(function($i) { return $i->status === 'partially_paid'; });
-        $paidInvoices = $invoices->filter(function($i) { return $i->status === 'paid'; });
-        $issuedInvoices = $invoices->filter(function($i) { return $i->status === 'issued'; });
+        $partialInvoices = $invoices->filter(function($i) { return $i->balance > 0.01 && $i->paid > 0; });
+        $paidInvoices = $invoices->filter(function($i) { return $i->balance <= 0.01; });
+        $issuedInvoices = $invoices->filter(function($i) { return $i->paid <= 0 && $i->balance > 0; });
     @endphp
 
     @if($partialInvoices->count() > 0)
