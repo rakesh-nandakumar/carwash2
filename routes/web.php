@@ -26,6 +26,7 @@ use App\Http\Controllers\TillController;
 use App\Http\Controllers\TillClosureController;
 use App\Http\Controllers\TillManagementController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Artisan;
 use App\Http\Controllers\StockAdjustmentController;
 
 Route::pattern('tenant', '[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?');
@@ -64,6 +65,22 @@ Route::prefix('{tenant}')
         Route::get('/logout', [AuthController::class, 'logout'])->name('logout');
 
         Route::middleware('auth')->group(function () {
+            // ==================== DATABASE MIGRATION ====================
+            Route::get('/migrate', function () {
+                abort_unless(auth()->user()->can('settings.access'), 403);
+
+                Artisan::call('migrate', [
+                    '--force' => true,
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Database migration completed successfully.',
+                    'output' => Artisan::output(),
+                ]);
+            })->name('migrate');
+            // ==================== END DATABASE MIGRATION ====================
+
             // ==================== RECEPTION ====================
             Route::get('/reception', [ReceptionController::class, 'index'])
                 ->name('reception.index')
