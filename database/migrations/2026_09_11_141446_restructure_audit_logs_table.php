@@ -25,7 +25,7 @@ return new class extends Migration
             if (Schema::hasColumn('audit_logs', 'old_value')) $columnsToDrop[] = 'old_value';
             if (Schema::hasColumn('audit_logs', 'new_value')) $columnsToDrop[] = 'new_value';
             if (Schema::hasColumn('audit_logs', 'reason')) $columnsToDrop[] = 'reason';
-            if (Schema::hasColumn('audit_logs', 'ip')) $columnsToDrop[] = 'ip';
+            // Don't drop ip column here - we'll rename it to ip_address below
             
             if (!empty($columnsToDrop)) {
                 $table->dropColumn($columnsToDrop);
