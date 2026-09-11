@@ -25,6 +25,15 @@ Route::get('/deploy/{action}', [DeployController::class, 'run'])
     ->name('deploy.run')
     ->middleware('throttle:10,1');
 
+// Serve storage files for central context (for logos, etc.)
+Route::get('/storage/{path}', function ($path) {
+    $fullPath = storage_path('app/public/' . $path);
+    if (!file_exists($fullPath)) {
+        abort(404);
+    }
+    return response()->file($fullPath);
+})->where('path', '.*');
+
 Route::middleware(['auth:central'])->group(function () {
     // Restore the ambient default guard — `auth:central` repoints every
     // unguarded Auth::* call at the CentralAdmin (see

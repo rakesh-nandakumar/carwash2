@@ -1007,7 +1007,7 @@
                     body {
                         font-family: "Courier New", Courier, monospace;
                         color: #000;
-                        font-size: 10px;
+                        font-size: 12px;
                         line-height: 1.35;
                     }
 
@@ -1023,19 +1023,19 @@
                     }
 
                     .company {
-                        font-size: 16px;
+                        font-size: 18px;
                         font-weight: bold;
                         letter-spacing: .5px;
                     }
 
                     .title {
-                        font-size: 11px;
+                        font-size: 13px;
                         font-weight: bold;
                         margin-top: 2mm;
                     }
 
                     .period {
-                        font-size: 9px;
+                        font-size: 11px;
                         margin-top: 2mm;
                     }
 
@@ -1049,26 +1049,26 @@
                     }
 
                     .movement-date {
-                        font-size: 9px;
+                        font-size: 11px;
                         font-weight: bold;
                         margin-bottom: 1mm;
                     }
 
                     .product {
-                        font-size: 11px;
+                        font-size: 13px;
                         font-weight: bold;
                         word-break: break-word;
                         margin-bottom: 1mm;
                     }
 
                     .detail {
-                        font-size: 9px;
+                        font-size: 11px;
                         margin: .7mm 0;
                         word-break: break-word;
                     }
 
                     .type {
-                        font-size: 9px;
+                        font-size: 11px;
                         font-weight: bold;
                         margin-top: 1mm;
                     }
@@ -1080,7 +1080,7 @@
                     }
 
                     .reference {
-                        font-size: 9px;
+                        font-size: 11px;
                         margin-top: 1mm;
                         word-break: break-word;
                     }
@@ -1088,19 +1088,19 @@
                     .summary {
                         text-align: center;
                         font-weight: bold;
-                        font-size: 10px;
+                        font-size: 12px;
                         margin-top: 4mm;
                     }
 
                     .generated {
                         text-align: center;
-                        font-size: 8px;
+                        font-size: 10px;
                         margin-top: 3mm;
                     }
 
                     .footer {
                         text-align: center;
-                        font-size: 8px;
+                        font-size: 10px;
                         margin-top: 4mm;
                     }
                 </style>

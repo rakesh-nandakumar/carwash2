@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use Illuminate\Support\Facades\Storage;
+use App\Services\CurrentContext;
 
 /**
  * Asset URL normalisation for media stored outside the document root.
@@ -21,7 +22,21 @@ class Media
             return asset($path);
         }
 
-        // Use Laravel route to serve files directly (bypasses Windows symlink issues)
-        return url('/storage/' . $path);
+        try {
+            // Use tenant-aware storage URL when in tenant context
+            $context = app(CurrentContext::class);
+            $tenant = $context->tenant();
+
+            if ($tenant && !$context->isCentral() && !empty($tenant->slug)) {
+                return url("/{$tenant->slug}/storage/{$path}");
+            }
+
+            // Fallback for central context or when tenant is not available
+            $centralPrefix = config('tenancy.central_prefix', 'admin');
+            return url("/{$centralPrefix}/storage/{$path}");
+        } catch (\Exception $e) {
+            // If context is not available, fall back to basic storage URL
+            return url('/storage/' . $path);
+        }
     }
 }

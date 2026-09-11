@@ -569,7 +569,7 @@ function printThermal() {
                         Helvetica,
                         sans-serif;
                     color: #000;
-                    font-size: 10px;
+                    font-size: 12px;
                     line-height: 1.4;
                 }
 
@@ -585,19 +585,19 @@ function printThermal() {
                 }
 
                 .company {
-                    font-size: 17px;
+                    font-size: 20px;
                     font-weight: 800;
                     letter-spacing: .4px;
                 }
 
                 .title {
-                    font-size: 11px;
+                    font-size: 13px;
                     font-weight: 700;
                     margin-top: 2mm;
                 }
 
                 .period {
-                    font-size: 9px;
+                    font-size: 11px;
                     margin-top: 1.5mm;
                 }
 
@@ -607,7 +607,7 @@ function printThermal() {
                 }
 
                 .summary-title {
-                    font-size: 10px;
+                    font-size: 12px;
                     font-weight: 700;
                     margin-bottom: 2mm;
                 }
@@ -617,7 +617,7 @@ function printThermal() {
                     justify-content: space-between;
                     gap: 5px;
                     margin: 1.5mm 0;
-                    font-size: 9px;
+                    font-size: 11px;
                 }
 
                 .summary-row strong {
@@ -634,7 +634,7 @@ function printThermal() {
                 }
 
                 .item-name {
-                    font-size: 10px;
+                    font-size: 12px;
                     font-weight: 700;
                     margin-bottom: 1mm;
                     word-break: break-word;
@@ -644,7 +644,7 @@ function printThermal() {
                     display: flex;
                     justify-content: space-between;
                     gap: 5px;
-                    font-size: 9px;
+                    font-size: 11px;
                 }
 
                 .item-qty {
@@ -659,7 +659,7 @@ function printThermal() {
 
                 .footer {
                     text-align: center;
-                    font-size: 8px;
+                    font-size: 10px;
                     margin-top: 4mm;
                 }
 

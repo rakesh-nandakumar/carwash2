@@ -28,7 +28,7 @@
 
         body {
             font-family: 'Courier New', monospace;
-            font-size: 13px;
+            font-size: 16px;
             color: #000;
             width: 76mm;
             margin: 0 auto;
@@ -45,13 +45,13 @@
         }
 
         .company-name {
-            font-size: 18px;
+            font-size: 22px;
             font-weight: 900;
             margin-bottom: 8px;
         }
 
         .company-details {
-            font-size: 12px;
+            font-size: 14px;
             margin-bottom: 12px;
             color: #000;
             font-weight: bold;
@@ -68,19 +68,19 @@
         }
 
         .invoice-number {
-            font-size: 16px;
+            font-size: 20px;
             font-weight: 900;
         }
 
         .invoice-date {
-            font-size: 12px;
+            font-size: 14px;
             font-weight: bold;
         }
 
         .customer-info {
             text-align: left;
             margin-bottom: 12px;
-            font-size: 12px;
+            font-size: 14px;
             font-weight: bold;
         }
 
@@ -88,7 +88,7 @@
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 12px;
-            font-size: 12px;
+            font-size: 14px;
         }
 
         .items-table td {
@@ -116,7 +116,7 @@
         }
 
         .item-discount {
-            font-size: 10px;
+            font-size: 12px;
             font-weight: bold;
             line-height: 1.2;
         }
@@ -124,7 +124,7 @@
         .totals {
             text-align: right;
             margin-bottom: 12px;
-            font-size: 12px;
+            font-size: 14px;
         }
 
         .total-row {
@@ -134,7 +134,7 @@
         }
 
         .grand-total {
-            font-size: 14px;
+            font-size: 16px;
             font-weight: 900;
             border-top: 2px solid #000;
             margin-top: 8px;
@@ -144,7 +144,7 @@
         .payment-status {
             text-align: center;
             margin: 12px 0;
-            font-size: 14px;
+            font-size: 16px;
             font-weight: 900;
         }
 
@@ -163,7 +163,7 @@
         .footer {
             text-align: center;
             margin-top: 18px;
-            font-size: 11px;
+            font-size: 12px;
             color: #000;
             font-weight: bold;
         }

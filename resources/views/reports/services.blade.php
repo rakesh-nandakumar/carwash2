@@ -386,7 +386,7 @@ function printThermal() {
                 body {
                     font-family: Arial, Helvetica, sans-serif;
                     color: #000;
-                    font-size: 10px;
+                    font-size: 12px;
                     line-height: 1.4;
                 }
 
@@ -402,18 +402,18 @@ function printThermal() {
                 }
 
                 .company {
-                    font-size: 17px;
+                    font-size: 20px;
                     font-weight: 800;
                 }
 
                 .title {
-                    font-size: 11px;
+                    font-size: 13px;
                     font-weight: 700;
                     margin-top: 2mm;
                 }
 
                 .period {
-                    font-size: 9px;
+                    font-size: 11px;
                     margin-top: 1.5mm;
                 }
 
@@ -428,7 +428,7 @@ function printThermal() {
                 }
 
                 .service-name {
-                    font-size: 10px;
+                    font-size: 12px;
                     font-weight: 700;
                     margin-bottom: 1mm;
                     word-break: break-word;
@@ -438,7 +438,7 @@ function printThermal() {
                     display: flex;
                     justify-content: space-between;
                     gap: 5px;
-                    font-size: 9px;
+                    font-size: 11px;
                 }
 
                 .revenue {
@@ -448,7 +448,7 @@ function printThermal() {
 
                 .footer {
                     text-align: center;
-                    font-size: 8px;
+                    font-size: 10px;
                     margin-top: 4mm;
                 }
             </style>
