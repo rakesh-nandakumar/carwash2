@@ -185,7 +185,11 @@ class CustomerController extends Controller
 
             $customer = Customer::create($validated);
 
-            $this->auditService->log('customer_created', 'Customer', $customer->id, null, $validated);
+            $this->auditService->log('customer.created', "Customer '{$customer->full_name}' created", 'info', 'tenant_user', auth()->user()->email, [
+                'customer_id' => $customer->id,
+                'customer_code' => $customer->customer_code,
+                'customer_data' => $validated,
+            ]);
 
             if ($r->transfer_vehicle_id) {
                 $vehicle = \App\Models\Vehicle::find($r->transfer_vehicle_id);
@@ -246,7 +250,12 @@ class CustomerController extends Controller
         $oldValues = $customer->toArray();
         $customer->update($validated);
 
-        $this->auditService->log('customer_updated', 'Customer', $customer->id, $oldValues, $validated);
+        $this->auditService->log('customer.updated', "Customer '{$customer->full_name}' updated", 'info', 'tenant_user', auth()->user()->email, [
+            'customer_id' => $customer->id,
+            'customer_code' => $customer->customer_code,
+            'old_values' => $oldValues,
+            'new_values' => $validated,
+        ]);
 
         return back()->with('success', 'Customer updated.');
     }

@@ -92,7 +92,11 @@ class JobController extends Controller
 
         $job = $this->jobs->create($d);
 
-        $this->auditService->log('job_created', 'Job', $job->id, null, $d);
+        $this->auditService->log('job.created', "Job #{$job->job_number} created", 'info', 'tenant_user', auth()->user()->email, [
+            'job_id' => $job->id,
+            'job_number' => $job->job_number,
+            'job_data' => $d,
+        ]);
 
         foreach ($serviceIds as $serviceId) {
             $service = Service::find($serviceId);
@@ -150,7 +154,12 @@ class JobController extends Controller
         $oldValues = $job->toArray();
         $job->update($validated);
 
-        $this->auditService->log('job_updated', 'Job', $job->id, $oldValues, $validated);
+        $this->auditService->log('job.updated', "Job #{$job->job_number} updated", 'info', 'tenant_user', auth()->user()->email, [
+            'job_id' => $job->id,
+            'job_number' => $job->job_number,
+            'old_values' => $oldValues,
+            'new_values' => $validated,
+        ]);
 
         return redirect()->route('jobs.show', $job)->with('success', 'Job updated.');
     }
@@ -193,7 +202,18 @@ class JobController extends Controller
                         $r->reason
                     );
 
-                    $this->auditService->log('job_status_changed', 'Job', $job->id, ['status' => $oldStatus], ['status' => $newStatus->value], $r->reason);
+                    $this->auditService->log('job.status_changed', "Job #{$job->job_number} status changed to {$newStatus->value}" . ($r->reason ? ": {$r->reason}" : ''), 'info', 'tenant_user', auth()->user()->email, [
+                        'job_id' => $job->id,
+                        'job_number' => $job->job_number,
+                        'old_status' => $oldStatus,
+                        'new_status' => $newStatus->value,
+                        'reason' => $r->reason,
+                    ]);
+
+                    // Log job cancellation specifically
+                    if ($newStatus === JobStatus::CANCELLED) {
+                        $this->auditService->logServiceCancellation($job->id, $r->reason ?? 'Job cancelled');
+                    }
 
                     $this->invoicing->generate($job->id);
                 });
@@ -219,7 +239,18 @@ class JobController extends Controller
                 $r->reason
             );
 
-            $this->auditService->log('job_status_changed', 'Job', $job->id, ['status' => $oldStatus], ['status' => $newStatus->value], $r->reason);
+            $this->auditService->log('job.status_changed', "Job #{$job->job_number} status changed to {$newStatus->value}" . ($r->reason ? ": {$r->reason}" : ''), 'info', 'tenant_user', auth()->user()->email, [
+                'job_id' => $job->id,
+                'job_number' => $job->job_number,
+                'old_status' => $oldStatus,
+                'new_status' => $newStatus->value,
+                'reason' => $r->reason,
+            ]);
+
+            // Log job cancellation specifically
+            if ($newStatus === JobStatus::CANCELLED) {
+                $this->auditService->logServiceCancellation($job->id, $r->reason ?? 'Job cancelled');
+            }
         }
 
         if ($newStatus === JobStatus::PAID && $job->invoice) {
@@ -275,7 +306,12 @@ class JobController extends Controller
 
         $this->approvals->requestAdditionalWork($job->id, $d);
 
-        $this->auditService->log('additional_work_requested', 'Job', $job->id, null, ['title' => $d['title'], 'estimated_cost' => $d['estimated_cost']]);
+        $this->auditService->log('job.additional_work_requested', "Additional work '{$d['title']}' requested for job #{$job->job_number}", 'info', 'tenant_user', auth()->user()->email, [
+            'job_id' => $job->id,
+            'job_number' => $job->job_number,
+            'title' => $d['title'],
+            'estimated_cost' => $d['estimated_cost'],
+        ]);
 
         return back()->with('success', 'Additional work requested.');
     }
@@ -285,7 +321,12 @@ class JobController extends Controller
         $oldStatus = $job->status->value;
         $job->transitionTo(JobStatus::APPROVED, auth()->user());
 
-        $this->auditService->log('job_approved', 'Job', $job->id, ['status' => $oldStatus], ['status' => JobStatus::APPROVED->value]);
+        $this->auditService->log('job.approved', "Job #{$job->job_number} approved", 'info', 'tenant_user', auth()->user()->email, [
+            'job_id' => $job->id,
+            'job_number' => $job->job_number,
+            'old_status' => $oldStatus,
+            'new_status' => JobStatus::APPROVED->value,
+        ]);
 
         return back()->with('success', 'Job approved.');
     }
@@ -318,9 +359,12 @@ class JobController extends Controller
             'applied' => false,
         ]);
 
-        $this->auditService->log('part_added_to_job', 'JobPart', $jobPart->id, null, [
+        $this->auditService->log('job.part_added', "Part '{$product->name}' added to job #{$job->job_number}", 'info', 'tenant_user', auth()->user()->email, [
             'job_id' => $job->id,
+            'job_number' => $job->job_number,
+            'job_part_id' => $jobPart->id,
             'product_id' => $d['product_id'],
+            'product_name' => $product->name,
             'quantity' => $d['quantity'],
             'unit_price' => $product->selling_price,
         ]);
@@ -385,7 +429,13 @@ class JobController extends Controller
         $oldStatus = $service->approval_status;
         $service->update(['approval_status' => 'approved']);
 
-        $this->auditService->log('service_approved', 'JobService', $service->id, ['approval_status' => $oldStatus], ['approval_status' => 'approved']);
+        $this->auditService->log('job.service_approved', "Service approved for job #{$job->job_number}", 'info', 'tenant_user', auth()->user()->email, [
+            'job_id' => $job->id,
+            'job_number' => $job->job_number,
+            'job_service_id' => $service->id,
+            'old_status' => $oldStatus,
+            'new_status' => 'approved',
+        ]);
 
         return back()->with('success', 'Service applied successfully.');
     }
@@ -425,10 +475,11 @@ class JobController extends Controller
             'approval_status' => 'pending',
         ]);
 
-        $this->auditService->log('service_added_to_job', 'JobService', $jobService->id, null, [
+        $this->auditService->logServiceAddition($jobService->id, [
             'job_id' => $job->id,
+            'job_number' => $job->job_number,
             'service_id' => $service->id,
-            'name_snapshot' => $service->name,
+            'service_name' => $service->name,
             'unit_price' => $service->base_price,
         ]);
 
@@ -438,9 +489,26 @@ class JobController extends Controller
     public function destroy(Job $job)
     {
         $jobData = $job->toArray();
+
+        // Log invoice deletion if job has an invoice
+        if ($job->invoice) {
+            $invoiceData = $job->invoice->toArray();
+            $this->auditService->log('invoice.deleted', "Invoice #{$job->invoice->invoice_number} deleted with job", 'warning', 'tenant_user', auth()->user()->email, [
+                'invoice_id' => $job->invoice->id,
+                'invoice_number' => $job->invoice->invoice_number,
+                'invoice_data' => $invoiceData,
+                'job_id' => $job->id,
+                'job_number' => $job->job_number,
+            ]);
+        }
+
         $job->delete();
 
-        $this->auditService->log('job_deleted', 'Job', $job->id, $jobData, null);
+        $this->auditService->log('job.deleted', "Job #{$job->job_number} deleted", 'warning', 'tenant_user', auth()->user()->email, [
+            'job_id' => $job->id,
+            'job_number' => $job->job_number,
+            'job_data' => $jobData,
+        ]);
 
         return redirect()->route('jobs.index')->with('success', 'Job deleted.');
     }
@@ -470,6 +538,7 @@ class JobController extends Controller
         |--------------------------------------------------------------------------
         */
 
+        $oldInvoiceData = $invoice->toArray();
         $invoice->update([
             'subtotal' => $calculation['subtotal'],
             'discount' => $calculation['discount'] + $calculation['membership_discount'],
@@ -477,6 +546,15 @@ class JobController extends Controller
             'total'    => $calculation['total'],
             'balance'  => $calculation['total'] - (float) $invoice->paid,
         ]);
+
+        $newInvoiceData = $invoice->fresh()->toArray();
+
+        $this->auditService->logInvoiceModification(
+            $invoice->id,
+            $oldInvoiceData,
+            $newInvoiceData,
+            'Invoice synced with job services and parts'
+        );
 
         /*
         |--------------------------------------------------------------------------

@@ -7,12 +7,16 @@ use App\Models\Role;
 use App\Models\User;
 use App\Models\UserPermissionOverride;
 use App\Services\PermissionEscalationService;
+use App\Services\AuditService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
+    public function __construct(private readonly AuditService $auditService)
+    {
+    }
     public function index(Request $request)
     {
         $this->authorize('viewAny', User::class);
@@ -148,6 +152,22 @@ class UserController extends Controller
                 $actor
             );
 
+            // Log role assignment
+            $this->auditService->log('user.roles_assigned', "Roles assigned to user {$user->name}", 'warning', 'tenant_user', $actor->email, [
+                'user_id' => $user->id,
+                'user_name' => $user->name,
+                'roles' => $roles->pluck('name')->toArray(),
+            ]);
+
+            // Log permission changes if overrides were provided
+            if (!empty($validated['permission_overrides'])) {
+                $this->auditService->log('user.permissions_assigned', "Permission overrides assigned to user {$user->name}", 'warning', 'tenant_user', $actor->email, [
+                    'user_id' => $user->id,
+                    'user_name' => $user->name,
+                    'permission_overrides' => $validated['permission_overrides'],
+                ]);
+            }
+
             return $user;
         });
 
@@ -275,6 +295,10 @@ class UserController extends Controller
             abort(403);
         }
 
+        // Capture old overrides and roles before transaction
+        $oldOverrides = $user->permissionOverrides()->pluck('type', 'permission_id')->toArray();
+        $oldRoles = $user->roles->pluck('name')->toArray();
+
         DB::transaction(function () use (
             $validated,
             $user,
@@ -307,6 +331,28 @@ class UserController extends Controller
                 $actor
             );
         });
+
+        // Log role changes if roles were modified
+        $newRoles = $user->roles->pluck('name')->toArray();
+        if ($oldRoles !== $newRoles) {
+            $this->auditService->log('user.roles_modified', "Roles modified for user {$user->name}", 'warning', 'tenant_user', $actor->email, [
+                'user_id' => $user->id,
+                'user_name' => $user->name,
+                'old_roles' => $oldRoles,
+                'new_roles' => $newRoles,
+            ]);
+        }
+
+        // Log permission changes if overrides were modified
+        $newOverrides = $user->permissionOverrides()->pluck('type', 'permission_id')->toArray();
+        if ($oldOverrides !== $newOverrides) {
+            $this->auditService->log('user.permissions_modified', "Permission overrides modified for user {$user->name}", 'warning', 'tenant_user', $actor->email, [
+                'user_id' => $user->id,
+                'user_name' => $user->name,
+                'old_overrides' => $oldOverrides,
+                'new_overrides' => $newOverrides,
+            ]);
+        }
 
         $user->clearPermissionCache();
 

@@ -14,23 +14,33 @@ class AuditController extends Controller
 
     public function index(Request $request)
     {
-        $query = AuditLog::with('user')
+        $query = AuditLog::query()
             ->where('tenant_id', auth()->user()->tenant_id)
             ->latest('created_at');
 
-        // Filter by action type
-        if ($request->filled('action')) {
-            $query->where('action', $request->action);
+        // Filter by event key
+        if ($request->filled('event_key')) {
+            $query->where('event_key', $request->event_key);
         }
 
-        // Filter by entity type
-        if ($request->filled('entity_type')) {
-            $query->where('entity_type', $request->entity_type);
+        // Filter by severity
+        if ($request->filled('severity')) {
+            $query->where('severity', $request->severity);
         }
 
-        // Filter by user
-        if ($request->filled('user_id')) {
-            $query->where('user_id', $request->user_id);
+        // Filter by actor email
+        if ($request->filled('actor_email')) {
+            $query->where('actor_email', $request->actor_email);
+        }
+
+        // Filter by actor type
+        if ($request->filled('actor_type')) {
+            $query->where('actor_type', $request->actor_type);
+        }
+
+        // Filter by flagged status
+        if ($request->filled('is_flagged')) {
+            $query->where('is_flagged', $request->boolean('is_flagged'));
         }
 
         // Filter by date range
@@ -46,24 +56,29 @@ class AuditController extends Controller
         $perPage = $request->isMobile() ? 10 : 50;
         $logs = $query->paginate($perPage)->withQueryString();
 
-        // Get available action types for filter dropdown
-        $actionTypes = AuditLog::where('tenant_id', auth()->user()->tenant_id)
-            ->select('action')
+        // Get available event keys for filter dropdown
+        $eventKeys = AuditLog::where('tenant_id', auth()->user()->tenant_id)
+            ->select('event_key')
             ->distinct()
-            ->orderBy('action')
-            ->pluck('action');
+            ->orderBy('event_key')
+            ->pluck('event_key');
 
-        // Get available entity types for filter dropdown
-        $entityTypes = AuditLog::where('tenant_id', auth()->user()->tenant_id)
-            ->select('entity_type')
+        // Get available severities for filter dropdown
+        $severities = ['info', 'warning', 'error', 'critical'];
+
+        // Get available actor types for filter dropdown
+        $actorTypes = AuditLog::where('tenant_id', auth()->user()->tenant_id)
+            ->select('actor_type')
             ->distinct()
-            ->orderBy('entity_type')
-            ->pluck('entity_type');
+            ->orderBy('actor_type')
+            ->pluck('actor_type');
 
-        // Get available users for filter dropdown
-        $users = \App\Models\User::where('tenant_id', auth()->user()->tenant_id)
-            ->orderBy('name')
-            ->get();
+        // Get available actor emails for filter dropdown
+        $actorEmails = AuditLog::where('tenant_id', auth()->user()->tenant_id)
+            ->select('actor_email')
+            ->distinct()
+            ->orderBy('actor_email')
+            ->pluck('actor_email');
 
         // Get statistics
         $totalLogs = AuditLog::where('tenant_id', auth()->user()->tenant_id)->count();
@@ -73,11 +88,11 @@ class AuditController extends Controller
         $weekLogs = AuditLog::where('tenant_id', auth()->user()->tenant_id)
             ->where('created_at', '>=', now()->startOfWeek())
             ->count();
-        $uniqueUsers = AuditLog::where('tenant_id', auth()->user()->tenant_id)
-            ->distinct('user_id')
-            ->count('user_id');
+        $flaggedLogs = AuditLog::where('tenant_id', auth()->user()->tenant_id)
+            ->where('is_flagged', true)
+            ->count();
 
-        return view('audit.index', compact('logs', 'actionTypes', 'entityTypes', 'users', 'totalLogs', 'todayLogs', 'weekLogs', 'uniqueUsers'));
+        return view('audit.index', compact('logs', 'eventKeys', 'severities', 'actorTypes', 'actorEmails', 'totalLogs', 'todayLogs', 'weekLogs', 'flaggedLogs'));
     }
 
     public function show($id)
@@ -87,8 +102,6 @@ class AuditController extends Controller
             ->where('id', $id)
             ->where('tenant_id', auth()->user()->tenant_id)
             ->firstOrFail();
-
-        $auditLog->load('user');
 
         return view('audit.show', compact('auditLog'));
     }

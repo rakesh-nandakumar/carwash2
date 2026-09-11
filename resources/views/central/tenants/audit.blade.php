@@ -16,22 +16,38 @@
     <div class="card">
         <table>
             <thead>
-            <tr><th>When</th><th>Action</th><th>Actor</th><th>Reason / data</th></tr>
+            <tr><th>When</th><th>Event</th><th>Severity</th><th>Actor</th><th>Description</th></tr>
             </thead>
             <tbody>
             @forelse($logs as $log)
                 <tr>
                     <td style="white-space:nowrap;">{{ $log->created_at->format('d M Y H:i') }}</td>
-                    <td><code>{{ $log->action }}</code></td>
-                    <td>{{ $log->user?->name ?? '—' }}
-                        @if(($log->new_value['central_admin'] ?? null) || ($log->reason ?? null))
-                            <small style="color:#64748b;">({{ $log->new_value['central_admin'] ?? $log->reason }})</small>
+                    <td><code>{{ $log->event_key }}</code></td>
+                    <td>
+                        @php
+                            $severityClass = match($log->severity) {
+                                'info' => 'background:#dcfce7;color:#166534;',
+                                'warning' => 'background:#fef3c7;color:#92400e;',
+                                'error' => 'background:#fee2e2;color:#991b1b;',
+                                'critical' => 'background:#7f1d1d;color:white;',
+                                default => 'background:#f3f4f6;color:#4b5563;'
+                            };
+                        @endphp
+                        <span style="{{ $severityClass }} padding:4px 8px;border-radius:999px;font-size:12px;font-weight:600;">
+                            {{ ucfirst($log->severity) }}
+                        </span>
+                    </td>
+                    <td>{{ $log->actor_email ?? '—' }}
+                        <small style="color:#64748b;">({{ ucfirst(str_replace('_', ' ', $log->actor_type ?? 'unknown')) }})</small>
+                    </td>
+                    <td style="font-size:12px;color:#64748b;">{{ Str::limit($log->description, 120) }}
+                        @if($log->is_flagged)
+                            <span style="color:#dc2626;font-weight:600;">⚠️ Flagged</span>
                         @endif
                     </td>
-                    <td style="font-size:12px;color:#64748b;">{{ Str::limit(json_encode($log->old_value), 120) }}</td>
                 </tr>
             @empty
-                <tr><td colspan="4">No audit rows yet.</td></tr>
+                <tr><td colspan="5">No audit rows yet.</td></tr>
             @endforelse
             </tbody>
         </table>

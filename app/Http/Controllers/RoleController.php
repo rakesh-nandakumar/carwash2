@@ -5,11 +5,15 @@ namespace App\Http\Controllers;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Services\PermissionEscalationService;
+use App\Services\AuditService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
 class RoleController extends Controller
 {
+    public function __construct(private readonly AuditService $auditService)
+    {
+    }
     public function index(Request $request)
     {
         $this->authorize('viewAny', Role::class);
@@ -88,6 +92,13 @@ class RoleController extends Controller
         );
 
         $this->clearRoleUsersCache($role);
+
+        $this->auditService->log('role.created', "Role '{$role->name}' created", 'info', 'tenant_user', auth()->user()->email, [
+            'role_id' => $role->id,
+            'role_name' => $role->name,
+            'role_slug' => $role->slug,
+            'permissions' => $permissions->pluck('slug')->toArray(),
+        ]);
 
         return redirect()
             ->route('roles.index')
@@ -168,6 +179,7 @@ class RoleController extends Controller
             abort(403);
         }
 
+        $oldPermissions = $role->permissions->pluck('slug')->toArray();
         $role->update([
             'name' => $validated['name'],
             'description' => $validated['description'] ?? null,
@@ -177,9 +189,18 @@ class RoleController extends Controller
             $permissions->pluck('id')
         );
 
+        $newPermissions = $role->fresh()->permissions->pluck('slug')->toArray();
+
         $role->users->each(
             fn ($user) => $user->clearPermissionCache()
         );
+
+        $this->auditService->log('role.permissions_changed', "Role '{$role->name}' permissions updated", 'warning', 'tenant_user', auth()->user()->email, [
+            'role_id' => $role->id,
+            'role_name' => $role->name,
+            'old_permissions' => $oldPermissions,
+            'new_permissions' => $newPermissions,
+        ]);
 
         return redirect()
             ->route('roles.index')
@@ -211,6 +232,12 @@ class RoleController extends Controller
         }
 
         $role->delete();
+
+        $this->auditService->log('role.deleted', "Role '{$role->name}' deleted", 'warning', 'tenant_user', auth()->user()->email, [
+            'role_id' => $role->id,
+            'role_name' => $role->name,
+            'role_slug' => $role->slug,
+        ]);
 
         return back()->with(
             'success',

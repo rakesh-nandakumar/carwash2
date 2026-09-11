@@ -5,12 +5,16 @@ namespace App\Services;
 use App\Models\CashMovement;
 use App\Models\Till;
 use App\Models\TillClosure;
+use App\Services\AuditService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
 class CashMovementService
 {
+    public function __construct(private readonly AuditService $auditService)
+    {
+    }
     public function mainTill(): Till
     {
         $user = auth()->user();
@@ -102,7 +106,7 @@ class CashMovementService
         ?Model $reference = null,
         ?int $userId = null
     ): CashMovement {
-        return $this->record(
+        $movement = $this->record(
             type: 'in',
             source: 'sale',
             amount: $amount,
@@ -110,6 +114,15 @@ class CashMovementService
             reference: $reference,
             userId: $userId,
         );
+
+        $this->auditService->log('cash.sale', "Cash sale recorded: Rs. {$amount}", 'info', 'tenant_user', auth()->user()->email, [
+            'movement_id' => $movement->id,
+            'amount' => $amount,
+            'reference_type' => $reference ? $reference->getMorphClass() : null,
+            'reference_id' => $reference ? $reference->id : null,
+        ]);
+
+        return $movement;
     }
 
     public function recordRefund(
@@ -117,7 +130,7 @@ class CashMovementService
         ?Model $reference = null,
         ?int $userId = null
     ): CashMovement {
-        return $this->record(
+        $movement = $this->record(
             type: 'out',
             source: 'refund',
             amount: $amount,
@@ -125,6 +138,15 @@ class CashMovementService
             reference: $reference,
             userId: $userId,
         );
+
+        $this->auditService->log('cash.refund', "Cash refund recorded: Rs. {$amount}", 'warning', 'tenant_user', auth()->user()->email, [
+            'movement_id' => $movement->id,
+            'amount' => $amount,
+            'reference_type' => $reference ? $reference->getMorphClass() : null,
+            'reference_id' => $reference ? $reference->id : null,
+        ]);
+
+        return $movement;
     }
 
     public function recordCashIn(
@@ -133,7 +155,7 @@ class CashMovementService
         ?string $description = null,
         ?int $userId = null
     ): CashMovement {
-        return $this->record(
+        $movement = $this->record(
             type: 'in',
             source: 'manual',
             amount: $amount,
@@ -141,6 +163,15 @@ class CashMovementService
             description: $description,
             userId: $userId,
         );
+
+        $this->auditService->log('cash.in', "Cash in recorded: Rs. {$amount} - {$reason}", 'info', 'tenant_user', auth()->user()->email, [
+            'movement_id' => $movement->id,
+            'amount' => $amount,
+            'reason' => $reason,
+            'description' => $description,
+        ]);
+
+        return $movement;
     }
 
     public function recordCashOut(
@@ -165,7 +196,7 @@ class CashMovementService
                 );
             }
 
-            return $this->record(
+            $movement = $this->record(
                 type: 'out',
                 source: 'manual',
                 amount: $amount,
@@ -174,6 +205,15 @@ class CashMovementService
                 userId: $userId,
                 till: $till,
             );
+
+            $this->auditService->log('cash.out', "Cash out recorded: Rs. {$amount} - {$reason}", 'warning', 'tenant_user', auth()->user()->email, [
+                'movement_id' => $movement->id,
+                'amount' => $amount,
+                'reason' => $reason,
+                'description' => $description,
+            ]);
+
+            return $movement;
         });
     }
 
@@ -183,7 +223,7 @@ class CashMovementService
         ?string $description = null,
         ?int $userId = null
     ): CashMovement {
-        return $this->record(
+        $movement = $this->record(
             type: 'out',
             source: 'drop',
             amount: $amount,
@@ -191,6 +231,15 @@ class CashMovementService
             description: $description,
             userId: $userId,
         );
+
+        $this->auditService->log('cash.drop', "Cash drop recorded: Rs. {$amount} - {$reason}", 'warning', 'tenant_user', auth()->user()->email, [
+            'movement_id' => $movement->id,
+            'amount' => $amount,
+            'reason' => $reason,
+            'description' => $description,
+        ]);
+
+        return $movement;
     }
 
     public function expectedBalance(?Till $till = null): float

@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Central;
 use App\Http\Controllers\Controller;
 use App\Models\Setting;
 use App\Models\Tenant;
+use App\Services\AuditService;
+use App\Services\CurrentContext;
 use App\Services\Settings;
 use App\Support\SettingType;
 use Database\Seeders\SettingsSeeder;
@@ -69,6 +71,22 @@ class TenantSettingController extends Controller
         $this->storeUploads($request, $tenant);
 
         Settings::invalidate($tenant->id);
+
+        // Log settings change
+        app(CurrentContext::class)->runForTenant($tenant->id, function () use ($tenant, $request) {
+            app(AuditService::class)->log(
+                'tenant.settings_changed',
+                "Settings updated for tenant '{$tenant->name}'",
+                'info',
+                'central_admin',
+                $request->user('central')->email,
+                [
+                    'tenant_id' => $tenant->id,
+                    'tenant_name' => $tenant->name,
+                    'changed_keys' => array_keys($request->input('s', [])),
+                ]
+            );
+        });
 
         return back()->with('success', 'Settings saved for '.$tenant->name.'.');
     }

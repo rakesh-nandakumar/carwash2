@@ -24,11 +24,19 @@ class ImpersonationController extends Controller
         // Runs inside the tenant's context so the audit row is stamped with
         // the tenant_id and shows in the tenant's own audit trail too.
         app(CurrentContext::class)->runForTenant($tenant->id, function () use ($tenant, $user, $admin): void {
-            app(AuditService::class)->log('impersonation.started', 'Tenant', $tenant->id, null, [
-                'user_id' => $user->id,
-                'user_email' => $user->email,
-                'central_admin' => $admin->email,
-            ]);
+            app(AuditService::class)->log(
+                'impersonation.started',
+                "Impersonation started for tenant '{$tenant->name}' by central admin {$admin->email}",
+                'info',
+                'central_admin',
+                $admin->email,
+                [
+                    'tenant_id' => $tenant->id,
+                    'tenant_name' => $tenant->name,
+                    'user_id' => $user->id,
+                    'user_email' => $user->email,
+                ]
+            );
         });
 
         return redirect($url);

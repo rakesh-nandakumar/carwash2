@@ -4,9 +4,13 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Services\AuditService;
 
 class AuthController extends Controller
 {
+    public function __construct(private readonly AuditService $auditService)
+    {
+    }
     public function showLogin()
     {
         return view('auth.login');
@@ -26,6 +30,8 @@ class AuthController extends Controller
             $request->session()->regenerate();
 
             $user = Auth::user();
+
+            $this->auditService->logLogin();
 
             if ($user->hasPermissionTo('reception.access')) {
                 return redirect()->intended(route('reception.index'));
@@ -51,6 +57,8 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
+        $this->auditService->logLogout();
+        
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();

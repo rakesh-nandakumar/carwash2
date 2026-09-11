@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Central;
 
 use App\Http\Controllers\Controller;
 use App\Models\Tenant;
+use App\Services\AuditService;
 use App\Services\CurrentContext;
 use App\Services\TenantModules;
 use App\Support\ModuleCatalog;
@@ -102,6 +103,7 @@ class TenantController extends Controller
             'opening_balance' => ['required', 'numeric', 'min:0'],
         ]);
 
+        // Create till
         app(CurrentContext::class)->runForTenant($tenant->id, function () use ($data) {
             \App\Models\Till::create([
                 'name' => $data['name'],
@@ -111,6 +113,23 @@ class TenantController extends Controller
                 'opening_balance' => $data['opening_balance'],
                 'is_active' => true,
             ]);
+        });
+
+        // Log till creation
+        app(CurrentContext::class)->runForTenant($tenant->id, function () use ($tenant, $data, $request) {
+            app(AuditService::class)->log(
+                'till.created',
+                "Till '{$data['name']}' created for tenant '{$tenant->name}'",
+                'info',
+                'central_admin',
+                $request->user('central')->email,
+                [
+                    'tenant_id' => $tenant->id,
+                    'tenant_name' => $tenant->name,
+                    'till_name' => $data['name'],
+                    'till_code' => $data['code'],
+                ]
+            );
         });
 
         return back()->with('success', 'Till created successfully.');
@@ -126,6 +145,22 @@ class TenantController extends Controller
 
         $tenant->update([...$data, 'updated_by' => $request->user('central')->id]);
 
+        // Log tenant update
+        app(CurrentContext::class)->runForTenant($tenant->id, function () use ($tenant, $data, $request) {
+            app(AuditService::class)->log(
+                'tenant.updated',
+                "Tenant '{$tenant->name}' updated",
+                'info',
+                'central_admin',
+                $request->user('central')->email,
+                [
+                    'tenant_id' => $tenant->id,
+                    'tenant_name' => $tenant->name,
+                    'changes' => $data,
+                ]
+            );
+        });
+
         return back()->with('success', 'Tenant updated.');
     }
 
@@ -138,6 +173,21 @@ class TenantController extends Controller
             'updated_by' => $request->user('central')->id,
         ]);
 
+        // Log tenant suspension
+        app(CurrentContext::class)->runForTenant($tenant->id, function () use ($tenant, $request) {
+            app(AuditService::class)->log(
+                'tenant.suspended',
+                "Tenant '{$tenant->name}' suspended",
+                'warning',
+                'central_admin',
+                $request->user('central')->email,
+                [
+                    'tenant_id' => $tenant->id,
+                    'tenant_name' => $tenant->name,
+                ]
+            );
+        });
+
         return back()->with('success', 'Tenant suspended.');
     }
 
@@ -149,6 +199,21 @@ class TenantController extends Controller
             'status' => TenantStatus::ACTIVE,
             'updated_by' => $request->user('central')->id,
         ]);
+
+        // Log tenant resume
+        app(CurrentContext::class)->runForTenant($tenant->id, function () use ($tenant, $request) {
+            app(AuditService::class)->log(
+                'tenant.resumed',
+                "Tenant '{$tenant->name}' resumed",
+                'info',
+                'central_admin',
+                $request->user('central')->email,
+                [
+                    'tenant_id' => $tenant->id,
+                    'tenant_name' => $tenant->name,
+                ]
+            );
+        });
 
         return back()->with('success', 'Tenant resumed.');
     }
@@ -186,7 +251,6 @@ class TenantController extends Controller
         $logs = \App\Models\AuditLog::query()
             ->withoutTenantScope()
             ->where('tenant_id', $tenant->id)
-            ->with('user:id,name,email')
             ->latest('created_at')
             ->paginate(20);
 

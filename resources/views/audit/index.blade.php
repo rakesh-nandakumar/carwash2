@@ -60,17 +60,15 @@
         </div>
     </div>
     <div class="stat-card">
-        <div class="stat-icon stat-icon-users">
+        <div class="stat-icon stat-icon-flagged">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                <circle cx="9" cy="7" r="4"></circle>
-                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path>
+                <line x1="4" y1="22" x2="4" y2="15"></line>
             </svg>
         </div>
         <div class="stat-content">
-            <div class="stat-label">Active Users</div>
-            <div class="stat-value">{{ number_format($uniqueUsers) }}</div>
+            <div class="stat-label">Flagged</div>
+            <div class="stat-value">{{ number_format($flaggedLogs) }}</div>
         </div>
     </div>
 </div>
@@ -101,36 +99,54 @@
                 </div>
             </div>
             <div class="filter-section">
-                <label>Action</label>
-                <select id="actionFilter" onchange="applyFilters()">
-                    <option value="">All Actions</option>
-                    @foreach($actionTypes as $action)
-                        <option value="{{ $action }}" {{ request('action') == $action ? 'selected' : '' }}>
-                            {{ ucfirst(str_replace('_', ' ', $action)) }}
+                <label>Event Key</label>
+                <select id="eventKeyFilter" onchange="applyFilters()">
+                    <option value="">All Events</option>
+                    @foreach($eventKeys as $eventKey)
+                        <option value="{{ $eventKey }}" {{ request('event_key') == $eventKey ? 'selected' : '' }}>
+                            {{ $eventKey }}
                         </option>
                     @endforeach
                 </select>
             </div>
             <div class="filter-section">
-                <label>Entity Type</label>
-                <select id="entityTypeFilter" onchange="applyFilters()">
-                    <option value="">All Entities</option>
-                    @foreach($entityTypes as $entityType)
-                        <option value="{{ $entityType }}" {{ request('entity_type') == $entityType ? 'selected' : '' }}>
-                            {{ ucfirst(str_replace('_', ' ', $entityType)) }}
+                <label>Severity</label>
+                <select id="severityFilter" onchange="applyFilters()">
+                    <option value="">All Severities</option>
+                    @foreach($severities as $severity)
+                        <option value="{{ $severity }}" {{ request('severity') == $severity ? 'selected' : '' }}>
+                            {{ ucfirst($severity) }}
                         </option>
                     @endforeach
                 </select>
             </div>
             <div class="filter-section">
-                <label>User</label>
-                <select id="userFilter" onchange="applyFilters()">
-                    <option value="">All Users</option>
-                    @foreach($users as $user)
-                        <option value="{{ $user->id }}" {{ request('user_id') == $user->id ? 'selected' : '' }}>
-                            {{ $user->name }}
+                <label>Actor Type</label>
+                <select id="actorTypeFilter" onchange="applyFilters()">
+                    <option value="">All Actor Types</option>
+                    @foreach($actorTypes as $actorType)
+                        <option value="{{ $actorType }}" {{ request('actor_type') == $actorType ? 'selected' : '' }}>
+                            {{ ucfirst(str_replace('_', ' ', $actorType)) }}
                         </option>
                     @endforeach
+                </select>
+            </div>
+            <div class="filter-section">
+                <label>Actor Email</label>
+                <select id="actorEmailFilter" onchange="applyFilters()">
+                    <option value="">All Actors</option>
+                    @foreach($actorEmails as $actorEmail)
+                        <option value="{{ $actorEmail }}" {{ request('actor_email') == $actorEmail ? 'selected' : '' }}>
+                            {{ $actorEmail }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="filter-section">
+                <label>Flagged Only</label>
+                <select id="flaggedFilter" onchange="applyFilters()">
+                    <option value="">All</option>
+                    <option value="1" {{ request('is_flagged') == '1' ? 'selected' : '' }}>Flagged Only</option>
                 </select>
             </div>
             <div class="filter-section">
@@ -152,27 +168,117 @@
 <!-- Details Modal -->
 <div id="detailsModal" class="modal-overlay" style="display:none;">
     <div class="modal-box details-modal-box">
-        <div class="modal-header">
-            <h2>Audit Log Details</h2>
-            <button class="modal-close" onclick="closeDetailsModal()">×</button>
-        </div>
-        <div class="modal-body">
-            <div class="details-reason" style="display:none;">
-                <strong>Reason:</strong>
-                <span id="modalReason"></span>
+        <div class="modal-header modal-header-enhanced">
+            <div class="modal-title-group">
+                <div class="modal-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                        <polyline points="10 9 9 9 8 9"></polyline>
+                    </svg>
+                </div>
+                <div>
+                    <h2>Audit Log Details</h2>
+                    <p class="modal-subtitle">View complete information about this system activity</p>
+                </div>
             </div>
+            <button class="modal-close modal-close-enhanced" onclick="closeDetailsModal()">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+        </div>
+        <div class="modal-body modal-body-enhanced">
             <div class="details-content-wrapper">
-                <div class="old-value" style="display:none;">
-                    <strong>Old Value:</strong>
-                    <pre id="modalOldValue"></pre>
+                <!-- Quick Info Cards -->
+                <div class="quick-info-grid">
+                    <div class="quick-info-card">
+                        <div class="quick-info-label">Event Key</div>
+                        <div class="quick-info-value" id="modalEventKey">-</div>
+                    </div>
+                    <div class="quick-info-card">
+                        <div class="quick-info-label">Severity</div>
+                        <div class="quick-info-value" id="modalSeverity">-</div>
+                    </div>
+                    <div class="quick-info-card">
+                        <div class="quick-info-label">Timestamp</div>
+                        <div class="quick-info-value" id="modalTimestamp">-</div>
+                    </div>
+                    <div class="quick-info-card">
+                        <div class="quick-info-label">IP Address</div>
+                        <div class="quick-info-value" id="modalIpAddress">-</div>
+                    </div>
                 </div>
-                <div class="new-value" style="display:none;">
-                    <strong>New Value:</strong>
-                    <pre id="modalNewValue"></pre>
+
+                <!-- Description Section -->
+                <div class="detail-section">
+                    <div class="detail-section-header">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                            <line x1="16" y1="13" x2="8" y2="13"></line>
+                            <line x1="16" y1="17" x2="8" y2="17"></line>
+                            <polyline points="10 9 9 9 8 9"></polyline>
+                        </svg>
+                        <h3>Description</h3>
+                    </div>
+                    <div class="detail-content">
+                        <p id="modalDescription">-</p>
+                    </div>
+                </div>
+
+                <!-- Actor Information -->
+                <div class="detail-section">
+                    <div class="detail-section-header">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                        <h3>Actor Information</h3>
+                    </div>
+                    <div class="detail-content">
+                        <div class="actor-info-grid">
+                            <div class="actor-info-item">
+                                <span class="actor-label">Email:</span>
+                                <span class="actor-value" id="modalActorEmail">-</span>
+                            </div>
+                            <div class="actor-info-item">
+                                <span class="actor-label">Type:</span>
+                                <span class="actor-value" id="modalActorType">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Meta Data Section -->
+                <div class="detail-section">
+                    <div class="detail-section-header">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                            <line x1="3" y1="9" x2="21" y2="9"></line>
+                            <line x1="9" y1="21" x2="9" y2="9"></line>
+                        </svg>
+                        <h3>Meta Data</h3>
+                        <button class="copy-btn" onclick="copyMetaData()" title="Copy to clipboard">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                            </svg>
+                            Copy
+                        </button>
+                    </div>
+                    <div class="detail-content">
+                        <div class="meta-content-enhanced">
+                            <pre id="modalMeta"></pre>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="modal-footer">
+        <div class="modal-footer modal-footer-enhanced">
             <button class="primary" onclick="closeDetailsModal()">Close</button>
         </div>
     </div>
@@ -185,87 +291,65 @@
             <thead>
                 <tr>
                     <th>Timestamp</th>
-                    <th>User</th>
-                    <th>Action</th>
-                    <th>Entity</th>
-                    <th>Details</th>
+                    <th>Event</th>
+                    <th>Severity</th>
+                    <th>Actor</th>
+                    <th>Description</th>
                     <th>IP Address</th>
                     <th>Action</th>
                 </tr>
             </thead>
             <tbody>
                 @forelse($logs as $log)
-                    <tr>
+                    <tr data-log-id="{{ $log->id }}">
                         <td>
                             <div class="timestamp-main">{{ $log->created_at->format('Y-m-d H:i') }}</div>
                             <small class="timestamp-relative">{{ $log->created_at->diffForHumans() }}</small>
                         </td>
                         <td>
-                            <div class="user-cell">
-                                <div class="user-avatar">
-                                    {{ $log->user ? substr($log->user->name, 0, 1) : 'S' }}
-                                </div>
-                                <div class="user-info">
-                                    <strong>{{ $log->user->name ?? 'System' }}</strong>
-                                    @if($log->user)
-                                        <small class="muted">{{ $log->user->email }}</small>
-                                    @endif
-                                </div>
-                            </div>
+                            <div class="event-key">{{ $log->event_key }}</div>
+                            @if($log->is_flagged)
+                                <span class="flagged-badge">⚠️ Flagged</span>
+                            @endif
                         </td>
                         <td>
                             @php
-                                $actionClass = match($log->action) {
-                                    'created', 'added' => 'action-created',
-                                    'updated', 'modified' => 'action-updated',
-                                    'deleted', 'removed' => 'action-deleted',
-                                    'cancelled' => 'action-cancelled',
-                                    'login', 'logout' => 'action-login',
-                                    default => 'action-default'
+                                $severityClass = match($log->severity) {
+                                    'info' => 'severity-info',
+                                    'warning' => 'severity-warning',
+                                    'error' => 'severity-error',
+                                    'critical' => 'severity-critical',
+                                    default => 'severity-default'
                                 };
                             @endphp
-                            <span class="{{ $actionClass }}">
-                                @if($log->action === 'created' || $log->action === 'added')
-                                    <svg class="action-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                                @elseif($log->action === 'updated' || $log->action === 'modified')
-                                    <svg class="action-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                                @elseif($log->action === 'deleted' || $log->action === 'removed')
-                                    <svg class="action-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                                @elseif($log->action === 'cancelled')
-                                    <svg class="action-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
-                                @elseif($log->action === 'login')
-                                    <svg class="action-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" y1="12" x2="3" y2="12"></line></svg>
-                                @elseif($log->action === 'logout')
-                                    <svg class="action-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-                                @else
-                                    <svg class="action-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-                                @endif
-                                {{ ucfirst(str_replace('_', ' ', $log->action)) }}
+                            <span class="{{ $severityClass }}">
+                                {{ ucfirst($log->severity) }}
                             </span>
                         </td>
                         <td>
-                            <div class="entity-cell">
-                                <strong>{{ $log->entity_type ?? 'N/A' }}</strong>
-                                @if($log->entity_id)
-                                    <small class="muted">#{{ $log->entity_id }}</small>
-                                @endif
+                            <div class="actor-cell">
+                                <div class="user-avatar">
+                                    {{ $log->actor_email ? substr($log->actor_email, 0, 1) : 'S' }}
+                                </div>
+                                <div class="user-info">
+                                    <strong>{{ $log->actor_email ?? 'System' }}</strong>
+                                    <small class="muted">{{ ucfirst(str_replace('_', ' ', $log->actor_type ?? 'unknown')) }}</small>
+                                </div>
                             </div>
                         </td>
                         <td>
-                            @if($log->reason)
-                                <div class="reason-text">{{ $log->reason }}</div>
-                            @endif
-                            @if($log->old_value || $log->new_value)
-                                <button class="details-toggle" onclick="openDetailsModal({{ $log->id }}, {{ $log->old_value ? json_encode($log->old_value) : 'null' }}, {{ $log->new_value ? json_encode($log->new_value) : 'null' }}, {{ $log->reason ? "'" . addslashes($log->reason) . "'" : 'null' }})">
+                            <div class="description-text">{{ $log->description }}</div>
+                            @if($log->meta)
+                                <button class="details-toggle" onclick="openDetailsModal({{ $log->id }}, {{ json_encode($log->meta) }})">
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;">
                                         <polyline points="6 9 12 15 18 9"></polyline>
                                     </svg>
-                                    View Details
+                                    View Meta
                                 </button>
                             @endif
                         </td>
                         <td>
-                            <span class="ip-address">{{ $log->ip ?? 'N/A' }}</span>
+                            <span class="ip-address">{{ $log->ip_address ?? 'N/A' }}</span>
                         </td>
                         <td>
                             <a href="{{ route('audit-logs.show', $log->id) }}" class="action-link">
@@ -291,70 +375,54 @@
                 <div class="card-header">
                     <div class="card-user">
                         <div class="user-avatar small">
-                            {{ $log->user ? substr($log->user->name, 0, 1) : 'S' }}
+                            {{ $log->actor_email ? substr($log->actor_email, 0, 1) : 'S' }}
                         </div>
                         <div class="user-info">
-                            <strong>{{ $log->user->name ?? 'System' }}</strong>
+                            <strong>{{ $log->actor_email ?? 'System' }}</strong>
                             <small>{{ $log->created_at->diffForHumans() }}</small>
                         </div>
                     </div>
                     @php
-                        $actionClass = match($log->action) {
-                            'created', 'added' => 'action-created',
-                            'updated', 'modified' => 'action-updated',
-                            'deleted', 'removed' => 'action-deleted',
-                            'cancelled' => 'action-cancelled',
-                            'login', 'logout' => 'action-login',
-                            default => 'action-default'
+                        $severityClass = match($log->severity) {
+                            'info' => 'severity-info',
+                            'warning' => 'severity-warning',
+                            'error' => 'severity-error',
+                            'critical' => 'severity-critical',
+                            default => 'severity-default'
                         };
                     @endphp
-                    <span class="{{ $actionClass }} small">
-                        @if($log->action === 'created' || $log->action === 'added')
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                        @elseif($log->action === 'updated' || $log->action === 'modified')
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                        @elseif($log->action === 'deleted' || $log->action === 'removed')
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                        @elseif($log->action === 'cancelled')
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
-                        @elseif($log->action === 'login')
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" y1="12" x2="3" y2="12"></line></svg>
-                        @elseif($log->action === 'logout')
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-                        @else
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-                        @endif
-                        {{ ucfirst(str_replace('_', ' ', $log->action)) }}
+                    <span class="{{ $severityClass }} small">
+                        {{ ucfirst($log->severity) }}
                     </span>
                 </div>
                 <div class="card-body">
                     <div class="card-detail">
-                        <span class="label">Entity</span>
-                        <span class="value">{{ $log->entity_type ?? 'N/A' }} @if($log->entity_id) #{{ $log->entity_id }} @endif</span>
+                        <span class="label">Event</span>
+                        <span class="value">{{ $log->event_key }}</span>
                     </div>
                     <div class="card-detail">
                         <span class="label">Time</span>
                         <span class="value">{{ $log->created_at->format('Y-m-d H:i') }}</span>
                     </div>
-                    @if($log->reason)
+                    @if($log->description)
                         <div class="card-detail full-width">
-                            <span class="label">Reason</span>
-                            <span class="value reason">{{ $log->reason }}</span>
+                            <span class="label">Description</span>
+                            <span class="value">{{ $log->description }}</span>
                         </div>
                     @endif
-                    @if($log->old_value || $log->new_value)
+                    @if($log->meta)
                         <div class="card-detail full-width">
-                            <button class="details-toggle mobile" onclick="openDetailsModal({{ $log->id }}, {{ $log->old_value ? json_encode($log->old_value) : 'null' }}, {{ $log->new_value ? json_encode($log->new_value) : 'null' }}, {{ $log->reason ? "'" . addslashes($log->reason) . "'" : 'null' }})">
+                            <button class="details-toggle mobile" onclick="openDetailsModal({{ $log->id }}, {{ json_encode($log->meta) }})">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;">
                                     <polyline points="6 9 12 15 18 9"></polyline>
                                 </svg>
-                                View Details
+                                View Meta
                             </button>
                         </div>
                     @endif
                 </div>
                 <div class="card-footer">
-                    <span class="ip-address small">{{ $log->ip ?? 'N/A' }}</span>
+                    <span class="ip-address small">{{ $log->ip_address ?? 'N/A' }}</span>
                     <a href="{{ route('audit-logs.show', $log->id) }}" class="action-link">View →</a>
                 </div>
             </div>
@@ -421,8 +489,8 @@
     color: white;
 }
 
-.stat-icon-users {
-    background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+.stat-icon-flagged {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
     color: white;
 }
 
@@ -595,6 +663,92 @@
     color: #4b5563;
 }
 
+/* Severity badges */
+.severity-info,
+.severity-warning,
+.severity-error,
+.severity-critical,
+.severity-default {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.severity-info {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.severity-warning {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.severity-error {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.severity-critical {
+    background: #7f1d1d;
+    color: white;
+}
+
+.severity-default {
+    background: #f3f4f6;
+    color: #4b5563;
+}
+
+.severity-info.small,
+.severity-warning.small,
+.severity-error.small,
+.severity-critical.small,
+.severity-default.small {
+    padding: 4px 8px;
+    font-size: 11px;
+}
+
+/* Event key styling */
+.event-key {
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 13px;
+    color: #6b7280;
+    background: #f3f4f6;
+    padding: 4px 8px;
+    border-radius: 4px;
+    margin-bottom: 4px;
+}
+
+/* Flagged badge */
+.flagged-badge {
+    display: inline-block;
+    background: #fee2e2;
+    color: #991b1b;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-top: 4px;
+}
+
+/* Description text */
+.description-text {
+    font-size: 14px;
+    color: #374151;
+    margin-bottom: 8px;
+}
+
+/* Actor cell */
+.actor-cell {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
 .action-created.small,
 .action-updated.small,
 .action-deleted.small,
@@ -642,45 +796,264 @@
 
 /* Details Modal Specific Styles */
 .details-modal-box {
-    max-width: 700px;
-    background: white;
+    max-width: 1100px;
+    background: rgba(10, 31, 51, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
-.details-reason {
-    background: #fef3c7;
-    border-left: 4px solid #f59e0b;
+/* Enhanced Modal Styles */
+.modal-header-enhanced {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 24px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.modal-title-group {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.modal-icon {
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.modal-header-enhanced h2 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+    color: #ffffff;
+}
+
+.modal-subtitle {
+    margin: 4px 0 0 0;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.modal-close-enhanced {
+    border: none;
+    background: rgba(255, 255, 255, 0.1);
+    font-size: 16px;
+    cursor: pointer;
+    color: rgba(255, 255, 255, 0.7);
+    padding: 8px;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    transition: all 0.15s ease;
+}
+
+.modal-close-enhanced:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+}
+
+.modal-body-enhanced {
+    margin-bottom: 24px;
+    overflow: visible;
+    /* Hide scrollbar but keep functionality */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+}
+
+.modal-body-enhanced::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
+}
+
+.quick-info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.quick-info-card {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
     padding: 12px 16px;
-    border-radius: 6px;
-    margin-bottom: 16px;
-    font-size: 14px;
-    color: #92400e;
 }
 
-.details-reason strong {
-    display: block;
+.quick-info-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.6);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
     margin-bottom: 4px;
+}
+
+.quick-info-value {
+    font-size: 14px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.9);
+    word-break: break-word;
+}
+
+.detail-section {
+    margin-bottom: 20px;
+}
+
+.detail-section:last-child {
+    margin-bottom: 0;
+}
+
+.detail-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.detail-section-header svg {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.detail-section-header h3 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.copy-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: rgba(255, 255, 255, 0.8);
+    padding: 6px 12px;
+    border-radius: 6px;
     font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.copy-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+}
+
+.detail-content {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.detail-content p {
+    margin: 0;
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.85);
+    line-height: 1.5;
+}
+
+.actor-info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+
+.actor-info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.actor-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.6);
     text-transform: uppercase;
     letter-spacing: 0.3px;
 }
 
-.details-content-wrapper {
-    max-height: 400px;
-    overflow-y: auto;
+.actor-value {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.85);
+    word-break: break-word;
 }
 
-.old-value,
-.new-value {
+.meta-content-enhanced {
+    background: rgba(15, 23, 42, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 16px;
+    max-height: 300px;
+    overflow-y: auto;
+    /* Hide scrollbar but keep functionality */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+}
+
+.meta-content-enhanced::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
+}
+
+.meta-content-enhanced pre {
+    font-size: 12px;
+    white-space: pre-wrap;
+    word-break: break-all;
+    margin: 0;
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.85);
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+}
+
+.modal-footer-enhanced {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.modal-footer-enhanced .secondary {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: rgba(255, 255, 255, 0.9);
+    text-decoration: none;
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.15s ease;
+}
+
+.modal-footer-enhanced .secondary:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+}
+
+/* Add data-log-id attribute support */
+tr[data-log-id] {
+    /* This allows us to find specific rows by ID */
+}
+
+.meta-content {
     margin-bottom: 16px;
 }
 
-.old-value:last-child,
-.new-value:last-child {
-    margin-bottom: 0;
-}
-
-.old-value strong,
-.new-value strong {
+.meta-content strong {
     display: block;
     margin-bottom: 8px;
     font-size: 13px;
@@ -688,16 +1061,7 @@
     color: #374151;
 }
 
-.old-value strong {
-    color: #991b1b;
-}
-
-.new-value strong {
-    color: #166534;
-}
-
-.old-value pre,
-.new-value pre {
+.meta-content pre {
     background: #f8fafc;
     border: 1px solid #e5e7eb;
     padding: 12px;
@@ -707,18 +1071,19 @@
     word-break: break-all;
     margin: 0;
     line-height: 1.5;
+    color: #374151;
 }
 
-.old-value pre {
-    background: #fef2f2;
-    border-color: #fecaca;
-    color: #991b1b;
+.details-content-wrapper {
+    max-height: 400px;
+    overflow-y: auto;
+    /* Hide scrollbar but keep functionality */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
 }
 
-.new-value pre {
-    background: #f0fdf4;
-    border-color: #bbf7d0;
-    color: #166534;
+.details-content-wrapper::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
 }
 
 /* IP address styling */
@@ -1266,11 +1631,50 @@ nav[role="navigation"] svg {
     }
 
     .details-modal-box {
-        max-width: 90%;
+        max-width: 98%;
     }
 
     .details-content-wrapper {
         max-height: 300px;
+    }
+
+    .quick-info-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .actor-info-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .modal-title-group {
+        gap: 12px;
+    }
+
+    .modal-icon {
+        width: 40px;
+        height: 40px;
+    }
+
+    .modal-header-enhanced h2 {
+        font-size: 18px;
+    }
+
+    .modal-subtitle {
+        font-size: 12px;
+    }
+
+    .meta-content-enhanced {
+        max-height: 200px;
+    }
+
+    .modal-footer-enhanced {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .modal-footer-enhanced .secondary,
+    .modal-footer-enhanced .primary {
+        width: 100%;
     }
 
     .quick-filters {
@@ -1347,16 +1751,20 @@ function setQuickDate(period) {
 }
 
 function applyFilters() {
-    const action = document.getElementById('actionFilter').value;
-    const entityType = document.getElementById('entityTypeFilter').value;
-    const user = document.getElementById('userFilter').value;
+    const eventKey = document.getElementById('eventKeyFilter').value;
+    const severity = document.getElementById('severityFilter').value;
+    const actorType = document.getElementById('actorTypeFilter').value;
+    const actorEmail = document.getElementById('actorEmailFilter').value;
+    const flagged = document.getElementById('flaggedFilter').value;
     const fromDate = document.getElementById('fromDateFilter').value;
     const toDate = document.getElementById('toDateFilter').value;
     
     const params = new URLSearchParams();
-    if (action) params.set('action', action);
-    if (entityType) params.set('entity_type', entityType);
-    if (user) params.set('user_id', user);
+    if (eventKey) params.set('event_key', eventKey);
+    if (severity) params.set('severity', severity);
+    if (actorType) params.set('actor_type', actorType);
+    if (actorEmail) params.set('actor_email', actorEmail);
+    if (flagged) params.set('is_flagged', flagged);
     if (fromDate) params.set('from_date', fromDate);
     if (toDate) params.set('to_date', toDate);
     
@@ -1364,41 +1772,56 @@ function applyFilters() {
 }
 
 function clearFilters() {
-    document.getElementById('actionFilter').value = '';
-    document.getElementById('entityTypeFilter').value = '';
-    document.getElementById('userFilter').value = '';
+    document.getElementById('eventKeyFilter').value = '';
+    document.getElementById('severityFilter').value = '';
+    document.getElementById('actorTypeFilter').value = '';
+    document.getElementById('actorEmailFilter').value = '';
+    document.getElementById('flaggedFilter').value = '';
     document.getElementById('fromDateFilter').value = '';
     document.getElementById('toDateFilter').value = '';
     window.location.href = '{{ route('audit-logs.index') }}';
 }
 
-function openDetailsModal(id, oldValue, newValue, reason) {
+function openDetailsModal(id, meta) {
     const modal = document.getElementById('detailsModal');
-    const modalOldValue = document.getElementById('modalOldValue');
-    const modalNewValue = document.getElementById('modalNewValue');
-    const modalReason = document.getElementById('modalReason');
-    const detailsReason = document.querySelector('.details-reason');
+    const modalMeta = document.getElementById('modalMeta');
 
-    // Set the content
-    if (oldValue && Object.keys(oldValue).length > 0) {
-        modalOldValue.textContent = JSON.stringify(oldValue, null, 2);
-        modalOldValue.parentElement.style.display = 'block';
-    } else {
-        modalOldValue.parentElement.style.display = 'none';
+    // Find the log row to get additional data
+    const logRow = document.querySelector(`tr[data-log-id="${id}"]`);
+    if (!logRow) {
+        // Fallback to meta-only view if row not found
+        if (meta && Object.keys(meta).length > 0) {
+            modalMeta.textContent = JSON.stringify(meta, null, 2);
+        } else {
+            modalMeta.textContent = 'No meta data available';
+        }
+        modal.style.display = 'flex';
+        return;
     }
 
-    if (newValue && Object.keys(newValue).length > 0) {
-        modalNewValue.textContent = JSON.stringify(newValue, null, 2);
-        modalNewValue.parentElement.style.display = 'block';
-    } else {
-        modalNewValue.parentElement.style.display = 'none';
-    }
+    // Extract data from the row
+    const eventKey = logRow.querySelector('.event-key')?.textContent.trim() || '-';
+    const severity = logRow.querySelector('.severity-info, .severity-warning, .severity-error, .severity-critical, .severity-default')?.textContent.trim() || '-';
+    const timestamp = logRow.querySelector('.timestamp-main')?.textContent.trim() || '-';
+    const ipAddress = logRow.querySelector('.ip-address')?.textContent.trim() || '-';
+    const description = logRow.querySelector('.description-text')?.textContent.trim() || '-';
+    const actorEmail = logRow.querySelector('.user-info strong')?.textContent.trim() || '-';
+    const actorType = logRow.querySelector('.user-info small')?.textContent.trim() || '-';
 
-    if (reason && reason.trim() !== '') {
-        modalReason.textContent = reason;
-        detailsReason.style.display = 'block';
+    // Populate the enhanced modal fields
+    document.getElementById('modalEventKey').textContent = eventKey;
+    document.getElementById('modalSeverity').textContent = severity;
+    document.getElementById('modalTimestamp').textContent = timestamp;
+    document.getElementById('modalIpAddress').textContent = ipAddress;
+    document.getElementById('modalDescription').textContent = description;
+    document.getElementById('modalActorEmail').textContent = actorEmail;
+    document.getElementById('modalActorType').textContent = actorType;
+
+    // Set the meta data
+    if (meta && Object.keys(meta).length > 0) {
+        modalMeta.textContent = JSON.stringify(meta, null, 2);
     } else {
-        detailsReason.style.display = 'none';
+        modalMeta.textContent = 'No meta data available';
     }
 
     modal.style.display = 'flex';
@@ -1406,6 +1829,28 @@ function openDetailsModal(id, oldValue, newValue, reason) {
 
 function closeDetailsModal() {
     document.getElementById('detailsModal').style.display = 'none';
+}
+
+function copyMetaData() {
+    const modalMeta = document.getElementById('modalMeta');
+    const text = modalMeta.textContent;
+
+    navigator.clipboard.writeText(text).then(() => {
+        // Show a brief success indicator
+        const copyBtn = document.querySelector('.copy-btn');
+        const originalText = copyBtn.innerHTML;
+        copyBtn.innerHTML = `
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            Copied!
+        `;
+        setTimeout(() => {
+            copyBtn.innerHTML = originalText;
+        }, 2000);
+    }).catch(err => {
+        console.error('Failed to copy:', err);
+    });
 }
 
 function exportAuditLogs() {
@@ -1417,21 +1862,21 @@ function exportAuditLogs() {
         return;
     }
     
-    let csv = 'Timestamp,User Email,User Name,Action,Entity Type,Entity ID,Reason,IP Address\n';
+    let csv = 'Timestamp,Event Key,Severity,Actor Email,Actor Type,Description,IP Address,Flagged\n';
     
     rows.forEach(row => {
         const cells = row.querySelectorAll('td');
         if (cells.length > 0 && !row.querySelector('.empty-state')) {
             const timestamp = cells[0].querySelector('.timestamp-main')?.textContent.trim() || cells[0].textContent.trim();
-            const userName = cells[1].querySelector('strong')?.textContent.trim() || '';
-            const userEmail = cells[1].querySelector('small')?.textContent.trim() || '';
-            const action = cells[2].textContent.trim();
-            const entityType = cells[3].querySelector('strong')?.textContent.trim() || cells[3].textContent.trim();
-            const entityId = cells[3].querySelector('small')?.textContent.replace('#', '').trim() || '';
-            const reason = cells[4].querySelector('.reason-text')?.textContent.trim() || '';
+            const eventKey = cells[1].querySelector('.event-key')?.textContent.trim() || cells[1].textContent.trim();
+            const severity = cells[2].textContent.trim();
+            const actorEmail = cells[3].querySelector('strong')?.textContent.trim() || '';
+            const actorType = cells[3].querySelector('small')?.textContent.trim() || '';
+            const description = cells[4].querySelector('.description-text')?.textContent.trim() || cells[4].textContent.trim();
             const ip = cells[5].textContent.trim();
+            const flagged = cells[1].querySelector('.flagged-badge') ? 'Yes' : 'No';
             
-            csv += `"${timestamp}","${userEmail}","${userName}","${action}","${entityType}","${entityId}","${reason}","${ip}"\n`;
+            csv += `"${timestamp}","${eventKey}","${severity}","${actorEmail}","${actorType}","${description}","${ip}","${flagged}"\n`;
         }
     });
     

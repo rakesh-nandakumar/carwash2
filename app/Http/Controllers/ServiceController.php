@@ -61,7 +61,10 @@ class ServiceController extends Controller
 
         $service = Service::create($validated);
 
-        $this->auditService->log('service_created', 'Service', $service->id, null, $validated);
+        $this->auditService->log('service.created', "Service '{$service->name}' created", 'info', 'tenant_user', auth()->user()->email, [
+            'service_id' => $service->id,
+            'service_data' => $validated,
+        ]);
 
         return redirect()->route('services.index')->with('success', 'Service created successfully.');
     }
@@ -101,7 +104,16 @@ class ServiceController extends Controller
         $oldValues = $service->toArray();
         $service->update($validated);
 
-        $this->auditService->log('service_updated', 'Service', $service->id, $oldValues, $validated);
+        // Check if price changed and log it specifically
+        if (isset($oldValues['base_price']) && isset($validated['base_price']) && $oldValues['base_price'] != $validated['base_price']) {
+            $this->auditService->logPriceChange($service->id, 'service', (float) $oldValues['base_price'], (float) $validated['base_price'], 'Service price updated');
+        }
+
+        $this->auditService->log('service.updated', "Service '{$service->name}' updated", 'info', 'tenant_user', auth()->user()->email, [
+            'service_id' => $service->id,
+            'old_values' => $oldValues,
+            'new_values' => $validated,
+        ]);
 
         return redirect()->route('services.index')->with('success', 'Service updated successfully.');
     }
@@ -118,7 +130,10 @@ class ServiceController extends Controller
         $serviceData = $service->toArray();
         $service->delete();
 
-        $this->auditService->log('service_deleted', 'Service', $serviceId, $serviceData, null);
+        $this->auditService->log('service.deleted', "Service '{$service->name}' deleted", 'warning', 'tenant_user', auth()->user()->email, [
+            'service_id' => $serviceId,
+            'service_data' => $serviceData,
+        ]);
 
         return redirect()->route('services.index')->with('success', 'Service deleted successfully.');
     }
@@ -129,7 +144,11 @@ class ServiceController extends Controller
         $newActive = $request->boolean('active');
         $service->update(['active' => $newActive]);
 
-        $this->auditService->log('service_toggled', 'Service', $service->id, ['active' => $oldActive], ['active' => $newActive]);
+        $this->auditService->log('service.toggled', "Service '{$service->name}' " . ($newActive ? 'activated' : 'deactivated'), 'info', 'tenant_user', auth()->user()->email, [
+            'service_id' => $service->id,
+            'old_active' => $oldActive,
+            'new_active' => $newActive,
+        ]);
 
         return response()->json(['success' => true, 'active' => $service->active]);
     }

@@ -7,112 +7,148 @@ use Illuminate\Support\Facades\Request;
 
 class AuditService
 {
-    public function log(string $action, ?string $entityType = null, ?int $entityId = null, $oldValue = null, $newValue = null, ?string $reason = null): void
+    public function log(string $eventKey, string $description, string $severity = 'info', ?string $actorType = null, ?string $actorEmail = null, ?array $meta = null, bool $isFlagged = false): void
     {
         AuditLog::create([
-            'user_id' => auth()->id(),
-            'action' => $action,
-            'entity_type' => $entityType,
-            'entity_id' => $entityId,
-            'old_value' => $oldValue,
-            'new_value' => $newValue,
-            'reason' => $reason,
-            'ip' => Request::ip(),
+            'event_key' => $eventKey,
+            'severity' => $severity,
+            'description' => $description,
+            'actor_email' => $actorEmail ?? (auth()->check() ? auth()->user()->email : null),
+            'actor_type' => $actorType ?? (auth()->check() ? 'tenant_user' : null),
+            'ip_address' => Request::ip(),
+            'meta' => $meta,
+            'is_flagged' => $isFlagged,
         ]);
     }
 
     public function logLogin(): void
     {
-        $this->log('login', 'User', auth()->id());
+        $this->log('auth.login', 'User logged in', 'info', 'tenant_user', auth()->user()->email);
     }
 
     public function logLogout(): void
     {
-        $this->log('logout', 'User', auth()->id());
+        $this->log('auth.logout', 'User logged out', 'info', 'tenant_user', auth()->user()->email);
     }
 
     public function logInvoiceCreation(int $invoiceId, array $invoiceData): void
     {
-        $this->log('invoice_created', 'Invoice', $invoiceId, null, $invoiceData);
+        $this->log('invoice.created', "Invoice #{$invoiceId} created", 'info', 'tenant_user', auth()->user()->email, [
+            'invoice_id' => $invoiceId,
+            'invoice_data' => $invoiceData,
+        ]);
     }
 
     public function logInvoiceModification(int $invoiceId, array $oldData, array $newData, string $reason): void
     {
-        $this->log('invoice_modified', 'Invoice', $invoiceId, $oldData, $newData, $reason);
+        $this->log('invoice.modified', "Invoice #{$invoiceId} modified: {$reason}", 'warning', 'tenant_user', auth()->user()->email, [
+            'invoice_id' => $invoiceId,
+            'old_data' => $oldData,
+            'new_data' => $newData,
+            'reason' => $reason,
+        ]);
     }
 
     public function logPayment(int $paymentId, array $paymentData): void
     {
-        $this->log('payment_created', 'Payment', $paymentId, null, $paymentData);
+        $this->log('payment.created', "Payment #{$paymentId} created", 'info', 'tenant_user', auth()->user()->email, [
+            'payment_id' => $paymentId,
+            'payment_data' => $paymentData,
+        ]);
     }
 
     public function logRefund(int $refundId, array $refundData): void
     {
-        $this->log('refund_created', 'Refund', $refundId, null, $refundData);
+        $this->log('payment.refunded', "Refund #{$refundId} processed", 'warning', 'tenant_user', auth()->user()->email, [
+            'refund_id' => $refundId,
+            'refund_data' => $refundData,
+        ]);
     }
 
     public function logDiscountApplied(int $invoiceId, array $discountData, string $reason): void
     {
-        $this->log('discount_applied', 'Invoice', $invoiceId, null, $discountData, $reason);
+        $this->log('invoice.discount_applied', "Discount applied to invoice #{$invoiceId}: {$reason}", 'warning', 'tenant_user', auth()->user()->email, [
+            'invoice_id' => $invoiceId,
+            'discount_data' => $discountData,
+            'reason' => $reason,
+        ]);
     }
 
     public function logStockAdjustment(int $productId, int $branchId, float $oldQty, float $newQty, string $reason): void
     {
-        $this->log('stock_adjusted', 'Inventory', null, [
+        $this->log('inventory.adjusted', "Stock adjusted for product #{$productId}: {$reason}", 'warning', 'tenant_user', auth()->user()->email, [
             'product_id' => $productId,
             'branch_id' => $branchId,
             'old_quantity' => $oldQty,
-        ], [
-            'product_id' => $productId,
-            'branch_id' => $branchId,
             'new_quantity' => $newQty,
-        ], $reason);
+            'reason' => $reason,
+        ]);
     }
 
     public function logServiceRemoval(int $jobServiceId, array $serviceData, string $reason): void
     {
-        $this->log('service_removed', 'JobService', $jobServiceId, $serviceData, null, $reason);
+        $this->log('job.service_removed', "Service #{$jobServiceId} removed from job: {$reason}", 'warning', 'tenant_user', auth()->user()->email, [
+            'job_service_id' => $jobServiceId,
+            'service_data' => $serviceData,
+            'reason' => $reason,
+        ]);
     }
 
     public function logServiceAddition(int $jobServiceId, array $serviceData): void
     {
-        $this->log('service_added', 'JobService', $jobServiceId, null, $serviceData);
+        $this->log('job.service_added', "Service #{$jobServiceId} added to job", 'info', 'tenant_user', auth()->user()->email, [
+            'job_service_id' => $jobServiceId,
+            'service_data' => $serviceData,
+        ]);
     }
 
     public function logPriceChange(int $entityId, string $entityType, float $oldPrice, float $newPrice, string $reason): void
     {
-        $this->log('price_changed', $entityType, $entityId, ['old_price' => $oldPrice], ['new_price' => $newPrice], $reason);
+        $this->log('price.changed', "Price changed for {$entityType} #{$entityId}: {$reason}", 'warning', 'tenant_user', auth()->user()->email, [
+            'entity_id' => $entityId,
+            'entity_type' => $entityType,
+            'old_price' => $oldPrice,
+            'new_price' => $newPrice,
+            'reason' => $reason,
+        ]);
     }
 
     public function logServiceCancellation(int $jobId, string $reason): void
     {
-        $this->log('job_cancelled', 'Job', $jobId, null, null, $reason);
+        $this->log('job.cancelled', "Job #{$jobId} cancelled: {$reason}", 'warning', 'tenant_user', auth()->user()->email, [
+            'job_id' => $jobId,
+            'reason' => $reason,
+        ]);
     }
 
     public function logCustomerDeletion(int $customerId, array $customerData): void
     {
-        $this->log('customer_deleted', 'Customer', $customerId, $customerData, null);
+        $this->log('customer.deleted', "Customer #{$customerId} deleted", 'critical', 'tenant_user', auth()->user()->email, [
+            'customer_id' => $customerId,
+            'customer_data' => $customerData,
+        ], true);
     }
 
     public function logPermissionChange(int $userId, array $oldPermissions, array $newPermissions, string $reason): void
     {
-        $this->log('permissions_changed', 'User', $userId, $oldPermissions, $newPermissions, $reason);
+        $this->log('user.permissions_changed', "Permissions changed for user #{$userId}: {$reason}", 'warning', 'tenant_user', auth()->user()->email, [
+            'user_id' => $userId,
+            'old_permissions' => $oldPermissions,
+            'new_permissions' => $newPermissions,
+            'reason' => $reason,
+        ]);
     }
 
-    public function getAuditLogs(?string $entityType = null, ?int $entityId = null, ?int $userId = null, ?int $limit = 100): array
+    public function getAuditLogs(?string $eventKey = null, ?string $actorEmail = null, ?int $limit = 100): array
     {
-        $query = AuditLog::with('user');
+        $query = AuditLog::query();
 
-        if ($entityType) {
-            $query->where('entity_type', $entityType);
+        if ($eventKey) {
+            $query->where('event_key', $eventKey);
         }
 
-        if ($entityId) {
-            $query->where('entity_id', $entityId);
-        }
-
-        if ($userId) {
-            $query->where('user_id', $userId);
+        if ($actorEmail) {
+            $query->where('actor_email', $actorEmail);
         }
 
         return $query->orderByDesc('created_at')
@@ -121,38 +157,52 @@ class AuditService
             ->map(function ($log) {
                 return [
                     'id' => $log->id,
-                    'user' => $log->user->name,
-                    'action' => $log->action,
-                    'entity_type' => $log->entity_type,
-                    'entity_id' => $log->entity_id,
-                    'old_value' => $log->old_value,
-                    'new_value' => $log->new_value,
-                    'reason' => $log->reason,
-                    'ip' => $log->ip,
+                    'event_key' => $log->event_key,
+                    'severity' => $log->severity,
+                    'description' => $log->description,
+                    'actor_email' => $log->actor_email,
+                    'actor_type' => $log->actor_type,
+                    'ip_address' => $log->ip_address,
+                    'is_flagged' => $log->is_flagged,
+                    'meta' => $log->meta,
                     'created_at' => $log->created_at->format('Y-m-d H:i:s'),
                 ];
             })
             ->toArray();
     }
 
-    public function getEntityHistory(string $entityType, int $entityId): array
+    public function getEntityHistory(string $eventKeyPattern, ?int $limit = 100): array
     {
-        return $this->getAuditLogs($entityType, $entityId);
+        return AuditLog::where('event_key', 'like', $eventKeyPattern)
+            ->orderByDesc('created_at')
+            ->limit($limit)
+            ->get()
+            ->map(function ($log) {
+                return [
+                    'event_key' => $log->event_key,
+                    'severity' => $log->severity,
+                    'description' => $log->description,
+                    'actor_email' => $log->actor_email,
+                    'actor_type' => $log->actor_type,
+                    'meta' => $log->meta,
+                    'created_at' => $log->created_at->format('Y-m-d H:i:s'),
+                ];
+            })
+            ->toArray();
     }
 
-    public function getUserActivity(int $userId, ?int $days = 30): array
+    public function getUserActivity(string $actorEmail, ?int $days = 30): array
     {
-        return AuditLog::where('user_id', $userId)
+        return AuditLog::where('actor_email', $actorEmail)
             ->where('created_at', '>=', now()->subDays($days))
-            ->with('user')
             ->orderByDesc('created_at')
             ->get()
             ->map(function ($log) {
                 return [
-                    'action' => $log->action,
-                    'entity_type' => $log->entity_type,
-                    'entity_id' => $log->entity_id,
-                    'reason' => $log->reason,
+                    'event_key' => $log->event_key,
+                    'severity' => $log->severity,
+                    'description' => $log->description,
+                    'meta' => $log->meta,
                     'created_at' => $log->created_at->format('Y-m-d H:i:s'),
                 ];
             })

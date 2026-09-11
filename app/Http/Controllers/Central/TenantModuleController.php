@@ -7,6 +7,7 @@ use App\Models\CentralAdmin;
 use App\Models\Tenant;
 use App\Models\TenantModule;
 use App\Services\AuditService;
+use App\Services\CurrentContext;
 use App\Services\TenantModules;
 use App\Support\ModuleCatalog;
 use Illuminate\Http\Request;
@@ -39,6 +40,23 @@ class TenantModuleController extends Controller
         );
 
         TenantModules::flush($tenant->id);
+
+        // Log module change
+        app(CurrentContext::class)->runForTenant($tenant->id, function () use ($tenant, $moduleKey, $data, $request) {
+            app(AuditService::class)->log(
+                'tenant.module_changed',
+                "Module '{$moduleKey}' " . ($data['enabled'] ? 'enabled' : 'disabled') . " for tenant '{$tenant->name}'",
+                'info',
+                'central_admin',
+                $request->user('central')->email,
+                [
+                    'tenant_id' => $tenant->id,
+                    'tenant_name' => $tenant->name,
+                    'module_key' => $moduleKey,
+                    'enabled' => $data['enabled'],
+                ]
+            );
+        });
 
         return back()->with('success', 'Module '.$moduleKey.($data['enabled'] ? ' enabled.' : ' disabled.'));
     }

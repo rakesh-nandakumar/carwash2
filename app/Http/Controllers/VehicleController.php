@@ -72,7 +72,11 @@ class VehicleController extends Controller
 
             $vehicle = Vehicle::create($validated);
 
-            $this->auditService->log('vehicle_created', 'Vehicle', $vehicle->id, null, $validated);
+            $this->auditService->log('vehicle.created', "Vehicle '{$vehicle->registration_number}' created", 'info', 'tenant_user', auth()->user()->email, [
+                'vehicle_id' => $vehicle->id,
+                'registration_number' => $vehicle->registration_number,
+                'vehicle_data' => $validated,
+            ]);
 
             if ($r->wantsJson()) {
                 return response()->json([
@@ -119,7 +123,12 @@ class VehicleController extends Controller
         $oldCustomer = $vehicle->customer_id;
         $vehicle->update(['customer_id' => $validated['customer_id']]);
 
-        $this->auditService->log('vehicle_ownership_transferred', 'Vehicle', $vehicle->id, ['customer_id' => $oldCustomer], ['customer_id' => $validated['customer_id']]);
+        $this->auditService->log('vehicle.ownership_transferred', "Vehicle '{$vehicle->registration_number}' ownership transferred", 'info', 'tenant_user', auth()->user()->email, [
+            'vehicle_id' => $vehicle->id,
+            'registration_number' => $vehicle->registration_number,
+            'old_customer_id' => $oldCustomer,
+            'new_customer_id' => $validated['customer_id'],
+        ]);
 
         return back()->with('success', 'Vehicle ownership transferred successfully.');
     }
@@ -165,7 +174,12 @@ class VehicleController extends Controller
 
         $vehicle->update($validated);
 
-        $this->auditService->log('vehicle_updated', 'Vehicle', $vehicle->id, $oldValues, $validated);
+        $this->auditService->log('vehicle.updated', "Vehicle '{$vehicle->registration_number}' updated", 'info', 'tenant_user', auth()->user()->email, [
+            'vehicle_id' => $vehicle->id,
+            'registration_number' => $vehicle->registration_number,
+            'old_values' => $oldValues,
+            'new_values' => $validated,
+        ]);
 
         return back()->with('success', 'Vehicle updated.');
     }

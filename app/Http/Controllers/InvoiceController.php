@@ -123,7 +123,7 @@ class InvoiceController extends Controller
                 'received_by' => auth()->id(),
             ]);
 
-            $this->auditService->log('invoice_payment_updated', 'Invoice', $invoice->id, [
+            $this->auditService->logInvoiceModification($invoice->id, [
                 'status' => $oldStatus,
                 'paid' => $oldPaid,
                 'balance' => $oldBalance,
@@ -131,7 +131,7 @@ class InvoiceController extends Controller
                 'status' => $invoice->status,
                 'paid' => $invoice->paid,
                 'balance' => $invoice->balance,
-            ]);
+            ], 'Payment recorded');
 
             if ($d['method'] === 'cash') {
                 // Record only the net cash amount that stays in the till

@@ -4,12 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Models\TillClosure;
 use App\Services\CashMovementService;
+use App\Services\AuditService;
 use Illuminate\Http\Request;
 
 class TillClosureController extends Controller
 {
     public function __construct(
-        private CashMovementService $cashMovements
+        private CashMovementService $cashMovements,
+        private AuditService $auditService
     ) {}
 
     public function showTillAction()
@@ -109,6 +111,17 @@ class TillClosureController extends Controller
                     notes: $data['notes'] ?? null,
                     userId: auth()->id(),
                 );
+
+                $this->auditService->log('till.closed', "Till #{$till->id} closed", 'info', 'tenant_user', auth()->user()->email, [
+                    'till_id' => $till->id,
+                    'till_name' => $till->name,
+                    'closure_id' => $closure->id,
+                    'opening_balance' => $closure->opening_balance,
+                    'counted_balance' => $closure->counted_balance,
+                    'expected_balance' => $closure->expected_balance,
+                    'discrepancy' => $closure->discrepancy,
+                    'notes' => $data['notes'] ?? null,
+                ]);
             } catch (\RuntimeException $e) {
                 return back()->with('error', $e->getMessage());
             }
@@ -182,10 +195,22 @@ class TillClosureController extends Controller
             if (!$user->permanent_till_id && !$user->hasPermissionTo('settings.access')) {
                 \Log::info('Assigning permanent till', ['user_id' => $user->id, 'till_id' => $selectedTill->id]);
                 $user->update(['permanent_till_id' => $selectedTill->id]);
+
+                $this->auditService->log('till.permanent_assigned', "Till #{$selectedTill->id} permanently assigned to user", 'info', 'tenant_user', $user->email, [
+                    'till_id' => $selectedTill->id,
+                    'till_name' => $selectedTill->name,
+                    'user_id' => $user->id,
+                    'user_name' => $user->name,
+                ]);
             } elseif ($user->hasPermissionTo('settings.access') && $user->permanent_till_id) {
                 // Remove permanent till assignment for users with settings.access
                 \Log::info('Removing permanent till for admin user', ['user_id' => $user->id]);
                 $user->update(['permanent_till_id' => null]);
+
+                $this->auditService->log('till.permanent_removed', "Permanent till assignment removed for admin user", 'info', 'tenant_user', $user->email, [
+                    'user_id' => $user->id,
+                    'user_name' => $user->name,
+                ]);
             }
 
             // Switch to the selected till
@@ -196,6 +221,13 @@ class TillClosureController extends Controller
                 if ($currentTill->current_user_id == $user->id) {
                     \Log::info('Releasing current till', ['current_till_id' => $currentTill->id]);
                     $currentTill->release();
+
+                    $this->auditService->log('till.released', "Till #{$currentTill->id} released by user", 'info', 'tenant_user', $user->email, [
+                        'till_id' => $currentTill->id,
+                        'till_name' => $currentTill->name,
+                        'user_id' => $user->id,
+                        'user_name' => $user->name,
+                    ]);
                 }
             }
             
@@ -203,6 +235,13 @@ class TillClosureController extends Controller
             \Log::info('Marking till as in use', ['till_id' => $selectedTill->id, 'user_id' => $user->id]);
             $selectedTill->markAsInUse($user->id);
             $user->update(['session_till_id' => $selectedTill->id]);
+
+            $this->auditService->log('till.assigned', "Till #{$selectedTill->id} assigned to user", 'info', 'tenant_user', $user->email, [
+                'till_id' => $selectedTill->id,
+                'till_name' => $selectedTill->name,
+                'user_id' => $user->id,
+                'user_name' => $user->name,
+            ]);
 
             // Handle balance selection
             if ($data['balance_option'] === 'previous' && $userLastClosure) {
@@ -222,6 +261,14 @@ class TillClosureController extends Controller
                     till: $selectedTill,
                 );
                 \Log::info('Shift opened successfully', ['closure_id' => $closure->id]);
+
+                $this->auditService->log('till.opened', "Till #{$selectedTill->id} opened", 'info', 'tenant_user', $user->email, [
+                    'till_id' => $selectedTill->id,
+                    'till_name' => $selectedTill->name,
+                    'closure_id' => $closure->id,
+                    'opening_balance' => $closure->opening_balance,
+                    'notes' => $data['notes'] ?? null,
+                ]);
             } catch (\RuntimeException $e) {
                 \Log::error('Failed to open shift', ['error' => $e->getMessage()]);
                 return back()->with('error', $e->getMessage());

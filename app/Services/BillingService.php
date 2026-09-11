@@ -12,13 +12,15 @@ use App\Models\CreditNote;
 use App\Models\CashMovement;
 use App\Services\PricingService;
 use App\Services\CashMovementService;
+use App\Services\AuditService;
 use Illuminate\Support\Facades\DB;
 
 class BillingService
 {
     public function __construct(
         private PricingService $pricingService,
-        private CashMovementService $cashMovements
+        private CashMovementService $cashMovements,
+        private AuditService $auditService
     ) {}
 
     public function createInvoice(int $jobId): Invoice
@@ -80,6 +82,16 @@ class BillingService
                 ]);
             }
 
+            $this->auditService->logInvoiceCreation($invoice->id, [
+                'invoice_number' => $invoice->invoice_number,
+                'job_id' => $jobId,
+                'customer_id' => $invoice->customer_id,
+                'subtotal' => $invoice->subtotal,
+                'discount' => $invoice->discount,
+                'tax' => $invoice->tax,
+                'total' => $invoice->total,
+            ]);
+
             return $invoice;
         });
     }
@@ -127,6 +139,8 @@ class BillingService
                 'changed_by' => auth()->id(),
                 'reason' => $reason,
             ]);
+
+            $this->auditService->logInvoiceModification($invoiceId, $oldData, $changes, $reason);
 
             return $invoice;
         });
@@ -196,6 +210,15 @@ class BillingService
                 'requested_by' => auth()->id(),
             ]);
 
+            $this->auditService->logRefund($refund->id, [
+                'refund_number' => $refund->refund_number,
+                'invoice_id' => $invoice->id,
+                'amount' => $amount,
+                'method' => $method,
+                'reason' => $reason,
+                'status' => 'pending',
+            ]);
+
             return $refund;
         });
     }
@@ -231,6 +254,14 @@ class BillingService
                     userId: $approvedBy,
                 );
             }
+
+            $this->auditService->log('refund.approved', "Refund #{$refund->refund_number} approved", 'warning', 'tenant_user', auth()->user()->email, [
+                'refund_id' => $refund->id,
+                'refund_number' => $refund->refund_number,
+                'invoice_id' => $invoice->id,
+                'amount' => $refund->amount,
+                'approved_by' => $approvedBy,
+            ]);
 
             return $refund;
         });

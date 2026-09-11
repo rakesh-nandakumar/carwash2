@@ -5,12 +5,15 @@ namespace App\Services;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\Job;
+use App\Services\AuditService;
 use Illuminate\Support\Facades\DB;
 
 class InvoiceService
 {
-    public function __construct(private PricingService $pricing)
-    {
+    public function __construct(
+        private PricingService $pricing,
+        private AuditService $auditService
+    ) {
     }
 
     public function generate(int $jobId, ?int $discountId = null): Invoice
@@ -71,6 +74,16 @@ class InvoiceService
                     'line_total' => $part['line_total'],
                 ]);
             }
+
+            $this->auditService->logInvoiceCreation($invoice->id, [
+                'invoice_number' => $invoice->invoice_number,
+                'job_id' => $job->id,
+                'customer_id' => $job->customer_id,
+                'subtotal' => $invoice->subtotal,
+                'discount' => $invoice->discount,
+                'tax' => $invoice->tax,
+                'total' => $invoice->total,
+            ]);
 
             return $invoice;
         });

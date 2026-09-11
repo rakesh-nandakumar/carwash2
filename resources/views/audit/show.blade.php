@@ -22,43 +22,30 @@
     <div class="audit-detail-header">
         <div class="audit-detail-user">
             <div class="user-avatar large">
-                {{ $auditLog->user ? substr($auditLog->user->name, 0, 1) : 'S' }}
+                {{ $auditLog->actor_email ? substr($auditLog->actor_email, 0, 1) : 'S' }}
             </div>
             <div class="user-info">
-                <strong>{{ $auditLog->user->name ?? 'System' }}</strong>
-                @if($auditLog->user)
-                    <small>{{ $auditLog->user->email }}</small>
-                @endif
+                <strong>{{ $auditLog->actor_email ?? 'System' }}</strong>
+                <small>{{ ucfirst(str_replace('_', ' ', $auditLog->actor_type ?? 'unknown')) }}</small>
             </div>
         </div>
         @php
-            $actionClass = match($auditLog->action) {
-                'created', 'added' => 'action-created',
-                'updated', 'modified' => 'action-updated',
-                'deleted', 'removed' => 'action-deleted',
-                'cancelled' => 'action-cancelled',
-                'login', 'logout' => 'action-login',
-                default => 'action-default'
+            $severityClass = match($auditLog->severity) {
+                'info' => 'severity-info',
+                'warning' => 'severity-warning',
+                'error' => 'severity-error',
+                'critical' => 'severity-critical',
+                default => 'severity-default'
             };
         @endphp
-        <span class="{{ $actionClass }} large">
-            @if($auditLog->action === 'created' || $auditLog->action === 'added')
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:8px;"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-            @elseif($auditLog->action === 'updated' || $auditLog->action === 'modified')
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:8px;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-            @elseif($auditLog->action === 'deleted' || $auditLog->action === 'removed')
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:8px;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-            @elseif($auditLog->action === 'cancelled')
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:8px;"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
-            @elseif($auditLog->action === 'login')
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:8px;"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" y1="12" x2="3" y2="12"></line></svg>
-            @elseif($auditLog->action === 'logout')
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:8px;"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-            @else
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:8px;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+        <div>
+            <span class="{{ $severityClass }} large">
+                {{ ucfirst($auditLog->severity) }}
+            </span>
+            @if($auditLog->is_flagged)
+                <span class="flagged-badge large">⚠️ Flagged</span>
             @endif
-            {{ ucfirst(str_replace('_', ' ', $auditLog->action)) }}
-        </span>
+        </div>
     </div>
 
     <!-- Details Grid -->
@@ -72,68 +59,43 @@
         </div>
 
         <div class="detail-item">
-            <label>Entity Type</label>
+            <label>Event Key</label>
             <div class="detail-value">
-                <strong>{{ $auditLog->entity_type ?? 'N/A' }}</strong>
+                <span class="event-key">{{ $auditLog->event_key }}</span>
             </div>
         </div>
 
         <div class="detail-item">
-            <label>Entity ID</label>
+            <label>Severity</label>
             <div class="detail-value">
-                <strong>#{{ $auditLog->entity_id ?? 'N/A' }}</strong>
+                <span class="{{ $severityClass }}">
+                    {{ ucfirst($auditLog->severity) }}
+                </span>
             </div>
         </div>
 
         <div class="detail-item">
             <label>IP Address</label>
             <div class="detail-value">
-                <span class="ip-address">{{ $auditLog->ip ?? 'N/A' }}</span>
+                <span class="ip-address">{{ $auditLog->ip_address ?? 'N/A' }}</span>
             </div>
         </div>
     </div>
 
-    @if($auditLog->reason)
-        <div class="reason-section">
-            <label>Reason</label>
-            <div class="reason-text">{{ $auditLog->reason }}</div>
+    @if($auditLog->description)
+        <div class="description-section">
+            <label>Description</label>
+            <div class="description-text">{{ $auditLog->description }}</div>
         </div>
     @endif
 
-    <!-- Data Changes Section -->
-    @if($auditLog->old_value || $auditLog->new_value)
-        <div class="data-changes-section">
-            <h3>Data Changes</h3>
-            
-            @if($auditLog->old_value && !empty($auditLog->old_value))
-                <div class="data-change-card old-value-card">
-                    <div class="data-change-header">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="10"></circle>
-                            <line x1="15" y1="9" x2="9" y2="15"></line>
-                            <line x1="9" y1="9" x2="15" y2="15"></line>
-                        </svg>
-                        <strong>Old Value</strong>
-                    </div>
-                    <div class="data-change-content">
-                        <pre>{{ json_encode($auditLog->old_value, JSON_PRETTY_PRINT) }}</pre>
-                    </div>
-                </div>
-            @endif
-
-            @if($auditLog->new_value && !empty($auditLog->new_value))
-                <div class="data-change-card new-value-card">
-                    <div class="data-change-header">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M12 5v14M5 12h14"/>
-                        </svg>
-                        <strong>New Value</strong>
-                    </div>
-                    <div class="data-change-content">
-                        <pre>{{ json_encode($auditLog->new_value, JSON_PRETTY_PRINT) }}</pre>
-                    </div>
-                </div>
-            @endif
+    <!-- Meta Data Section -->
+    @if($auditLog->meta && !empty($auditLog->meta))
+        <div class="meta-section">
+            <h3>Meta Data</h3>
+            <div class="meta-content">
+                <pre>{{ json_encode($auditLog->meta, JSON_PRETTY_PRINT) }}</pre>
+            </div>
         </div>
     @endif
 </div>
@@ -182,12 +144,11 @@
     color: rgba(255, 255, 255, 0.8);
 }
 
-.action-created.large,
-.action-updated.large,
-.action-deleted.large,
-.action-cancelled.large,
-.action-login.large,
-.action-default.large {
+.severity-info.large,
+.severity-warning.large,
+.severity-error.large,
+.severity-critical.large,
+.severity-default.large {
     display: inline-flex;
     align-items: center;
     padding: 10px 20px;
@@ -196,6 +157,18 @@
     font-weight: 600;
     background: rgba(255, 255, 255, 0.2);
     color: white;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.flagged-badge.large {
+    display: inline-block;
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    margin-left: 8px;
     border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
@@ -247,86 +220,61 @@
     border: 1px solid #e5e7eb;
 }
 
-/* Reason Section */
-.reason-section {
-    background: #fef3c7;
-    border-left: 4px solid #f59e0b;
+.event-key {
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 13px;
+    color: #6b7280;
+    background: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    border: 1px solid #e5e7eb;
+}
+
+/* Description Section */
+.description-section {
+    background: #f8fafc;
+    border-left: 4px solid #3b82f6;
     border-radius: 8px;
     padding: 16px;
     margin-bottom: 24px;
 }
 
-.reason-section label {
+.description-section label {
     display: block;
     font-size: 11px;
     font-weight: 600;
-    color: #92400e;
+    color: #6b7280;
     text-transform: uppercase;
     letter-spacing: 0.3px;
     margin-bottom: 8px;
 }
 
-.reason-text {
+.description-text {
     font-size: 14px;
     color: #111827;
     line-height: 1.5;
 }
 
-/* Data Changes Section */
-.data-changes-section {
+/* Meta Data Section */
+.meta-section {
     margin-top: 24px;
 }
 
-.data-changes-section h3 {
+.meta-section h3 {
     font-size: 16px;
     font-weight: 600;
     color: #111827;
     margin-bottom: 16px;
 }
 
-.data-change-card {
+.meta-content {
+    background: #f8fafc;
+    border: 1px solid #e5e7eb;
     border-radius: 10px;
-    overflow: hidden;
-    margin-bottom: 16px;
-    border: 1px solid;
-}
-
-.old-value-card {
-    border-color: #fecaca;
-    background: #fef2f2;
-}
-
-.new-value-card {
-    border-color: #bbf7d0;
-    background: #f0fdf4;
-}
-
-.data-change-header {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 12px 16px;
-    font-weight: 600;
-    font-size: 14px;
-}
-
-.old-value-card .data-change-header {
-    color: #991b1b;
-    background: #fee2e2;
-    border-bottom: 1px solid #fecaca;
-}
-
-.new-value-card .data-change-header {
-    color: #166534;
-    background: #dcfce7;
-    border-bottom: 1px solid #bbf7d0;
-}
-
-.data-change-content {
     padding: 16px;
 }
 
-.data-change-content pre {
+.meta-content pre {
     font-size: 13px;
     white-space: pre-wrap;
     word-break: break-all;
@@ -348,12 +296,11 @@
         width: 100%;
     }
 
-    .action-created.large,
-    .action-updated.large,
-    .action-deleted.large,
-    .action-cancelled.large,
-    .action-login.large,
-    .action-default.large {
+    .severity-info.large,
+    .severity-warning.large,
+    .severity-error.large,
+    .severity-critical.large,
+    .severity-default.large {
         width: 100%;
         justify-content: center;
     }

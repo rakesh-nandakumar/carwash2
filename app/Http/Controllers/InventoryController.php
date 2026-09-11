@@ -326,6 +326,12 @@ class InventoryController extends Controller
 
         DB::transaction(function () use ($validated, $request, $product) {
             $oldValues = $product->toArray();
+            
+            // Check if selling price changed and log it specifically
+            if (isset($oldValues['selling_price']) && isset($validated['selling_price']) && $oldValues['selling_price'] != $validated['selling_price']) {
+                $this->auditService->logPriceChange($product->id, 'product', (float) $oldValues['selling_price'], (float) $validated['selling_price'], 'Product selling price updated');
+            }
+            
             $product->update([
                 'name' => $validated['name'],
                 'sku' => $validated['sku'],
@@ -344,7 +350,11 @@ class InventoryController extends Controller
                 $product->update(['image' => $imagePath]);
             }
 
-            $this->auditService->log('product_updated', 'Product', $product->id, $oldValues, $validated);
+            $this->auditService->log('product.updated', "Product '{$product->name}' updated", 'info', 'tenant_user', auth()->user()->email, [
+                'product_id' => $product->id,
+                'old_values' => $oldValues,
+                'new_values' => $validated,
+            ]);
         });
 
         return redirect()
