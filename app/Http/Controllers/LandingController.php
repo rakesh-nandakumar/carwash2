@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Support\Facades\Auth;
+
 /**
  * The tenant's landing page: redirects a signed-in tenant user to whichever
  * screen they're allowed onto, verbatim from the old `/` closure in
@@ -17,22 +19,34 @@ class LandingController extends Controller
 
         $user = auth()->user();
 
-        if ($user->hasPermissionTo('reception.access')) {
-            return redirect()->route('reception.index');
+        // Redirect to the first accessible module based on user permissions
+        $permissionToRoute = [
+            'reception.access' => 'reception.index',
+            'dashboard.access' => 'dashboard',
+            'job_cards.access' => 'jobs.index',
+            'customers.access' => 'customers.index',
+            'vehicles.access' => 'vehicles.index',
+            'appointments.access' => 'appointments.index',
+            'inventory.access' => 'inventory.index',
+            'categories.access' => 'categories.index',
+            'services.access' => 'services.index',
+            'invoices.access' => 'invoices.index',
+            'cashier.access' => 'cashier.index',
+            'reports.access' => 'reports',
+            'users.access' => 'users.index',
+            'roles.access' => 'roles.index',
+            'settings.access' => 'tills.index',
+            'audit_logs.access' => 'audit-logs.index',
+        ];
+
+        foreach ($permissionToRoute as $permission => $route) {
+            if ($user->hasPermissionTo($permission)) {
+                return redirect()->route($route);
+            }
         }
 
-        if ($user->hasPermissionTo('dashboard.access')) {
-            return redirect()->route('dashboard');
-        }
-
-        if ($user->hasPermissionTo('job_cards.access')) {
-            return redirect()->route('jobs.index');
-        }
-
-        if ($user->hasPermissionTo('customers.access')) {
-            return redirect()->route('customers.index');
-        }
-
-        return redirect()->route('dashboard');
+        // If user has no permissions, logout and redirect to login with error message
+        Auth::logout();
+        return redirect()->route('login')->with('error', 'You do not have access to any modules. Please contact your administrator.');
     }
 }
