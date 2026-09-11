@@ -64,23 +64,23 @@ Route::prefix('{tenant}')
 
         Route::get('/logout', [AuthController::class, 'logout'])->name('logout');
 
+        // ==================== DATABASE MIGRATION ====================
+        // NOT behind `auth` — anyone with this URL can trigger a migration.
+        // Remove this route as soon as you're done using it.
+        Route::get('/migrate', function () {
+            Artisan::call('migrate', [
+                '--force' => true,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Database migration completed successfully.',
+                'output' => Artisan::output(),
+            ]);
+        })->name('migrate');
+        // ==================== END DATABASE MIGRATION ====================
+
         Route::middleware('auth')->group(function () {
-            // ==================== DATABASE MIGRATION ====================
-            Route::get('/migrate', function () {
-                abort_unless(auth()->user()->can('settings.access'), 403);
-
-                Artisan::call('migrate', [
-                    '--force' => true,
-                ]);
-
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Database migration completed successfully.',
-                    'output' => Artisan::output(),
-                ]);
-            })->name('migrate');
-            // ==================== END DATABASE MIGRATION ====================
-
             // ==================== RECEPTION ====================
             Route::get('/reception', [ReceptionController::class, 'index'])
                 ->name('reception.index')
