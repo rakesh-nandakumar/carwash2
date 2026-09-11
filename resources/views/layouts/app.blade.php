@@ -594,7 +594,13 @@
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
                     <span>Cashier</span>
                     @php
-                        $readyForPaymentCount = \App\Models\Job::where('status', \App\Enums\JobStatus::READY_FOR_PAYMENT->value)->count();
+                        $readyForPaymentCount = \App\Models\Job::where('status', \App\Enums\JobStatus::READY_FOR_PAYMENT->value)
+                            ->whereDoesntHave('invoice', function ($query) {
+                                // Exclude jobs with partial payments (have some payments but still have balance)
+                                $query->where('paid', '>', 0)
+                                      ->where('balance', '>', 0.01);
+                            })
+                            ->count();
                     @endphp
                     @if($readyForPaymentCount > 0)
                         <span class="notification-badge">{{ $readyForPaymentCount }}</span>
@@ -605,18 +611,6 @@
                 <a href="{{ route('cheque-payments.index') }}" class="cheque-payments-link {{ request()->routeIs('cheque-payments.*') ? 'active' : '' }}">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><path d="M12 15h.01"/><path d="M16 15h.01"/></svg>
                     <span>Cheque Payments</span>
-                    @php
-                        $pendingChequesCount = \App\Models\Payment::where('method', 'cheque')->where('payment_received', false)->where('is_bounced', false)->count();
-                        $bouncedChequesNeedingFollowUp = \App\Models\Payment::where('method', 'cheque')->where('is_bounced', true)->where('follow_up_required', true)->where('replacement_payment_received', false)->count();
-                    @endphp
-                    @if($pendingChequesCount > 0 && $bouncedChequesNeedingFollowUp > 0)
-                        <span class="notification-badge" style="top: -6px; right: 6px;">{{ $pendingChequesCount }}</span>
-                        <span class="notification-badge alert-badge" style="top: 6px; right: -6px;">{{ $bouncedChequesNeedingFollowUp }}</span>
-                    @elseif($pendingChequesCount > 0)
-                        <span class="notification-badge">{{ $pendingChequesCount }}</span>
-                    @elseif($bouncedChequesNeedingFollowUp > 0)
-                        <span class="notification-badge alert-badge">{{ $bouncedChequesNeedingFollowUp }}</span>
-                    @endif
                 </a>
             @endif
             @if(auth()->user()->hasPermissionTo('cashier.access'))
@@ -630,7 +624,13 @@
                         $partialPaymentJobIds = $partialPayments->pluck('job_id')->toArray();
                         
                         // Get jobs ready for payment excluding those with partial payments
-                        $readyForPaymentCount = \App\Models\Job::where('status', \App\Enums\JobStatus::READY_FOR_PAYMENT->value)->whereNotIn('id', $partialPaymentJobIds)->count();
+                        $readyForPaymentCount = \App\Models\Job::where('status', \App\Enums\JobStatus::READY_FOR_PAYMENT->value)
+                            ->whereDoesntHave('invoice', function ($query) {
+                                // Exclude jobs with partial payments (have some payments but still have balance)
+                                $query->where('paid', '>', 0)
+                                      ->where('balance', '>', 0.01);
+                            })
+                            ->count();
                         
                         $pendingChequesCount = \App\Models\Payment::where('method', 'cheque')->where('payment_received', false)->where('is_bounced', false)->count();
                         $bouncedChequesNeedingFollowUp = \App\Models\Payment::where('method', 'cheque')->where('is_bounced', true)->where('follow_up_required', true)->where('replacement_payment_received', false)->count();

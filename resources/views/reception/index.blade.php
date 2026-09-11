@@ -360,7 +360,7 @@
                 </div>
 
                 <div class="modal-actions">
-                    <button type="button" class="btn-secondary" id="closeModalBtn">Cancel</button>
+                    <button type="button" class="btn-secondary" id="closeModalBtn">Skip WhatsApp & Open Job</button>
                     <button type="button" class="btn-primary" id="sendWhatsappBtn">Send WhatsApp & Open Job</button>
                 </div>
             </div>

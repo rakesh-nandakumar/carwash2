@@ -267,22 +267,12 @@
                 {{ $job->notes ?: 'No notes added' }}
             </div>
         </div>
-
-        <!-- Back button -->
-        <div class="back-button-cell">
-            <a href="javascript:history.back()" class="btn-back">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="19" y1="12" x2="5" y2="12"></line>
-                    <polyline points="12 19 5 12 12 5"></polyline>
-                </svg>
-                Back
-            </a>
-        </div>
     </div>
 
     @if($job->invoice)
         <div class="invoice-link">
             <a href="{{ route('invoices.show',$job->invoice) }}" class="btn-primary">View Invoice</a>
+            <a href="{{ route('cashier.payment', $job) }}" class="btn-secondary">Go to Cashier</a>
         </div>
     @endif
 </div>
@@ -747,36 +737,11 @@
     white-space: pre-wrap;
 }
 
-/* Back button cell - aligns bottom with Notes card */
-.back-button-cell {
-    display: flex;
-    align-items: flex-end;
-    justify-content: flex-end;
-    min-height: 0;
-}
-
-.btn-back {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 11px 22px;
-    background: #e5e7eb;
-    color: #374151;
-    border-radius: 10px;
-    font-size: 14px;
-    font-weight: 600;
-    text-decoration: none;
-    transition: all 0.2s ease;
-}
-
-.btn-back:hover {
-    background: #d1d5db;
-    color: #111827;
-}
-
 .invoice-link {
-    text-align: center;
-    margin-top: 16px;
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-top: -16px;
 }
 
 .btn-primary {
@@ -792,11 +757,15 @@
 }
 
 .btn-secondary {
-    padding: 10px 20px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
     background: #e5e7eb;
     color: #374151;
+    text-decoration: none;
     border: none;
-    border-radius: 8px;
+    border-radius: 10px;
     font-weight: 600;
     cursor: pointer;
 }
@@ -1055,13 +1024,9 @@
         font-size: 14px;
     }
 
-    .back-button-cell {
-        justify-content: stretch;
-    }
-
-    .btn-back {
-        width: 100%;
-        justify-content: center;
+    .invoice-link {
+        flex-direction: column;
+        margin-top: 16px;
     }
 }
 
