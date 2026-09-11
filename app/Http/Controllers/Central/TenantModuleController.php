@@ -41,7 +41,7 @@ class TenantModuleController extends Controller
 
         TenantModules::flush($tenant->id);
 
-        // Log module change in central context only
+        // Log module change in the tenant's context
         app(AuditService::class)->log(
             'tenant.module_changed',
             "Module '{$moduleKey}' " . ($data['enabled'] ? 'enabled' : 'disabled') . " for tenant '{$tenant->name}'",
@@ -53,7 +53,9 @@ class TenantModuleController extends Controller
                 'tenant_name' => $tenant->name,
                 'module_key' => $moduleKey,
                 'enabled' => $data['enabled'],
-            ]
+            ],
+            false,
+            $tenant->id
         );
 
         return back()->with('success', 'Module '.$moduleKey.($data['enabled'] ? ' enabled.' : ' disabled.'));

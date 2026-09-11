@@ -35,6 +35,20 @@ class ImpersonationSessionController extends Controller
 
         $request->session()->put('impersonated_by_central', true);
 
+        // Log the impersonation login in the tenant's context
+        app(\App\Services\AuditService::class)->log(
+            'auth.impersonation_login',
+            'User logged in via impersonation',
+            'info',
+            'tenant_user',
+            $user->email,
+            [
+                'impersonated_by_central' => true,
+            ],
+            false,
+            $tenantId
+        );
+
         return redirect()->route('tenant.home');
     }
 }

@@ -77,7 +77,7 @@ class TenantSettingController extends Controller
 
         Settings::invalidate($tenant->id);
 
-        // Log settings change in central context only
+        // Log settings change in the tenant's context
         app(AuditService::class)->log(
             'tenant.settings_changed',
             "Settings updated for tenant '{$tenant->name}'",
@@ -88,7 +88,9 @@ class TenantSettingController extends Controller
                 'tenant_id' => $tenant->id,
                 'tenant_name' => $tenant->name,
                 'changed_keys' => array_keys($request->input('s', [])),
-            ]
+            ],
+            false,
+            $tenant->id
         );
 
         return back()->with('success', 'Settings saved for '.$tenant->name.'.');

@@ -21,7 +21,7 @@ class ImpersonationController extends Controller
 
         ['url' => $url, 'user' => $user] = $this->impersonation->startFor($tenant, $admin);
 
-        // Log in central context only - not in tenant's audit logs
+        // Log in the tenant's context
         app(AuditService::class)->log(
             'impersonation.started',
             "Impersonation started for tenant '{$tenant->name}' by central admin {$admin->email}",
@@ -33,7 +33,9 @@ class ImpersonationController extends Controller
                 'tenant_name' => $tenant->name,
                 'user_id' => $user->id,
                 'user_email' => $user->email,
-            ]
+            ],
+            false,
+            $tenant->id
         );
 
         return redirect($url);

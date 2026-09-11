@@ -4,21 +4,64 @@ namespace App\Services;
 
 use App\Models\AuditLog;
 use Illuminate\Support\Facades\Request;
+use App\Services\CurrentContext;
 
 class AuditService
 {
-    public function log(string $eventKey, string $description, string $severity = 'info', ?string $actorType = null, ?string $actorEmail = null, ?array $meta = null, bool $isFlagged = false): void
+    public function log(string $eventKey, string $description, string $severity = 'info', ?string $actorType = null, ?string $actorEmail = null, ?array $meta = null, bool $isFlagged = false, ?int $tenantId = null): void
     {
-        AuditLog::create([
+        $context = app(CurrentContext::class);
+        
+        // Debug logging to understand context state
+        \Log::debug('AuditService::log called', [
             'event_key' => $eventKey,
-            'severity' => $severity,
-            'description' => $description,
-            'actor_email' => $actorEmail ?? (auth()->check() ? auth()->user()->email : null),
-            'actor_type' => $actorType ?? (auth()->check() ? 'tenant_user' : null),
-            'ip_address' => Request::ip(),
-            'meta' => $meta,
-            'is_flagged' => $isFlagged,
+            'provided_tenant_id' => $tenantId,
+            'context_tenant_id' => $context->tenantId(),
+            'authenticated' => auth()->check(),
+            'user_type' => auth()->check() ? get_class(auth()->user()) : 'none',
+            'user_tenant_id' => auth()->check() && auth()->user() instanceof \App\Models\User ? auth()->user()->tenant_id : 'n/a',
+            'is_central' => $context->isCentral(),
         ]);
+        
+        // If no tenant_id is provided, try to get it from the current context first
+        if ($tenantId === null) {
+            $tenantId = $context->tenantId();
+        }
+        
+        // If still no tenant_id, try to get it from the authenticated regular user (not central admin)
+        if ($tenantId === null && auth()->check() && auth()->user() instanceof \App\Models\User && auth()->user()->tenant_id) {
+            $tenantId = auth()->user()->tenant_id;
+        }
+        
+        // If we still don't have a tenant_id, we can't create the audit log
+        if ($tenantId === null) {
+            // Log to Laravel's log instead of throwing an error
+            \Log::warning('Audit log skipped - no tenant context', [
+                'event_key' => $eventKey,
+                'description' => $description,
+                'authenticated' => auth()->check(),
+                'user_type' => auth()->check() ? get_class(auth()->user()) : 'none',
+                'context_tenant_id' => $context->tenantId(),
+                'is_central' => $context->isCentral(),
+            ]);
+            return;
+        }
+        
+        $createLog = function () use ($eventKey, $severity, $description, $actorEmail, $actorType, $meta, $isFlagged) {
+            AuditLog::create([
+                'event_key' => $eventKey,
+                'severity' => $severity,
+                'description' => $description,
+                'actor_email' => $actorEmail ?? (auth()->check() ? auth()->user()->email : null),
+                'actor_type' => $actorType ?? (auth()->check() ? 'tenant_user' : null),
+                'ip_address' => Request::ip(),
+                'meta' => $meta,
+                'is_flagged' => $isFlagged,
+            ]);
+        };
+        
+        // Always run in the tenant's context to ensure BelongsToTenant works correctly
+        $context->runForTenant($tenantId, $createLog);
     }
 
     public function logLogin(): void
