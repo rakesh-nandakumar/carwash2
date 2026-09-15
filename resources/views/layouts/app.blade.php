@@ -23,7 +23,7 @@
 
     <style>
         html.sidebar-preload-collapsed aside.sidebar {
-            margin-left: -380px !important;
+            margin-left: -304px !important;
         }
         html.sidebar-preload-collapsed .main {
             margin-left: 0 !important;
@@ -125,15 +125,15 @@
             gap: 10px !important;
         }
         .brand-logo {
-            max-height: 120px;
-            max-width: 200px;
+            max-height: 96px;
+            max-width: 160px;
             object-fit: contain;
             border-radius: 8px;
             display: block;
             margin: 0 auto;
         }
         .brand-text {
-            font-size: 24px;
+            font-size: 19px;
             font-weight: bold;
             color: white;
         }
@@ -141,14 +141,14 @@
             color: #4a90e2;
         }
         .brand-text small {
-            font-size: 14px;
+            font-size: 11px;
             color: #4a90e2;
         }
         .brand {
             display: flex;
             justify-content: center;
             align-items: center;
-            padding: var(--brand-padding-v, 25px) 10px var(--brand-padding-b, 20px) 10px;
+            padding: var(--brand-padding-v, 20px) 10px var(--brand-padding-b, 16px) 10px;
             flex: 0 0 auto;
         }
         /* ===== Sidebar layout ===== */
@@ -159,15 +159,15 @@
             height: 100dvh;  /* real visible viewport height on mobile */
             /* Default sizing "tokens" — JS scales these down only if the
                nav content would otherwise overflow and need to scroll. */
-            --nav-link-padding-v: 14px;
-            --nav-link-padding-h: 20px;
-            --nav-link-font-size: 16px;
-            --nav-link-gap: 14px;
-            --nav-link-margin-bottom: 5px;
-            --nav-icon-size: 24px;
-            --nav-padding-v: 18px;
-            --brand-padding-v: 38px;
-            --brand-padding-b: 28px;
+            --nav-link-padding-v: 11px;
+            --nav-link-padding-h: 16px;
+            --nav-link-font-size: 13px;
+            --nav-link-gap: 11px;
+            --nav-link-margin-bottom: 4px;
+            --nav-icon-size: 19px;
+            --nav-padding-v: 14px;
+            --brand-padding-v: 30px;
+            --brand-padding-b: 22px;
         }
         aside.sidebar nav {
             display: flex;
@@ -221,7 +221,7 @@
         aside.sidebar nav a:hover {
             background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.08));
             color: #ffffff;
-            transform: translateX(4px) scale(1.02);
+            transform: translateX(3px) scale(1.02);
             border-color: rgba(255, 255, 255, 0.2);
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.1);
         }
@@ -237,7 +237,7 @@
         aside.sidebar nav a.active {
             background: linear-gradient(135deg, rgba(74, 144, 226, 0.35), rgba(74, 144, 226, 0.25));
             color: #ffffff;
-            box-shadow: inset 4px 0 0 #4a90e2, 0 4px 12px rgba(74, 144, 226, 0.3);
+            box-shadow: inset 3px 0 0 #4a90e2, 0 4px 12px rgba(74, 144, 226, 0.3);
             border-color: rgba(74, 144, 226, 0.4);
             transform: translateX(2px);
         }
@@ -272,7 +272,7 @@
             color: #10b981;
         }
         aside.sidebar nav a.cashier-link.active {
-            box-shadow: inset 3px 0 0 #10b981;
+            box-shadow: inset 2px 0 0 #10b981;
         }
         aside.sidebar nav a.cheque-payments-link {
             background: rgba(245, 158, 11, 0.12);
@@ -286,7 +286,7 @@
             color: #f59e0b;
         }
         aside.sidebar nav a.cheque-payments-link.active {
-            box-shadow: inset 3px 0 0 #f59e0b;
+            box-shadow: inset 2px 0 0 #f59e0b;
         }
         aside.sidebar nav a.notifications-link {
             background: rgba(239, 68, 68, 0.12);
@@ -300,7 +300,7 @@
             color: #ef4444;
         }
         aside.sidebar nav a.notifications-link.active {
-            box-shadow: inset 3px 0 0 #ef4444;
+            box-shadow: inset 2px 0 0 #ef4444;
         }
         aside.sidebar a.logout {
             flex: 0 0 auto;
@@ -311,17 +311,17 @@
                 display: flex !important;
             }
             aside.sidebar {
-                width: 380px !important;
+                width: 304px !important;
                 margin-left: 0 !important;
                 transition: margin-left 0.3s ease !important;
             }
             aside.sidebar.collapsed {
-                margin-left: -380px !important;
+                margin-left: -304px !important;
             }
             .main {
-                margin-left: 380px !important;
+                margin-left: 304px !important;
                 transition: margin-left 0.3s ease !important;
-                width: calc(100% - 380px) !important;
+                width: calc(100% - 304px) !important;
             }
             .main.expanded {
                 margin-left: 0 !important;
@@ -334,20 +334,45 @@
             }
             aside.sidebar {
                 position: fixed !important;
-                left: -300px !important;
+                left: -320px !important;
                 top: 0 !important;
-                width: 300px !important;
+                width: 320px !important;
                 z-index: 1000 !important;
                 transition: left 0.3s ease !important;
                 background: #0a1f33 !important;
                 box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1) !important;
+
+                /* Smaller content on tablet */
+                --nav-link-padding-v: 13px;
+                --nav-link-padding-h: 18px;
+                --nav-link-font-size: 14px;
+                --nav-link-gap: 12px;
+                --nav-link-margin-bottom: 4px;
+                --nav-icon-size: 22px;
+                --nav-padding-v: 16px;
+                --brand-padding-v: 36px;
+                --brand-padding-b: 28px;
+            }
+            /* Open state for tablet */
+            aside.sidebar.active {
+                left: 0 !important;
             }
             .main {
                 margin-left: 0 !important;
             }
             header {
-                padding: 15px !important;
-                padding-left: 65px !important;
+                padding: 12px !important;
+                padding-left: 52px !important;
+            }
+            .brand-logo {
+                max-height: 80px;
+                max-width: 140px;
+            }
+            .brand-text {
+                font-size: 21px;
+            }
+            .brand-text small {
+                font-size: 12px;
             }
         }
         @media (max-width: 768px) {
@@ -356,66 +381,80 @@
             }
             aside.sidebar {
                 position: fixed !important;
-                left: -260px !important;
+                left: -280px !important;
                 top: 0 !important;
-                width: 260px !important;
+                width: 280px !important;
                 z-index: 1000 !important;
                 transition: left 0.3s ease !important;
                 background: #0a1f33 !important;
                 box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1) !important;
 
                 /* Smaller content on mobile */
-                --nav-link-padding-v: 10px;
+                --nav-link-padding-v: 12px;
                 --nav-link-padding-h: 16px;
                 --nav-link-font-size: 14px;
                 --nav-link-gap: 12px;
-                --nav-link-margin-bottom: 3px;
+                --nav-link-margin-bottom: 4px;
                 --nav-icon-size: 20px;
                 --nav-padding-v: 14px;
-                --brand-padding-v: 30px;
-                --brand-padding-b: 22px;
+                --brand-padding-v: 32px;
+                --brand-padding-b: 24px;
+            }
+            /* Open state for mobile */
+            aside.sidebar.active {
+                left: 0 !important;
             }
             .main {
                 margin-left: 0 !important;
             }
             header {
                 padding: 12px !important;
-                padding-left: 62px !important;
+                padding-left: 50px !important;
             }
             .brand-logo {
                 max-height: 80px;
                 max-width: 140px;
             }
+            .brand-text {
+                font-size: 20px;
+            }
+            .brand-text small {
+                font-size: 12px;
+            }
         }
         @media (max-width: 480px) {
             aside.sidebar {
-                width: 240px !important;
-                left: -240px !important;
+                width: 260px !important;
+                left: -260px !important;
 
                 /* Even more compact on very small screens */
-                --nav-link-padding-v: 9px;
-                --nav-link-padding-h: 15px;
+                --nav-link-padding-v: 11px;
+                --nav-link-padding-h: 14px;
                 --nav-link-font-size: 13px;
                 --nav-link-gap: 11px;
-                --nav-link-margin-bottom: 3px;
+                --nav-link-margin-bottom: 4px;
                 --nav-icon-size: 18px;
                 --nav-padding-v: 12px;
                 --brand-padding-v: 28px;
-                --brand-padding-b: 20px;
+                --brand-padding-b: 22px;
             }
-            header {
-                padding: 10px !important;
-                padding-left: 62px !important;
-            }
-            .brand-logo {
-                max-height: 60px;
-                max-width: 100px;
-            }
-        }
-        /* Open state for tablet/mobile */
-        @media (max-width: 1024px) {
+            /* Open state for very small screens */
             aside.sidebar.active {
                 left: 0 !important;
+            }
+            header {
+                padding: 8px !important;
+                padding-left: 42px !important;
+            }
+            .brand-logo {
+                max-height: 72px;
+                max-width: 128px;
+            }
+            .brand-text {
+                font-size: 18px;
+            }
+            .brand-text small {
+                font-size: 11px;
             }
         }
         .cashier-link {
@@ -423,35 +462,35 @@
         }
         .notification-badge {
             position: absolute;
-            top: -6px;
-            right: -6px;
+            top: -5px;
+            right: -5px;
             background: #ef4444;
             color: white;
             border-radius: 50%;
-            width: 18px;
-            height: 18px;
+            width: 14px;
+            height: 14px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 11px;
+            font-size: 9px;
             font-weight: bold;
             animation: pulse 2s infinite;
         }
 
         .notification-badge.alert-badge {
             background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
-            border: 2px solid #fee2e2;
+            border: 1px solid #fee2e2;
             animation: urgentPulse 1s infinite;
         }
 
         .cheque-payments-link .notification-badge:first-of-type {
-            top: -6px;
-            right: 6px;
+            top: -5px;
+            right: 5px;
         }
 
         .cheque-payments-link .notification-badge.alert-badge {
-            top: 6px;
-            right: -6px;
+            top: 5px;
+            right: -5px;
         }
 
         @keyframes urgentPulse {
@@ -742,7 +781,7 @@
         <a href="{{ route('logout') }}" class="logout">Sign out</a>
     </aside>
     <main class="main">
-        <div style="position:fixed;top:15px;left:15px;z-index:100000;">
+        <div style="position:fixed;top:12px;left:12px;z-index:100000;">
             <button
                 id="sidebarToggle"
                 aria-label="Toggle menu"
@@ -750,8 +789,8 @@
                     display:flex !important;
                     align-items:center !important;
                     justify-content:center !important;
-                    width:30px !important;
-                    height:30px !important;
+                    width:24px !important;
+                    height:24px !important;
                     background:white !important;
                     border:1px solid #e5e7eb !important;
                     border-radius:6px !important;
@@ -762,8 +801,8 @@
                     transition:all 0.3s ease !important;
                 ">
                 <svg
-                    width="18"
-                    height="18"
+                    width="14"
+                    height="14"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="#1a1a2e"
@@ -775,7 +814,7 @@
                 </svg>
             </button>
         </div>
-        <header style="padding-left:70px;">
+        <header style="padding-left:56px;">
             <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
                 <div></div>
                 <div>

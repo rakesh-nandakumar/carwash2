@@ -66,17 +66,17 @@ class AuditService
 
     public function logLogin(): void
     {
-        $this->log('auth.login', 'User logged in', 'info', 'tenant_user', auth()->user()->email);
+        $this->log('auth.login', 'User logged in', 'info', 'tenant_user', auth()->check() ? auth()->user()->email : null);
     }
 
     public function logLogout(): void
     {
-        $this->log('auth.logout', 'User logged out', 'info', 'tenant_user', auth()->user()->email);
+        $this->log('auth.logout', 'User logged out', 'info', 'tenant_user', auth()->check() ? auth()->user()->email : null);
     }
 
     public function logInvoiceCreation(int $invoiceId, array $invoiceData): void
     {
-        $this->log('invoice.created', "Invoice #{$invoiceId} created", 'info', 'tenant_user', auth()->user()->email, [
+        $this->log('invoice.created', "Invoice #{$invoiceId} created", 'info', 'tenant_user', auth()->check() ? auth()->user()->email : null, [
             'invoice_id' => $invoiceId,
             'invoice_data' => $invoiceData,
         ]);
@@ -84,7 +84,7 @@ class AuditService
 
     public function logInvoiceModification(int $invoiceId, array $oldData, array $newData, string $reason): void
     {
-        $this->log('invoice.modified', "Invoice #{$invoiceId} modified: {$reason}", 'warning', 'tenant_user', auth()->user()->email, [
+        $this->log('invoice.modified', "Invoice #{$invoiceId} modified: {$reason}", 'warning', 'tenant_user', auth()->check() ? auth()->user()->email : null, [
             'invoice_id' => $invoiceId,
             'old_data' => $oldData,
             'new_data' => $newData,
@@ -94,7 +94,7 @@ class AuditService
 
     public function logPayment(int $paymentId, array $paymentData): void
     {
-        $this->log('payment.created', "Payment #{$paymentId} created", 'info', 'tenant_user', auth()->user()->email, [
+        $this->log('payment.created', "Payment #{$paymentId} created", 'info', 'tenant_user', auth()->check() ? auth()->user()->email : null, [
             'payment_id' => $paymentId,
             'payment_data' => $paymentData,
         ]);
@@ -102,7 +102,7 @@ class AuditService
 
     public function logRefund(int $refundId, array $refundData): void
     {
-        $this->log('payment.refunded', "Refund #{$refundId} processed", 'warning', 'tenant_user', auth()->user()->email, [
+        $this->log('payment.refunded', "Refund #{$refundId} processed", 'warning', 'tenant_user', auth()->check() ? auth()->user()->email : null, [
             'refund_id' => $refundId,
             'refund_data' => $refundData,
         ]);
@@ -110,7 +110,7 @@ class AuditService
 
     public function logDiscountApplied(int $invoiceId, array $discountData, string $reason): void
     {
-        $this->log('invoice.discount_applied', "Discount applied to invoice #{$invoiceId}: {$reason}", 'warning', 'tenant_user', auth()->user()->email, [
+        $this->log('invoice.discount_applied', "Discount applied to invoice #{$invoiceId}: {$reason}", 'warning', 'tenant_user', auth()->check() ? auth()->user()->email : null, [
             'invoice_id' => $invoiceId,
             'discount_data' => $discountData,
             'reason' => $reason,
@@ -119,7 +119,7 @@ class AuditService
 
     public function logStockAdjustment(int $productId, int $branchId, float $oldQty, float $newQty, string $reason): void
     {
-        $this->log('inventory.adjusted', "Stock adjusted for product #{$productId}: {$reason}", 'warning', 'tenant_user', auth()->user()->email, [
+        $this->log('inventory.adjusted', "Stock adjusted for product #{$productId}: {$reason}", 'warning', 'tenant_user', auth()->check() ? auth()->user()->email : null, [
             'product_id' => $productId,
             'branch_id' => $branchId,
             'old_quantity' => $oldQty,
@@ -130,7 +130,7 @@ class AuditService
 
     public function logServiceRemoval(int $jobServiceId, array $serviceData, string $reason): void
     {
-        $this->log('job.service_removed', "Service #{$jobServiceId} removed from job: {$reason}", 'warning', 'tenant_user', auth()->user()->email, [
+        $this->log('job.service_removed', "Service #{$jobServiceId} removed from job: {$reason}", 'warning', 'tenant_user', auth()->check() ? auth()->user()->email : null, [
             'job_service_id' => $jobServiceId,
             'service_data' => $serviceData,
             'reason' => $reason,
@@ -139,7 +139,7 @@ class AuditService
 
     public function logServiceAddition(int $jobServiceId, array $serviceData): void
     {
-        $this->log('job.service_added', "Service #{$jobServiceId} added to job", 'info', 'tenant_user', auth()->user()->email, [
+        $this->log('job.service_added', "Service #{$jobServiceId} added to job", 'info', 'tenant_user', auth()->check() ? auth()->user()->email : null, [
             'job_service_id' => $jobServiceId,
             'service_data' => $serviceData,
         ]);
@@ -147,7 +147,7 @@ class AuditService
 
     public function logPriceChange(int $entityId, string $entityType, float $oldPrice, float $newPrice, string $reason): void
     {
-        $this->log('price.changed', "Price changed for {$entityType} #{$entityId}: {$reason}", 'warning', 'tenant_user', auth()->user()->email, [
+        $this->log('price.changed', "Price changed for {$entityType} #{$entityId}: {$reason}", 'warning', 'tenant_user', auth()->check() ? auth()->user()->email : null, [
             'entity_id' => $entityId,
             'entity_type' => $entityType,
             'old_price' => $oldPrice,
@@ -158,7 +158,7 @@ class AuditService
 
     public function logServiceCancellation(int $jobId, string $reason): void
     {
-        $this->log('job.cancelled', "Job #{$jobId} cancelled: {$reason}", 'warning', 'tenant_user', auth()->user()->email, [
+        $this->log('job.cancelled', "Job #{$jobId} cancelled: {$reason}", 'warning', 'tenant_user', auth()->check() ? auth()->user()->email : null, [
             'job_id' => $jobId,
             'reason' => $reason,
         ]);
@@ -166,7 +166,7 @@ class AuditService
 
     public function logCustomerDeletion(int $customerId, array $customerData): void
     {
-        $this->log('customer.deleted', "Customer #{$customerId} deleted", 'critical', 'tenant_user', auth()->user()->email, [
+        $this->log('customer.deleted', "Customer #{$customerId} deleted", 'critical', 'tenant_user', auth()->check() ? auth()->user()->email : null, [
             'customer_id' => $customerId,
             'customer_data' => $customerData,
         ], true);
@@ -174,7 +174,7 @@ class AuditService
 
     public function logPermissionChange(int $userId, array $oldPermissions, array $newPermissions, string $reason): void
     {
-        $this->log('user.permissions_changed', "Permissions changed for user #{$userId}: {$reason}", 'warning', 'tenant_user', auth()->user()->email, [
+        $this->log('user.permissions_changed', "Permissions changed for user #{$userId}: {$reason}", 'warning', 'tenant_user', auth()->check() ? auth()->user()->email : null, [
             'user_id' => $userId,
             'old_permissions' => $oldPermissions,
             'new_permissions' => $newPermissions,

@@ -13,7 +13,23 @@ class AuthController extends Controller
     }
     public function showLogin()
     {
-        return view('auth.login');
+        // Get business settings for logo display on login page
+        $settings = [
+            'company_name' => 'AutoCare Pro',
+            'logo_path' => ''
+        ];
+        
+        // Try to get the business from the current tenant context
+        $tenant = app(\App\Services\CurrentContext::class)->tenant();
+        if ($tenant) {
+            // Read settings directly using Settings service
+            $settings = [
+                'company_name' => \App\Services\Settings::str('business.company_name', 'AutoCare Pro'),
+                'logo_path' => \App\Services\Settings::str('branding.logo_path', ''),
+            ];
+        }
+        
+        return view('auth.login', compact('settings'));
     }
 
     public function login(Request $request)

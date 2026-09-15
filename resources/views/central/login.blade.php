@@ -13,17 +13,24 @@
             min-height: 100vh; margin: 0; color: #1e293b;
         }
         .card { background: #fff; border-radius: 16px; padding: 36px; width: 360px; box-shadow: 0 20px 50px rgba(0,0,0,.3); }
-        .card h1 { font-size: 19px; margin: 0 0 4px; }
-        .card p { color: #64748b; font-size: 13px; margin: 0 0 22px; }
+        .card h1 { font-size: 24px; margin: 0 0 4px; text-align: center; }
+        .card h1 span { color: #4a90e2; }
+        .card p { color: #64748b; font-size: 13px; margin: 0 0 22px; text-align: center; }
         label { display: block; font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 14px; }
         label input { width: 100%; padding: 11px 13px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; margin-top: 5px; }
         button { width: 100%; padding: 12px; background: #4a90e2; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; margin-top: 6px; }
         .flash { background: #fee2e2; color: #991b1b; padding: 10px 12px; border-radius: 8px; font-size: 13px; margin-bottom: 14px; }
+        .footer { text-align: center; margin-top: 24px; color: #64748b; font-size: 12px; }
+        .footer a { color: #4a90e2; text-decoration: none; }
+        .footer a:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
     <div class="card">
-        <h1>AutoCare Pro <span style="color:#4a90e2">Master Control</span></h1>
+        <div style="text-align: center; margin-bottom: 20px;">
+            <h1 style="font-size: 28px; margin: 0;">AutoCare Pro</h1>
+            <span style="color: #4a90e2; font-size: 14px; font-weight: 600;">Master Control</span>
+        </div>
         <p>Platform operators only.</p>
         @if($errors->any())
             <div class="flash">{{ $errors->first() }}</div>
@@ -41,6 +48,7 @@
             </label>
             <button type="submit">Sign in</button>
         </form>
+        <div class="footer">Powered by <a href="https://vellixglobal.com" target="_blank">VellixGlobal</a> © {{ date('Y') }}</div>
     </div>
 </body>
 </html>
