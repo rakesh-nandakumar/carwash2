@@ -56,7 +56,7 @@ class ReturnGrnController extends Controller
         
         // Get supplier references (GRN references for each supplier) - only confirmed GRNs
         $supplierReferences = [];
-        $grnItemsMap = []; // Map GRN number to its items
+        $grnItemsMap = []; // Map GRN number to its items with unit costs
         $confirmedStatusId = \App\Models\Setting::where('key', 'confirmed')->first()?->id ?? 45;
         $grns = \App\Models\GoodsReceipt::with(['supplier', 'items'])
             ->where('status_id', $confirmedStatusId)
@@ -74,8 +74,14 @@ class ReturnGrnController extends Controller
                 'notes' => $grn->notes,
             ];
             
-            // Store items for this GRN
-            $grnItemsMap[$grn->grn_number] = $grn->items->pluck('product_id')->toArray();
+            // Store items for this GRN with unit costs
+            $grnItemsMap[$grn->grn_number] = [];
+            foreach ($grn->items as $item) {
+                $grnItemsMap[$grn->grn_number][] = [
+                    'product_id' => $item->product_id,
+                    'unit_cost' => $item->unit_cost,
+                ];
+            }
         }
         
         return view('return_grns.create', compact('suppliers', 'products', 'productStocks', 'supplierProducts', 'supplierReferences', 'grnItemsMap'));

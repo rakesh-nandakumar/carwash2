@@ -63,7 +63,7 @@
                         </div>
                         <div class="field">
                             <label>Unit Cost</label>
-                            <input type="number" name="items[0][unit_cost]" step="0.01">
+                            <input type="number" name="items[0][unit_cost]" step="0.01" readonly>
                         </div>
                         <div class="field">
                             <label>Notes</label>
@@ -118,6 +118,11 @@
     font-size: 14px;
 }
 
+.field input[readonly] {
+    background-color: #f3f4f6;
+    cursor: not-allowed;
+}
+
 .field input.error {
     border-color: #ef4444;
     background-color: #fef2f2;
@@ -167,6 +172,20 @@ document.addEventListener('DOMContentLoaded', function() {
     if (supplierSelect) {
         supplierSelect.addEventListener('change', function() {
             handleSupplierChange(this.value);
+        });
+    }
+    
+    // Clear unit cost when reference is cleared
+    const referenceSelect = document.querySelector('select[name="reference"]');
+    if (referenceSelect) {
+        referenceSelect.addEventListener('change', function() {
+            if (!this.value) {
+                currentGrnNumber = null;
+                // Clear all unit cost fields
+                document.querySelectorAll('input[type="number"][name*="unit_cost"]').forEach(input => {
+                    input.value = '';
+                });
+            }
         });
     }
 });
@@ -241,16 +260,38 @@ function handleReferenceChange(select) {
         productSelects.forEach(select => {
             updateProductOptionsForGrn(select, grnItemsMap[grnNumber]);
         });
+        
+        // Auto-fill unit costs for already selected products
+        const itemRows = document.querySelectorAll('.item-row');
+        itemRows.forEach(row => {
+            const productSelect = row.querySelector('select');
+            const unitCostInput = row.querySelector('input[type="number"][name*="unit_cost"]');
+            const productId = productSelect.value;
+            
+            if (productId) {
+                const grnItem = grnItemsMap[grnNumber].find(item => item.product_id === parseInt(productId));
+                if (grnItem && grnItem.unit_cost !== null) {
+                    unitCostInput.value = grnItem.unit_cost;
+                } else {
+                    unitCostInput.value = '';
+                }
+            }
+        });
+    } else {
+        // Clear unit costs if no reference selected
+        document.querySelectorAll('input[type="number"][name*="unit_cost"]').forEach(input => {
+            input.value = '';
+        });
     }
 }
 
-function updateProductOptionsForGrn(select, grnProductIds) {
+function updateProductOptionsForGrn(select, grnItems) {
     const currentValue = select.value;
     let optionsHtml = '<option value="">Select Product</option>';
     
-    if (grnProductIds && grnProductIds.length > 0) {
-        grnProductIds.forEach(productId => {
-            const product = products.find(p => p.id === productId);
+    if (grnItems && grnItems.length > 0) {
+        grnItems.forEach(item => {
+            const product = products.find(p => p.id === item.product_id);
             if (product) {
                 optionsHtml += `<option value="${product.id}">${product.name}</option>`;
             }
@@ -268,6 +309,12 @@ function updateProductOptionsForGrn(select, grnProductIds) {
     if (stockDisplay) {
         stockDisplay.textContent = 'Available stock: -';
     }
+    
+    // Clear unit cost
+    const unitCostInput = row.querySelector('input[type="number"][name*="unit_cost"]');
+    if (unitCostInput) {
+        unitCostInput.value = '';
+    }
 }
 
 function addItemRow() {
@@ -277,8 +324,8 @@ function addItemRow() {
     
     // If a reference is selected, show only items from that GRN
     if (currentGrnNumber && grnItemsMap[currentGrnNumber]) {
-        grnItemsMap[currentGrnNumber].forEach(productId => {
-            const product = products.find(p => p.id === productId);
+        grnItemsMap[currentGrnNumber].forEach(item => {
+            const product = products.find(p => p.id === item.product_id);
             if (product) {
                 optionsHtml += `<option value="${product.id}">${product.name}</option>`;
             }
@@ -314,7 +361,7 @@ function addItemRow() {
                 </div>
                 <div class="field">
                     <label>Unit Cost</label>
-                    <input type="number" name="items[${itemCount}][unit_cost]" step="0.01">
+                    <input type="number" name="items[${itemCount}][unit_cost]" step="0.01" readonly>
                 </div>
                 <div class="field">
                     <label>Notes</label>
@@ -326,6 +373,20 @@ function addItemRow() {
     `;
     
     container.insertAdjacentHTML('beforeend', html);
+    
+    // Add change event listener to the new product select to auto-fill unit cost
+    const newRow = container.lastElementChild;
+    const newProductSelect = newRow.querySelector('select');
+    newProductSelect.addEventListener('change', function() {
+        updateStockDisplay(this);
+    });
+    
+    // If a reference is selected, auto-fill unit cost for the first item if pre-selected
+    if (currentGrnNumber && grnItemsMap[currentGrnNumber]) {
+        const unitCostInput = newRow.querySelector('input[type="number"][name*="unit_cost"]');
+        // Will be filled when product is selected
+    }
+    
     itemCount++;
 }
 
@@ -333,12 +394,25 @@ function updateStockDisplay(select) {
     const row = select.closest('.item-row');
     const productId = select.value;
     const stockDisplay = row.querySelector('.stock-display');
+    const unitCostInput = row.querySelector('input[type="number"][name*="unit_cost"]');
     
     if (productId && productStocks[productId] !== undefined) {
         stockDisplay.textContent = `Available stock: ${productStocks[productId]}`;
         stockDisplay.classList.remove('error');
     } else {
         stockDisplay.textContent = 'Available stock: -';
+    }
+    
+    // Auto-fill unit cost from GRN if a reference is selected
+    if (currentGrnNumber && grnItemsMap[currentGrnNumber]) {
+        const grnItem = grnItemsMap[currentGrnNumber].find(item => item.product_id === parseInt(productId));
+        if (grnItem && grnItem.unit_cost !== null) {
+            unitCostInput.value = grnItem.unit_cost;
+        } else {
+            unitCostInput.value = '';
+        }
+    } else {
+        unitCostInput.value = '';
     }
     
     // Also validate quantity when product changes
