@@ -14,18 +14,14 @@ use Illuminate\Support\Facades\DB;
 class PurchaseOrderService
 {
     public function __construct(
-        private InventoryService $inventory
+        private InventoryService $inventory,
+        private DocumentNumberService $documentNumbers,
     ) {}
 
     public function createPurchaseOrder(array $data): PurchaseOrder
     {
         return DB::transaction(function () use ($data) {
-            $poNumber = 'PO-' . date('Y') . '-' . str_pad(
-                PurchaseOrder::whereYear('created_at', date('Y'))->count() + 1,
-                6,
-                '0',
-                STR_PAD_LEFT
-            );
+            $poNumber = $this->documentNumbers->next('purchase_order');
 
             $purchaseOrder = PurchaseOrder::create([
                 'po_number' => $poNumber,
@@ -129,55 +125,74 @@ class PurchaseOrderService
         return DB::transaction(function () use ($purchaseOrderId, $receivedItems, $receivedBy) {
             $purchaseOrder = PurchaseOrder::with('items')->findOrFail($purchaseOrderId);
             
-            $ceiptNumber = 'GR-' . date('Y') . '-' . str_pad(
-                GoodsReceipt::whereYear('created_at', date('Y'))->count() + 1,
-                6,
-                '0',
-                STR_PAD_LEFT
-            );
+            $grnNumber = $this->documentNumbers->next('grn');
+
+            // Get draft status ID
+            $statusId = $this->getStatusId('draft');
 
             $goodsReceipt = GoodsReceipt::create([
-                'receipt_number' => $ceiptNumber,
+                'grn_number' => $grnNumber,
                 'purchase_order_id' => $purchaseOrderId,
                 'branch_id' => $purchaseOrder->branch_id,
-                'status' => 'received',
+                'supplier_id' => $purchaseOrder->supplier_id,
+                'status_id' => $statusId,
                 'received_by' => $receivedBy,
                 'received_at' => now(),
             ]);
 
-            // Update received quantities and add to inventory
+            // Create GRN items with received quantities
             foreach ($receivedItems as $receivedItem) {
                 $poItem = $purchaseOrder->items->where('product_id', $receivedItem['product_id'])->first();
                 
                 if ($poItem) {
-                    $poItem->received_quantity += $receivedItem['quantity'];
-                    $poItem->save();
-
-                    // Add to inventory
-                    $product = Product::find($receivedItem['product_id']);
-                    $this->inventory->adjust(
-                        $product,
-                        $purchaseOrder->branch_id,
-                        $receivedItem['quantity'],
-                        'Purchase receipt: ' . $purchaseOrder->po_number,
-                        'purchase'
-                    );
+                    GoodsReceiptItem::create([
+                        'goods_receipt_id' => $goodsReceipt->id,
+                        'product_id' => $receivedItem['product_id'],
+                        'quantity' => $receivedItem['quantity'],
+                        'unit_cost' => $poItem->unit_price,
+                        'sale_price' => null, // Will be set during confirmation
+                    ]);
                 }
-            }
-
-            // Check if all items received
-            $allReceived = $purchaseOrder->items->every(function ($item) {
-                return $item->received_quantity >= $item->quantity;
-            });
-
-            if ($allReceived) {
-                $purchaseOrder->update(['status' => 'received']);
-            } else {
-                $purchaseOrder->update(['status' => 'partially_received']);
             }
 
             return $goodsReceipt;
         });
+    }
+
+    /**
+     * Called by GrnService::confirm() when a GRN references this PO. Updates
+     * each line's received_quantity and flips status to partial/received.
+     *
+     * @param  array<int,float>  $receivedQtyByProductId  quantity received per product_id
+     */
+    public function applyGrnReceipt(PurchaseOrder $po, array $receivedQtyByProductId): void
+    {
+        foreach ($po->items as $item) {
+            $received = $receivedQtyByProductId[$item->product_id] ?? 0.0;
+            if ($received > 0) {
+                $item->increment('received_quantity', $received);
+            }
+        }
+
+        $po->refresh()->load('items');
+        $allReceived = $po->items->every(function ($item) {
+            return $item->received_quantity >= $item->quantity;
+        });
+
+        $newStatus = $allReceived ? 'received' : 'partially_received';
+        $po->update(['status' => $newStatus]);
+
+        // Log the PO receipt application
+        if (class_exists(\App\Services\AuditService::class)) {
+            app(\App\Services\AuditService::class)->log(
+                'purchase_order.receipt_applied',
+                "Purchase Order {$po->po_number} receipt applied: {$newStatus}",
+                'info',
+                'tenant_user',
+                auth()->user()->email ?? null,
+                ['po_number' => $po->po_number, 'status' => $newStatus]
+            );
+        }
     }
 
     public function createSupplierReturn(array $data): SupplierReturn
@@ -278,5 +293,25 @@ class PurchaseOrderService
                 'created_at' => $po->created_at->format('Y-m-d'),
             ];
         })->toArray();
+    }
+
+    private function getStatusId(string $status): ?int
+    {
+        // Try to find the status in settings
+        $setting = \App\Models\Setting::where('group', 'grn_statuses')
+            ->where('key', $status)
+            ->first();
+
+        return $setting ? (int) $setting->id : null;
+    }
+
+    private function getPoStatusId(string $status): ?int
+    {
+        // Try to find the status in settings for purchase orders
+        $setting = \App\Models\Setting::where('group', 'purchase_order_statuses')
+            ->where('key', $status)
+            ->first();
+
+        return $setting ? (int) $setting->id : null;
     }
 }

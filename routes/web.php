@@ -28,6 +28,12 @@ use App\Http\Controllers\TillManagementController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Artisan;
 use App\Http\Controllers\StockAdjustmentController;
+use App\Http\Controllers\GrnController;
+use App\Http\Controllers\SupplierController;
+use App\Http\Controllers\Api\SupplierController as ApiSupplierController;
+use App\Http\Controllers\Api\GrnController as ApiGrnController;
+use App\Http\Controllers\ReturnGrnController;
+use App\Http\Controllers\Api\ReturnGrnController as ApiReturnGrnController;
 
 Route::pattern('tenant', '[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?');
 
@@ -545,6 +551,10 @@ Route::prefix('{tenant}')
             Route::get('/reports/cash-movements', [ReportController::class, 'cashMovementsReport'])
                 ->name('reports.cash-movements')
                 ->middleware('permission:cash_movements.access');
+
+            Route::get('/reports/grn', [ReportController::class, 'grnReport'])
+                ->name('reports.grn')
+                ->middleware('permission:reports.access');
             // ==================== END REPORTS ====================
 
             // ==================== USERS ====================
@@ -704,5 +714,122 @@ Route::prefix('{tenant}')
                 ->name('settings.till.update')
                 ->middleware('permission:settings.access');
             // ==================== END SETTINGS ====================
+
+            // ==================== SUPPLIERS ====================
+            Route::get('/suppliers', [SupplierController::class, 'index'])
+                ->name('suppliers.index')
+                ->middleware('permission:suppliers.access');
+
+            Route::get('/suppliers/{supplier}', [SupplierController::class, 'show'])
+                ->name('suppliers.show')
+                ->middleware('permission:suppliers.access');
+
+            // API routes for AJAX calls
+            Route::get('/api/suppliers', [\App\Http\Controllers\Api\SupplierController::class, 'index'])
+                ->name('api.suppliers.index')
+                ->middleware('permission:suppliers.access');
+
+            Route::post('/api/suppliers', [\App\Http\Controllers\Api\SupplierController::class, 'store'])
+                ->name('api.suppliers.store')
+                ->middleware('permission:suppliers.create');
+
+            Route::get('/api/suppliers/{supplier}', [\App\Http\Controllers\Api\SupplierController::class, 'show'])
+                ->name('api.suppliers.show')
+                ->middleware('permission:suppliers.access');
+
+            Route::put('/api/suppliers/{supplier}', [\App\Http\Controllers\Api\SupplierController::class, 'update'])
+                ->name('api.suppliers.update')
+                ->middleware('permission:suppliers.edit');
+
+            Route::delete('/api/suppliers/{supplier}', [\App\Http\Controllers\Api\SupplierController::class, 'destroy'])
+                ->name('api.suppliers.destroy')
+                ->middleware('permission:suppliers.delete');
+
+            Route::post('/api/suppliers/{supplier}/blacklist', [\App\Http\Controllers\Api\SupplierController::class, 'blacklist'])
+                ->name('api.suppliers.blacklist')
+                ->middleware('permission:suppliers.blacklist');
+
+            Route::post('/api/suppliers/{supplier}/unblacklist', [\App\Http\Controllers\Api\SupplierController::class, 'unblacklist'])
+                ->name('api.suppliers.unblacklist')
+                ->middleware('permission:suppliers.blacklist');
+
+            Route::get('/api/suppliers/{supplier}/ledger', [\App\Http\Controllers\Api\SupplierController::class, 'ledger'])
+                ->name('api.suppliers.ledger')
+                ->middleware('permission:suppliers.access');
+
+            Route::get('/api/suppliers/statistics', [\App\Http\Controllers\Api\SupplierController::class, 'statistics'])
+                ->name('api.suppliers.statistics')
+                ->middleware('permission:suppliers.access');
+            // ==================== END SUPPLIERS ====================
+
+            // ==================== GRN (GOODS RECEIPT NOTES) ====================
+            Route::get('/grns', [GrnController::class, 'index'])
+                ->name('grns.index')
+                ->middleware('permission:grns.access');
+
+            Route::get('/grns/{grn}', [GrnController::class, 'show'])
+                ->name('grns.show')
+                ->middleware('permission:grns.access');
+
+            Route::get('/return-grns', [ReturnGrnController::class, 'index'])
+                ->name('return_grns.index')
+                ->middleware('permission:grns.access');
+
+            Route::get('/return-grns/create', [ReturnGrnController::class, 'create'])
+                ->name('return_grns.create')
+                ->middleware('permission:grns.access');
+
+            Route::get('/return-grns/{returnGrn}', [ReturnGrnController::class, 'show'])
+                ->name('return_grns.show')
+                ->middleware('permission:grns.access');
+
+            // API routes for AJAX calls
+            Route::get('/api/grns', [\App\Http\Controllers\Api\GrnController::class, 'index'])
+                ->name('api.grns.index')
+                ->middleware('permission:grns.access');
+
+            Route::post('/api/grns', [\App\Http\Controllers\Api\GrnController::class, 'store'])
+                ->name('api.grns.store')
+                ->middleware('permission:grns.create');
+
+            Route::get('/api/grns/{grn}', [\App\Http\Controllers\Api\GrnController::class, 'show'])
+                ->name('api.grns.show')
+                ->middleware('permission:grns.access');
+
+            Route::put('/api/grns/{grn}', [\App\Http\Controllers\Api\GrnController::class, 'update'])
+                ->name('api.grns.update')
+                ->middleware('permission:grns.edit');
+
+            Route::post('/api/grns/{grn}/confirm', [\App\Http\Controllers\Api\GrnController::class, 'confirm'])
+                ->name('api.grns.confirm');
+
+            Route::post('/api/grns/{grn}/revert', [\App\Http\Controllers\Api\GrnController::class, 'revert'])
+                ->name('api.grns.revert');
+
+            Route::delete('/api/grns/{grn}', [\App\Http\Controllers\Api\GrnController::class, 'destroy'])
+                ->name('api.grns.destroy');
+
+            Route::get('/api/return-grns', [\App\Http\Controllers\Api\ReturnGrnController::class, 'index'])
+                ->name('api.return-grns.index')
+                ->middleware('permission:grns.access');
+
+            Route::post('/api/return-grns', [\App\Http\Controllers\Api\ReturnGrnController::class, 'store'])
+                ->name('api.return-grns.store')
+                ->middleware('permission:grns.access');
+
+            Route::get('/api/return-grns/{returnGrn}', [\App\Http\Controllers\Api\ReturnGrnController::class, 'show'])
+                ->name('api.return-grns.show')
+                ->middleware('permission:grns.access');
+
+            Route::post('/api/return-grns/{returnGrn}/confirm', [\App\Http\Controllers\Api\ReturnGrnController::class, 'confirm'])
+                ->name('api.return-grns.confirm');
+
+            Route::delete('/api/return-grns/{returnGrn}', [\App\Http\Controllers\Api\ReturnGrnController::class, 'destroy'])
+                ->name('api.return-grns.destroy');
+
+            Route::get('/api/grns/statistics', [\App\Http\Controllers\Api\GrnController::class, 'statistics'])
+                ->name('api.grns.statistics')
+                ->middleware('permission:grns.access');
+            // ==================== END GRN ====================
         });
     });

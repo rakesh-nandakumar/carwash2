@@ -273,7 +273,7 @@ class InventoryController extends Controller
                 ]);
             }
 
-            $this->auditService->log('product_created', 'Product', $product->id, null, $validated);
+            $this->auditService->log('product_created', 'Product created', 'info', 'tenant_user', auth()->user()->email ?? null);
         });
 
         return redirect()
@@ -350,11 +350,7 @@ class InventoryController extends Controller
                 $product->update(['image' => $imagePath]);
             }
 
-            $this->auditService->log('product.updated', "Product '{$product->name}' updated", 'info', 'tenant_user', auth()->user()->email, [
-                'product_id' => $product->id,
-                'old_values' => $oldValues,
-                'new_values' => $validated,
-            ]);
+            $this->auditService->log('product.updated', "Product '{$product->name}' updated", 'info', 'tenant_user', auth()->user()->email ?? null);
         });
 
         return redirect()
@@ -402,7 +398,7 @@ class InventoryController extends Controller
             // Delete the product
             $product->delete();
 
-            $this->auditService->log('product_deleted', 'Product', $product->id, $productData, null);
+            $this->auditService->log('product_deleted', 'Product deleted', 'warning', 'tenant_user', auth()->user()->email ?? null);
         });
 
         return redirect()

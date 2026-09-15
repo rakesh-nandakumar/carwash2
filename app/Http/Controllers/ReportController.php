@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\{Invoice, Job, Customer, Vehicle, Product, Service, InventoryMovement, CashMovement};
+use App\Models\{Invoice, Job, Customer, Vehicle, Product, Service, InventoryMovement, CashMovement, GoodsReceipt, Supplier, ReturnGrn};
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
@@ -436,5 +436,91 @@ class ReportController extends Controller
                 'drops',
             )
         );
+    }
+
+    public function grnReport(Request $request)
+    {
+        abort_unless(
+            auth()->user()->hasPermissionTo('reports.access'),
+            403
+        );
+
+        $startDate = Carbon::parse(
+            $request->input(
+                'start_date',
+                now()->startOfMonth()->toDateString()
+            )
+        )->startOfDay();
+
+        $endDate = Carbon::parse(
+            $request->input(
+                'end_date',
+                now()->toDateString()
+            )
+        )->endOfDay();
+
+        $activeTab = $request->input('tab', 'grn');
+
+        // Get all suppliers for filter dropdown
+        $suppliers = Supplier::orderBy('name')->get();
+
+        // Build GRN query
+        $query = GoodsReceipt::with(['supplier', 'items.product', 'status'])
+            ->whereBetween('received_at', [$startDate, $endDate]);
+
+        // Filter by supplier if selected
+        if ($request->filled('supplier_id')) {
+            $query->where('supplier_id', $request->supplier_id);
+        }
+
+        // Get GRNs
+        $grns = $query->latest('received_at')->get();
+
+        // Group by supplier
+        $grnsBySupplier = $grns->groupBy(function ($grn) {
+            return $grn->supplier ? $grn->supplier->name : 'No Supplier';
+        });
+
+        // Calculate grand total
+        $grandTotal = $grns->sum(function ($grn) {
+            return $grn->items->sum(function ($item) {
+                return ($item->unit_cost ?? 0) * $item->quantity;
+            });
+        });
+
+        // Build Return GRN query
+        $returnQuery = ReturnGrn::with(['supplier', 'items.product', 'status'])
+            ->whereBetween('returned_at', [$startDate, $endDate]);
+
+        // Filter by supplier if selected
+        if ($request->filled('supplier_id')) {
+            $returnQuery->where('supplier_id', $request->supplier_id);
+        }
+
+        // Get Return GRNs
+        $returnGrns = $returnQuery->latest('returned_at')->get();
+
+        // Group by supplier
+        $returnGrnsBySupplier = $returnGrns->groupBy(function ($returnGrn) {
+            return $returnGrn->supplier ? $returnGrn->supplier->name : 'No Supplier';
+        });
+
+        // Calculate return grand total
+        $returnGrandTotal = $returnGrns->sum(function ($returnGrn) {
+            return $returnGrn->items->sum(function ($item) {
+                return ($item->unit_cost ?? 0) * $item->quantity;
+            });
+        });
+
+        return view('reports.grn', compact(
+            'grnsBySupplier',
+            'returnGrnsBySupplier',
+            'suppliers',
+            'startDate',
+            'endDate',
+            'grandTotal',
+            'returnGrandTotal',
+            'activeTab'
+        ));
     }
 }

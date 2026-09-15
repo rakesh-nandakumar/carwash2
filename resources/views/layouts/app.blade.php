@@ -20,6 +20,7 @@
             } catch (e) {}
         })();
     </script>
+
     <style>
         html.sidebar-preload-collapsed aside.sidebar {
             margin-left: -380px !important;
@@ -27,6 +28,47 @@
         html.sidebar-preload-collapsed .main {
             margin-left: 0 !important;
             width: 100% !important;
+        }
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            z-index: 9999;
+            animation: slideIn 0.3s ease-out;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        .toast.success {
+            background-color: #10b981;
+        }
+        .toast.error {
+            background-color: #ef4444;
+        }
+        .toast.toast-hide {
+            animation: slideOut 0.3s ease-in forwards;
+        }
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
         }
         .sidebar-toggle {
             display: flex !important;
@@ -579,6 +621,43 @@
                         <path d="M2 12l10 5 10-5"/>
                     </svg>
                     <span>Services</span>
+                </a>
+            @endif
+
+            @if(auth()->user()->hasPermissionTo('suppliers.access'))
+                <a href="{{ route('suppliers.index') }}" class="{{ request()->routeIs('suppliers.*') ? 'active' : '' }}">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                        <circle cx="8.5" cy="7" r="4"/>
+                        <line x1="20" y1="8" x2="20" y2="14"/>
+                        <line x1="23" y1="11" x2="17" y2="11"/>
+                    </svg>
+                    <span>Suppliers</span>
+                </a>
+            @endif
+
+            @if(auth()->user()->hasPermissionTo('grns.access'))
+                <a href="{{ route('grns.index') }}" class="{{ request()->routeIs('grns.*') ? 'active' : '' }}">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                        <line x1="16" y1="13" x2="8" y2="13"/>
+                        <line x1="16" y1="17" x2="8" y2="17"/>
+                        <polyline points="10 9 9 9 8 9"/>
+                    </svg>
+                    <span>GRN</span>
+                </a>
+            @endif
+
+            @if(auth()->user()->hasPermissionTo('grns.access'))
+                <a href="{{ route('return_grns.index') }}" class="{{ request()->routeIs('return_grns.*') ? 'active' : '' }}">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M17 1l4 4-4 4"/>
+                        <path d="M3 11V9a4 4 0 0 1 4-4h14"/>
+                        <path d="M7 23l-4-4 4-4"/>
+                        <path d="M21 13v2a4 4 0 0 1-4 4H3"/>
+                    </svg>
+                    <span>Return GRN</span>
                 </a>
             @endif
             {{-- ==================== END INVENTORY SECTION ==================== --}}

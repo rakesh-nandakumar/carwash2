@@ -18,6 +18,16 @@ use Illuminate\Support\Facades\DB;
 
 class InventoryService
 {
+    public function getStock(Product $product, ?int $branchId = null): float
+    {
+        $query = Inventory::where('product_id', $product->id);
+        if ($branchId) {
+            $query->where('branch_id', $branchId);
+        }
+        $inventory = $query->first();
+        return $inventory ? (float) $inventory->quantity : 0;
+    }
+
     public function adjust(
         Product $product,
         ?int $branchId,
@@ -26,7 +36,8 @@ class InventoryService
         string $type = 'adjustment'
     ): Inventory {
         // Protect against negative / zero quantities coming from Item Master
-        if ($qty <= 0) {
+        // Allow negative for reversal types
+        if ($qty <= 0 && !in_array($type, ['adjustment_reversal', 'sale', 'consumption', 'supplier_return'])) {
             abort(422, 'Stock can only be increased from Item Master.');
         }
 

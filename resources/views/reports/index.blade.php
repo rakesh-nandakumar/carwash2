@@ -97,6 +97,19 @@
                 </p>
             </div>
         @endif
+
+        {{-- GRN Status Report --}}
+        <div class="report-card report-card-teal" onclick="window.location.href='{{ route('reports.grn') }}'">
+            <div class="report-icon">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                    <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+                    <line x1="12" y1="22.08" x2="12" y2="12"/>
+                </svg>
+            </div>
+            <h3>GRN Status</h3>
+            <p>Products received and returned to suppliers by date range.</p>
+        </div>
     </div>
 </div>
 
@@ -176,6 +189,16 @@
 .report-card-pink {
     background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
     box-shadow: 0 4px 6px rgba(236, 72, 153, 0.2);
+}
+
+.report-card-teal {
+    background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
+    box-shadow: 0 4px 6px rgba(20, 184, 166, 0.2);
+}
+
+.report-card-red {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    box-shadow: 0 4px 6px rgba(239, 68, 68, 0.2);
 }
 
 /* Only stretch the last card on mobile (2-column layout) */

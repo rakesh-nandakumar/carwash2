@@ -8,52 +8,41 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class GoodsReceipt extends Model
+class ReturnGrn extends Model
 {
     use BelongsToTenant;
 
     protected $guarded = [];
 
     protected $fillable = [
-        'grn_number',
+        'return_grn_number',
         'supplier_id',
-        'purchase_order_id',
         'reference',
+        'address',
+        'reason',
         'notes',
-        'received_by',
-        'received_at',
-        'receipt_number',
+        'total_cost',
         'status_id',
-        'confirmed_by',
-        'confirmed_at',
+        'returned_by',
+        'returned_at',
         'deleted_by',
         'deleted_at',
     ];
 
     protected $casts = [
-        'received_at' => 'datetime',
-        'confirmed_at' => 'datetime',
+        'returned_at' => 'datetime',
         'deleted_at' => 'datetime',
+        'total_cost' => 'decimal:2',
     ];
-
-    public function purchaseOrder(): BelongsTo
-    {
-        return $this->belongsTo(PurchaseOrder::class);
-    }
 
     public function supplier(): BelongsTo
     {
         return $this->belongsTo(Supplier::class);
     }
 
-    public function receivedBy(): BelongsTo
+    public function returnedBy(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'received_by');
-    }
-
-    public function confirmedBy(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'confirmed_by');
+        return $this->belongsTo(User::class, 'returned_by');
     }
 
     public function deletedBy(): BelongsTo
@@ -68,21 +57,21 @@ class GoodsReceipt extends Model
 
     public function items(): HasMany
     {
-        return $this->hasMany(GoodsReceiptItem::class);
+        return $this->hasMany(ReturnGrnItem::class);
     }
 
     public function isDraft(): bool
     {
-        return $this->status?->key === 'draft';
+        return $this->status_id == 56;
     }
 
     public function isConfirmed(): bool
     {
-        return $this->status?->key === 'confirmed';
+        return $this->status_id == 57;
     }
 
     public function isDeleted(): bool
     {
-        return $this->status?->key === 'deleted';
+        return $this->status_id == 58;
     }
 }
