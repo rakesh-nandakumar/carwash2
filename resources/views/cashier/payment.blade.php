@@ -43,13 +43,13 @@
                 </svg>
                 <h2>Services</h2>
             </div>
-            @forelse($job->services as $service)
+            @forelse($job->services->where('approval_status', 'approved') as $service)
                 <div class="service-item">
                     <span class="service-name">{{ $service->name_snapshot }}</span>
                     <span class="service-price">Rs. {{ number_format($service->unit_price, 2) }} × {{ $service->quantity }}</span>
                 </div>
             @empty
-                <p class="empty-state">No services.</p>
+                <p class="empty-state">No services approved.</p>
             @endforelse
         </div>
 
@@ -61,13 +61,13 @@
                 </svg>
                 <h2>Parts Used</h2>
             </div>
-            @forelse($job->parts as $part)
+            @forelse($job->parts->where('applied', true) as $part)
                 <div class="part-item">
                     <span class="part-name">{{ $part->product->name }}</span>
                     <span class="part-price">{{ $part->quantity }} × Rs. {{ number_format($part->unit_price, 2) }}</span>
                 </div>
             @empty
-                <p class="empty-state">No parts used.</p>
+                <p class="empty-state">No parts applied.</p>
             @endforelse
         </div>
 
@@ -102,7 +102,7 @@
                 <span class="total-amount">Rs. {{ number_format($calculation['total'], 2) }}</span>
             </div>
 
-            <form method="post" action="{{ route('cashier.process-payment', $job) }}" id="paymentForm" onsubmit="updateHiddenFieldsBeforeSubmit()">
+            <form method="post" action="{{ route('cashier.process-payment', $job) }}" id="paymentForm" onsubmit="handlePaymentSubmit(event)">
                 @csrf
 
                 <div class="form-section">
@@ -1223,6 +1223,37 @@ const tax = {{ $calculation['tax'] }};
 let currentTotal = originalTotal;
 let rowCounter = 1;
 
+function handlePaymentSubmit(event) {
+    event.preventDefault();
+    
+    // Check if till is closed by making an API call
+    fetch('/' + window.location.pathname.split('/')[1] + '/api/check-till-status')
+        .then(response => response.json())
+        .then(data => {
+            if (!data.till_open) {
+                // Show modal instead of alert
+                document.getElementById('tillClosedModal').classList.add('active');
+                return;
+            }
+            // If till is open, submit the form
+            document.getElementById('paymentForm').submit();
+        })
+        .catch(error => {
+            console.error('Error checking till status:', error);
+            // If error, allow submission (failsafe)
+            document.getElementById('paymentForm').submit();
+        });
+}
+
+function closeTillClosedModal() {
+    document.getElementById('tillClosedModal').classList.remove('active');
+}
+
+function goToCashier() {
+    const tenant = window.location.pathname.split('/')[1];
+    window.location.href = '/' + tenant + '/cashier';
+}
+
 function toggleReferenceField() {
     const paymentMethod = document.querySelector('input[name="payment_method"]:checked').value;
     const referenceField = document.getElementById('referenceField');
@@ -1589,4 +1620,131 @@ function calculateBalance() {
     }
 }
 </script>
+
+<!-- Till Closed Modal -->
+<div id="tillClosedModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Till Closed</h2>
+            <button class="close-btn" onclick="closeTillClosedModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p>Cannot process payment. Till is closed. Please open a new shift first.</p>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="secondary" onclick="closeTillClosedModal()">Cancel</button>
+            <button type="button" class="primary" onclick="goToCashier()">Go to Cashier</button>
+        </div>
+    </div>
+</div>
+
+<style>
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(15px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+}
+
+.modal.active {
+    display: flex;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 12px;
+    max-width: 400px;
+    width: 90%;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.modal-header h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #111827;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    font-size: 28px;
+    cursor: pointer;
+    color: #6b7280;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    transition: all 0.2s;
+}
+
+.close-btn:hover {
+    background: #f3f4f6;
+    color: #111827;
+}
+
+.modal-body {
+    padding: 20px 24px;
+    text-align: center;
+}
+
+.modal-body p {
+    margin: 0;
+    color: #374151;
+    font-size: 16px;
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 20px 24px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.modal-footer button {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.modal-footer button.secondary {
+    background: #e5e7eb;
+    color: #374151;
+}
+
+.modal-footer button.secondary:hover {
+    background: #d1d5db;
+}
+
+.modal-footer button.primary {
+    background: #3b82f6;
+    color: white;
+}
+
+.modal-footer button.primary:hover {
+    background: #2563eb;
+}
+</style>
 @endsection

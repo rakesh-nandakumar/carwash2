@@ -1127,9 +1127,10 @@ function closeCloseModal() {
 
 function confirmClose() {
     const jobId = '{{ $job->id }}';
+    const tenant = window.location.pathname.split('/')[1];
     let url = currentCloseType === 'service' 
-        ? `/jobs/${jobId}/services/${currentCloseId}/remove`
-        : `/jobs/${jobId}/parts/${currentCloseId}/remove`;
+        ? `/${tenant}/jobs/${jobId}/services/${currentCloseId}/remove`
+        : `/${tenant}/jobs/${jobId}/parts/${currentCloseId}/remove`;
 
     fetch(url, {
         method: 'DELETE',
@@ -1146,6 +1147,9 @@ function confirmClose() {
         } else {
             alert(data.message || 'Error');
         }
+    })
+    .catch(error => {
+        alert('Error: ' + error.message);
     });
 }
 
@@ -1241,7 +1245,15 @@ document.getElementById('statusForm').addEventListener('submit', async function(
         }
 
         closeStatusModal();
-        window.location.reload();
+        
+        // Redirect to payment processing page if status is ready_for_payment
+        const newStatus = document.getElementById('statusInput').value;
+        if (newStatus === 'ready_for_payment') {
+            const tenant = window.location.pathname.split('/')[1];
+            window.location.href = `/${tenant}/cashier/payment/{{ $job->id }}`;
+        } else {
+            window.location.reload();
+        }
 
     } catch (error) {
         console.error(

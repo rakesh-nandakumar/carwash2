@@ -47,7 +47,8 @@ class PricingService
         $services = [];
         
         foreach ($job->services as $jobService) {
-            if ($jobService->approval_status === 'rejected' || $jobService->removed) {
+            // Only include approved services in the invoice
+            if ($jobService->approval_status === 'rejected' || $jobService->removed || $jobService->approval_status === 'pending') {
                 continue;
             }
             
@@ -85,6 +86,11 @@ class PricingService
         $parts = [];
         
         foreach ($job->parts as $jobPart) {
+            // Only include applied parts in the invoice
+            if (!$jobPart->applied) {
+                continue;
+            }
+            
             $lineTotal = $jobPart->quantity * $jobPart->unit_price;
             $total += $lineTotal;
             

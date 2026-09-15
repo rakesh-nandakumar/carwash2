@@ -21,6 +21,21 @@ class CashierController extends Controller
         private AuditService $audit
     ) {}
 
+    public function checkTillStatus()
+    {
+        $till = $this->cashMovements->getSelectedTill();
+        $tillOpen = false;
+        
+        if ($till) {
+            $lastClosure = $this->cashMovements->lastClosure($till);
+            $tillOpen = $lastClosure && !$lastClosure->closed_at;
+        }
+        
+        return response()->json([
+            'till_open' => $tillOpen
+        ]);
+    }
+
     public function index()
     {
         $readyForPayment = Job::with([
@@ -131,6 +146,15 @@ class CashierController extends Controller
 
     public function processPayment(Request $request, Job $job)
     {
+        // Check if till is closed (no open shift)
+        $till = $this->cashMovements->getSelectedTill();
+        if ($till) {
+            $lastClosure = $this->cashMovements->lastClosure($till);
+            if (!$lastClosure || $lastClosure->closed_at) {
+                return back()->with('error', 'Cannot process payment. Till is closed. Please open a new shift first.');
+            }
+        }
+
         $request->validate([
             'payment_method' => 'required|string|in:cash,card,upi,bank_transfer,cheque',
             'amount_received' => 'required|numeric|min:0',
