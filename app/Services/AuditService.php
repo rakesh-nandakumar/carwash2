@@ -47,7 +47,7 @@ class AuditService
             return;
         }
         
-        $createLog = function () use ($eventKey, $severity, $description, $actorEmail, $actorType, $meta, $isFlagged) {
+        $createLog = function () use ($eventKey, $severity, $description, $actorEmail, $actorType, $meta, $isFlagged, $tenantId) {
             AuditLog::create([
                 'event_key' => $eventKey,
                 'severity' => $severity,
@@ -57,6 +57,7 @@ class AuditService
                 'ip_address' => Request::ip(),
                 'meta' => $meta,
                 'is_flagged' => $isFlagged,
+                'tenant_id' => $tenantId,
             ]);
         };
         
