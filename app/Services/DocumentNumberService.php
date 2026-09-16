@@ -23,6 +23,7 @@ class DocumentNumberService
             'purchase_order' => $this->generatePurchaseOrderNumber(),
             'supplier_return' => $this->generateSupplierReturnNumber(),
             'grn_reference' => $this->generateGrnReference(),
+            'barcode_label' => $this->generateBarcodeLabelNumber(),
             default => $this->generateGenericNumber($type),
         };
     }
@@ -65,6 +66,16 @@ class DocumentNumberService
         $year = date('Y');
         $count = $this->getCountForYear('goods_receipts', $year) + 1;
         return 'REF-' . $year . '-' . str_pad($count, 6, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * Generate Barcode Label number in format: LBL-YYYY-NNNNNN
+     */
+    private function generateBarcodeLabelNumber(): string
+    {
+        $year = date('Y');
+        $count = $this->getCountForYear('barcode_labels', $year) + 1;
+        return 'LBL-' . $year . '-' . str_pad($count, 6, '0', STR_PAD_LEFT);
     }
 
     /**

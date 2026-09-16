@@ -1,3 +1,67 @@
-<?php namespace App\Models;
+<?php
 
-use App\Models\Concerns\BelongsToTenant; use Illuminate\Database\Eloquent\Model; class Product extends Model { use BelongsToTenant;protected $guarded=[]; public function inventory(){return $this->hasMany(Inventory::class);} public function inventoryMovements(){return $this->hasMany(InventoryMovement::class);} public function customerSuppliedParts(){return $this->hasMany(CustomerSuppliedPart::class);} public function emergencyPurchases(){return $this->hasMany(EmergencyPurchase::class);} public function jobParts(){return $this->hasMany(JobPart::class);} public function purchaseOrderItems(){return $this->hasMany(PurchaseOrderItem::class);} public function stockTransferItems(){return $this->hasMany(StockTransferItem::class);} public function warranties(){return $this->hasMany(Warranty::class);} public function category(){return $this->belongsTo(Category::class);}}
+namespace App\Models;
+
+use App\Models\Concerns\BelongsToTenant;
+use Illuminate\Database\Eloquent\Model;
+
+class Product extends Model
+{
+    use BelongsToTenant;
+
+    protected $guarded = [];
+
+    protected $casts = [
+        'unit_price' => 'decimal:2',
+    ];
+
+    public function inventory()
+    {
+        return $this->hasMany(Inventory::class);
+    }
+
+    public function inventoryMovements()
+    {
+        return $this->hasMany(InventoryMovement::class);
+    }
+
+    public function customerSuppliedParts()
+    {
+        return $this->hasMany(CustomerSuppliedPart::class);
+    }
+
+    public function emergencyPurchases()
+    {
+        return $this->hasMany(EmergencyPurchase::class);
+    }
+
+    public function jobParts()
+    {
+        return $this->hasMany(JobPart::class);
+    }
+
+    public function purchaseOrderItems()
+    {
+        return $this->hasMany(PurchaseOrderItem::class);
+    }
+
+    public function stockTransferItems()
+    {
+        return $this->hasMany(StockTransferItem::class);
+    }
+
+    public function warranties()
+    {
+        return $this->hasMany(Warranty::class);
+    }
+
+    public function category()
+    {
+        return $this->belongsTo(Category::class);
+    }
+
+    public function barcodeLabels()
+    {
+        return $this->hasMany(BarcodeLabel::class);
+    }
+}

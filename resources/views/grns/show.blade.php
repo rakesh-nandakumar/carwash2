@@ -39,10 +39,10 @@
         </div>
 
         <div class="grn-actions">
-            @if($grn->status_id == 44)
+            @if($grn->isDraft())
                 <button onclick="window.grnConfirm()" class="primary">Confirm GRN</button>
             @endif
-            @if($grn->status_id != 46)
+            @if(!$grn->isDeleted())
                 <button onclick="window.grnDelete()" class="danger">Delete GRN</button>
             @endif
         </div>

@@ -4,6 +4,7 @@ use App\Http\Controllers\AppointmentController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Auth\ImpersonationSessionController;
 use App\Http\Controllers\AuditController;
+use App\Http\Controllers\BarcodeLabelController;
 use App\Http\Controllers\CashierController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ChequePaymentController;
@@ -354,6 +355,32 @@ Route::prefix('{tenant}')
                 ->name('inventory.stock')
                 ->middleware('permission:inventory.access');
             // ==================== END INVENTORY ====================
+
+            // ==================== BARCODE LABELS ====================
+            Route::get('/barcode-labels', [BarcodeLabelController::class, 'index'])
+                ->name('barcode-labels.index')
+                ->middleware('permission:inventory.access');
+
+            Route::get('/barcode-labels/create', [BarcodeLabelController::class, 'create'])
+                ->name('barcode-labels.create')
+                ->middleware('permission:inventory.create');
+
+            Route::post('/barcode-labels', [BarcodeLabelController::class, 'store'])
+                ->name('barcode-labels.store')
+                ->middleware('permission:inventory.create');
+
+            Route::get('/barcode-labels/{barcodeLabel}', [BarcodeLabelController::class, 'show'])
+                ->name('barcode-labels.show')
+                ->middleware('permission:inventory.access');
+
+            Route::delete('/barcode-labels/{barcodeLabel}', [BarcodeLabelController::class, 'destroy'])
+                ->name('barcode-labels.destroy')
+                ->middleware('permission:inventory.delete');
+
+            Route::post('/barcode-labels/print', [BarcodeLabelController::class, 'print'])
+                ->name('barcode-labels.print')
+                ->middleware('permission:inventory.access');
+            // ==================== END BARCODE LABELS ====================
 
             // ==================== CATEGORIES ====================
             Route::get('/categories', [CategoryController::class, 'index'])
