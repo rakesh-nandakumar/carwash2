@@ -44,13 +44,25 @@
         <button class="nav-toggle" onclick="toggleNav()">☰</button>
         <div class="nav-menu" id="navMenu">
             <a href="{{ route('dashboard') }}" @if(!auth()->user()->hasPermissionTo('dashboard.access')) style="display:none" @endif>Dashboard</a>
+            <a href="{{ route('jobs.board') }}" @if(!auth()->user()->hasPermissionTo('job_cards.access')) style="display:none" @endif>Live Job Board</a>
             <a href="{{ route('jobs.index') }}" @if(!auth()->user()->hasPermissionTo('job_cards.access')) style="display:none" @endif>Job Cards</a>
             <a href="{{ route('customers.index') }}" @if(!auth()->user()->hasPermissionTo('customers.access')) style="display:none" @endif>Customers</a>
             <a href="{{ route('vehicles.index') }}" @if(!auth()->user()->hasPermissionTo('vehicles.access')) style="display:none" @endif>Vehicles</a>
             <a href="{{ route('appointments.index') }}" @if(!auth()->user()->hasPermissionTo('appointments.access')) style="display:none" @endif>Appointments</a>
-            <a href="{{ route('inventory.index') }}" @if(!auth()->user()->hasPermissionTo('inventory.access')) style="display:none" @endif>Inventory</a>
+            <a href="{{ route('inventory.index') }}" @if(!auth()->user()->hasPermissionTo('inventory.access')) style="display:none" @endif>Item Master</a>
+            <a href="{{ route('barcode-labels.index') }}" @if(!auth()->user()->hasPermissionTo('inventory.access')) style="display:none" @endif>Barcode Labels</a>
+            <a href="{{ route('stock-adjustments.index') }}" @if(!auth()->user()->hasPermissionTo('stock_adjustments.access')) style="display:none" @endif>Stock Adjustments</a>
+            <a href="{{ route('categories.index') }}" @if(!auth()->user()->hasPermissionTo('inventory.access')) style="display:none" @endif>Categories</a>
+            <a href="{{ route('services.index') }}" @if(!auth()->user()->hasPermissionTo('inventory.access')) style="display:none" @endif>Services</a>
+            <a href="{{ route('suppliers.index') }}" @if(!auth()->user()->hasPermissionTo('grns.access')) style="display:none" @endif>Suppliers</a>
+            <a href="{{ route('grns.index') }}" @if(!auth()->user()->hasPermissionTo('grns.access')) style="display:none" @endif>GRN</a>
+            <a href="{{ route('return_grns.index') }}" @if(!auth()->user()->hasPermissionTo('grns.access')) style="display:none" @endif>Return GRN</a>
             <a href="{{ route('invoices.index') }}" @if(!auth()->user()->hasPermissionTo('invoices.access')) style="display:none" @endif>Billing</a>
+            <a href="{{ route('cashier.index') }}" @if(!auth()->user()->hasPermissionTo('cashier.access')) style="display:none" @endif>Cashier</a>
+            <a href="{{ route('cheque-payments.index') }}" @if(!auth()->user()->hasPermissionTo('cashier.access')) style="display:none" @endif>Cheque Payments</a>
+            <a href="{{ route('notifications.index') }}" @if(!auth()->user()->hasPermissionTo('cashier.access')) style="display:none" @endif>Notifications</a>
             <a href="{{ route('reports') }}" @if(!auth()->user()->hasPermissionTo('reports.access')) style="display:none" @endif>Reports</a>
+            <a href="{{ route('audit-logs.index') }}" @if(!auth()->user()->hasPermissionTo('audit_logs.access')) style="display:none" @endif>Audit Logs</a>
             <a href="{{ route('users.index') }}" @if(!auth()->user()->hasPermissionTo('users.access')) style="display:none" @endif>Users</a>
             
             <a href="{{ route('logout') }}" class="logout-link">Sign Out</a>
@@ -1918,44 +1930,29 @@ document.addEventListener('click', (e) => {
     border: 1px solid var(--panel-border);
     border-radius: 12px;
     padding: 10px;
-    min-width: 200px;
-    max-height: 70vh;
-    overflow-y: auto;
+    min-width: 400px;
     display: none;
+    gap: 8px;
     backdrop-filter: blur(16px);
     box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
-}
-
-.nav-menu::-webkit-scrollbar {
-    width: 4px;
-}
-
-.nav-menu::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-.nav-menu::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 2px;
-}
-
-.nav-menu::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.3);
-}
-
-.nav-menu.active {
-    display: block;
 }
 
 .nav-menu a {
     display: block;
     color: var(--text);
     text-decoration: none;
-    padding: 12px 14px;
+    padding: 10px 12px;
     border-radius: 7px;
-    margin-bottom: 2px;
-    font-size: 14px;
+    font-size: 13px;
     transition: background 0.15s ease;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.nav-menu.active {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
 }
 
 .nav-menu a:hover {
@@ -2010,13 +2007,17 @@ document.addEventListener('click', (e) => {
     }
 
     .nav-menu {
-        min-width: 180px;
-        padding: 10px;
+        min-width: 360px;
+        padding: 8px;
+    }
+
+    .nav-menu.active {
+        grid-template-columns: 1fr 1fr;
     }
 
     .nav-menu a {
-        padding: 12px 14px;
-        font-size: 14px;
+        padding: 10px 12px;
+        font-size: 12px;
     }
 
     .search-box input {
@@ -2048,15 +2049,17 @@ document.addEventListener('click', (e) => {
     }
 
     .nav-menu {
-        min-width: 160px;
-        padding: 8px;
-        max-height: 60vh;
+        min-width: 320px;
+        padding: 6px;
+    }
+
+    .nav-menu.active {
+        grid-template-columns: 1fr 1fr;
     }
 
     .nav-menu a {
-        padding: 10px 12px;
-        font-size: 12px;
-        margin-bottom: 2px;
+        padding: 8px 10px;
+        font-size: 11px;
     }
 
     .search-box input {
@@ -2088,14 +2091,17 @@ document.addEventListener('click', (e) => {
     }
 
     .nav-menu {
-        min-width: 140px;
+        min-width: 280px;
         padding: 6px;
-        max-height: 50vh;
+    }
+
+    .nav-menu.active {
+        grid-template-columns: 1fr 1fr;
     }
 
     .nav-menu a {
-        padding: 8px 10px;
-        font-size: 11px;
+        padding: 7px 10px;
+        font-size: 10px;
     }
 
     .search-box input {

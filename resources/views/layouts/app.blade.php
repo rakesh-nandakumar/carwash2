@@ -23,7 +23,7 @@
 
     <style>
         html.sidebar-preload-collapsed aside.sidebar {
-            margin-left: -304px !important;
+            margin-left: -257px !important;
         }
         html.sidebar-preload-collapsed .main {
             margin-left: 0 !important;
@@ -311,17 +311,27 @@
                 display: flex !important;
             }
             aside.sidebar {
-                width: 304px !important;
+                width: 257px !important;
                 margin-left: 0 !important;
                 transition: margin-left 0.3s ease !important;
+                /* Scale content sizes proportionally */
+                --nav-link-padding-v: 10px !important;
+                --nav-link-padding-h: 14px !important;
+                --nav-link-font-size: 14px !important;
+                --nav-link-gap: 10px !important;
+                --nav-link-margin-bottom: 4px !important;
+                --nav-icon-size: 18px !important;
+                --nav-padding-v: 12px !important;
+                --brand-padding-v: 26px !important;
+                --brand-padding-b: 18px !important;
             }
             aside.sidebar.collapsed {
-                margin-left: -304px !important;
+                margin-left: -257px !important;
             }
             .main {
-                margin-left: 304px !important;
+                margin-left: 257px !important;
                 transition: margin-left 0.3s ease !important;
-                width: calc(100% - 304px) !important;
+                width: calc(100% - 257px) !important;
             }
             .main.expanded {
                 margin-left: 0 !important;
@@ -343,15 +353,15 @@
                 box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1) !important;
 
                 /* Smaller content on tablet */
-                --nav-link-padding-v: 13px;
-                --nav-link-padding-h: 18px;
-                --nav-link-font-size: 14px;
-                --nav-link-gap: 12px;
-                --nav-link-margin-bottom: 4px;
-                --nav-icon-size: 22px;
-                --nav-padding-v: 16px;
-                --brand-padding-v: 36px;
-                --brand-padding-b: 28px;
+                --nav-link-padding-v: 13px !important;
+                --nav-link-padding-h: 17px !important;
+                --nav-link-font-size: 15px !important;
+                --nav-link-gap: 12px !important;
+                --nav-link-margin-bottom: 4px !important;
+                --nav-icon-size: 21px !important;
+                --nav-padding-v: 15px !important;
+                --brand-padding-v: 34px !important;
+                --brand-padding-b: 26px !important;
             }
             /* Open state for tablet */
             aside.sidebar.active {
@@ -390,15 +400,15 @@
                 box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1) !important;
 
                 /* Smaller content on mobile */
-                --nav-link-padding-v: 12px;
-                --nav-link-padding-h: 16px;
-                --nav-link-font-size: 14px;
-                --nav-link-gap: 12px;
-                --nav-link-margin-bottom: 4px;
-                --nav-icon-size: 20px;
-                --nav-padding-v: 14px;
-                --brand-padding-v: 32px;
-                --brand-padding-b: 24px;
+                --nav-link-padding-v: 12px !important;
+                --nav-link-padding-h: 16px !important;
+                --nav-link-font-size: 14px !important;
+                --nav-link-gap: 11px !important;
+                --nav-link-margin-bottom: 3px !important;
+                --nav-icon-size: 19px !important;
+                --nav-padding-v: 14px !important;
+                --brand-padding-v: 30px !important;
+                --brand-padding-b: 22px !important;
             }
             /* Open state for mobile */
             aside.sidebar.active {
@@ -428,15 +438,15 @@
                 left: -260px !important;
 
                 /* Even more compact on very small screens */
-                --nav-link-padding-v: 11px;
-                --nav-link-padding-h: 14px;
-                --nav-link-font-size: 13px;
-                --nav-link-gap: 11px;
-                --nav-link-margin-bottom: 4px;
-                --nav-icon-size: 18px;
-                --nav-padding-v: 12px;
-                --brand-padding-v: 28px;
-                --brand-padding-b: 22px;
+                --nav-link-padding-v: 11px !important;
+                --nav-link-padding-h: 15px !important;
+                --nav-link-font-size: 13px !important;
+                --nav-link-gap: 10px !important;
+                --nav-link-margin-bottom: 3px !important;
+                --nav-icon-size: 17px !important;
+                --nav-padding-v: 13px !important;
+                --brand-padding-v: 26px !important;
+                --brand-padding-b: 18px !important;
             }
             /* Open state for very small screens */
             aside.sidebar.active {
