@@ -10,15 +10,12 @@ return new class extends Migration
     {
         Schema::table('goods_receipts', function (Blueprint $table) {
             // Add GRN number if not exists (receipt_number might exist)
-            if (!Schema::hasColumn('goods_receipts', 'grn_number') && Schema::hasColumn('goods_receipts', 'receipt_number')) {
-                $table->renameColumn('receipt_number', 'grn_number');
-            } elseif (!Schema::hasColumn('goods_receipts', 'grn_number')) {
-                $table->string('grn_number')->unique()->after('id');
-            }
-            
-            // Force add grn_number if it's missing (for cases where migration didn't run properly)
             if (!Schema::hasColumn('goods_receipts', 'grn_number')) {
-                $table->string('grn_number')->unique()->after('id');
+                if (Schema::hasColumn('goods_receipts', 'receipt_number')) {
+                    $table->renameColumn('receipt_number', 'grn_number');
+                } else {
+                    $table->string('grn_number')->unique()->after('id');
+                }
             }
             
             // Add supplier relationship if it doesn't exist
