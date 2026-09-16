@@ -33,7 +33,6 @@ echo "\n4. Testing database insert:\n";
 try {
     $test = new \App\Models\GoodsReceipt();
     $test->grn_number = 'TEST-001';
-    $test->receipt_number = 'TEST-001';
     $test->supplier_id = 1;
     $test->reference = 'TEST';
     $test->notes = 'TEST';

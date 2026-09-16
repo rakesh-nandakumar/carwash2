@@ -92,14 +92,14 @@ class ChequePaymentController extends Controller
                 $payment->markAsReceived();
 
                 // Log cheque confirmation in audit logs
-                $this->audit->log('cheque_confirmed', 'Payment', $payment->id, null, [
+                $this->audit->log('cheque_confirmed', 'Cheque payment confirmed and cleared', 'info', 'tenant_user', auth()->user()->email, [
                     'payment_id' => $payment->id,
                     'invoice_id' => $payment->invoice_id,
                     'amount' => $payment->amount,
                     'cheque_number' => $payment->cheque_number,
                     'bank_name' => $payment->bank_name,
                     'cheque_due_date' => $payment->cheque_due_date,
-                ], 'Cheque payment confirmed and cleared');
+                ]);
 
                 // Record the cash movement in till since payment is now received
                 $invoice = $payment->invoice;
@@ -126,14 +126,14 @@ class ChequePaymentController extends Controller
                 $payment->markAsBounced($request->bounce_reason);
 
                 // Log cheque bounce in audit logs
-                $this->audit->log('cheque_bounced', 'Payment', $payment->id, null, [
+                $this->audit->log('cheque_bounced', 'Cheque bounced: ' . $request->bounce_reason, 'warning', 'tenant_user', auth()->user()->email, [
                     'payment_id' => $payment->id,
                     'invoice_id' => $payment->invoice_id,
                     'amount' => $payment->amount,
                     'cheque_number' => $payment->cheque_number,
                     'bank_name' => $payment->bank_name,
                     'bounce_reason' => $request->bounce_reason,
-                ], 'Cheque bounced: ' . $request->bounce_reason);
+                ]);
 
                 // Reverse the invoice payment status
                 $invoice = $payment->invoice;
