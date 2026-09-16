@@ -42,7 +42,6 @@ class GrnService
                 $grn->purchase_order_id = $header['purchase_order_id'] ?? null;
                 $grn->reference = $header['reference'] ?? null;
                 $grn->notes = $header['note'] ?? null;
-                $grn->receipt_number = $grnNumber;
                 $grn->received_by = auth()->id();
                 $grn->received_at = now();
 

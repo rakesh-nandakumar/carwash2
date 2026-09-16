@@ -22,7 +22,6 @@ class GoodsReceipt extends Model
         'notes',
         'received_by',
         'received_at',
-        'receipt_number',
         'status_id',
         'confirmed_by',
         'confirmed_at',
