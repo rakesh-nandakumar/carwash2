@@ -59,7 +59,7 @@ Route::get('/migrate', function () {
         'message' => 'Database migration completed successfully.',
         'output' => Artisan::output(),
     ]);
-})->name('migrate');
+})->name('migrate')->withoutMiddleware([\App\Http\Middleware\IdentifyTenant::class]);
 // ==================== END DATABASE MIGRATION ====================
 
 Route::prefix('{tenant}')
