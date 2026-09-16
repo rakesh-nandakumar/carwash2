@@ -378,9 +378,12 @@
                     <span>Payment Method:</span>
                     <span id="confirmPaymentMethod">-</span>
                 </div>
-                <div class="summary-row">
-                    <span>Amount Received:</span>
-                    <span id="confirmAmountReceived">Rs. 0.00</span>
+                <div class="summary-row editable">
+                    <span>Amount Received <small style="color: #6b7280; font-weight: normal;">(editable)</small></span>
+                    <div class="amount-edit-wrapper">
+                        <span class="currency-prefix">Rs.</span>
+                        <input type="number" id="editAmountReceived" step="0.01" value="0.00" oninput="updateBalance()" onfocus="this.select()" placeholder="Enter amount">
+                    </div>
                 </div>
                 <div class="summary-row balance-row">
                     <span>Balance:</span>
@@ -390,7 +393,7 @@
             <p class="confirmation-text">Are you sure you want to process this payment?</p>
         </div>
         <div class="modal-footer">
-            <button type="button" class="secondary" onclick="closePaymentConfirmationModal()">Back to Edit</button>
+            <button type="button" class="secondary" onclick="closePaymentConfirmationModal()">Cancel</button>
             <button type="button" class="primary" onclick="confirmPayment()">Confirm Payment — Rs. <span id="confirmButtonAmount">{{ number_format($calculation['total'], 2) }}</span></button>
         </div>
     </div>
@@ -1785,6 +1788,38 @@ function calculateBalance() {
     color: #dc2626;
 }
 
+.summary-row.editable input {
+    padding: 10px 12px;
+    border: 2px solid #3b82f6;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    text-align: right;
+    width: 140px;
+    background: white;
+    transition: all 0.2s ease;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.summary-row.editable input:focus {
+    outline: none;
+    border-color: #2563eb;
+    background: white;
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
+}
+
+.amount-edit-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.amount-edit-wrapper .currency-prefix {
+    color: #6b7280;
+    font-weight: 600;
+    font-size: 16px;
+}
+
 .confirmation-text {
     color: #6b7280;
     font-size: 14px;
@@ -1848,7 +1883,7 @@ function openPaymentConfirmation() {
             
             // Populate modal
             document.getElementById('confirmPaymentMethod').textContent = paymentMethod.charAt(0).toUpperCase() + paymentMethod.slice(1);
-            document.getElementById('confirmAmountReceived').textContent = 'Rs. ' + parseFloat(amountReceived).toFixed(2);
+            document.getElementById('editAmountReceived').value = parseFloat(amountReceived).toFixed(2);
             document.getElementById('confirmBalance').textContent = balanceAmount;
             document.getElementById('confirmButtonAmount').textContent = '{{ number_format($calculation['total'], 2) }}';
             
@@ -1863,7 +1898,7 @@ function openPaymentConfirmation() {
             const balanceAmount = document.getElementById('balanceAmount')?.textContent || 'Rs. 0.00';
             
             document.getElementById('confirmPaymentMethod').textContent = paymentMethod.charAt(0).toUpperCase() + paymentMethod.slice(1);
-            document.getElementById('confirmAmountReceived').textContent = 'Rs. ' + parseFloat(amountReceived).toFixed(2);
+            document.getElementById('editAmountReceived').value = parseFloat(amountReceived).toFixed(2);
             document.getElementById('confirmBalance').textContent = balanceAmount;
             
             document.getElementById('paymentConfirmationModal').classList.add('active');
@@ -1874,7 +1909,23 @@ function closePaymentConfirmationModal() {
     document.getElementById('paymentConfirmationModal').classList.remove('active');
 }
 
+function updateBalance() {
+    const totalDue = {{ $calculation['total'] }};
+    const amountReceived = parseFloat(document.getElementById('editAmountReceived').value) || 0;
+    const balance = totalDue - amountReceived;
+    
+    document.getElementById('confirmBalance').textContent = 'Rs. ' + balance.toFixed(2);
+    document.getElementById('confirmButtonAmount').textContent = 'Rs. ' + amountReceived.toFixed(2);
+}
+
 function confirmPayment() {
+    // Update the original form with the edited amount
+    const editedAmount = document.getElementById('editAmountReceived').value;
+    const amountField = document.getElementById('amountReceived');
+    if (amountField) {
+        amountField.value = editedAmount;
+    }
+    
     closePaymentConfirmationModal();
     document.getElementById('paymentForm').submit();
 }

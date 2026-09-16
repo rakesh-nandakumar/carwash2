@@ -765,8 +765,13 @@ class CashierController extends Controller
             if ($request->payment_method === 'cash' && $amountReceived > 0) {
                 // Record only the net cash amount that stays in the till
                 // If customer overpaid (invoiceBalance < 0), record the invoice total since change is given back
+                // If final total is 0 (prepayment/deposit), record the actual amount received
                 // Otherwise record the full payment amount
-                $netCashAmount = $invoiceBalance < 0 ? $finalTotal : $amountReceived;
+                if ($finalTotal <= 0) {
+                    $netCashAmount = $amountReceived;
+                } else {
+                    $netCashAmount = $invoiceBalance < 0 ? $finalTotal : $amountReceived;
+                }
 
                 $this->cashMovements->recordSale(
                     amount: $netCashAmount,
@@ -775,7 +780,11 @@ class CashierController extends Controller
                 );
             } elseif ($request->payment_method === 'cheque' && $request->payment_received === 'yes' && $amountReceived > 0) {
                 // Only record cheque payment in till when payment is actually received/cleared
-                $netChequeAmount = $invoiceBalance < 0 ? $finalTotal : $amountReceived;
+                if ($finalTotal <= 0) {
+                    $netChequeAmount = $amountReceived;
+                } else {
+                    $netChequeAmount = $invoiceBalance < 0 ? $finalTotal : $amountReceived;
+                }
 
                 $this->cashMovements->recordSale(
                     amount: $netChequeAmount,
