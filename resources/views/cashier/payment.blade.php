@@ -335,7 +335,7 @@
                     </div>
                 </div>
 
-                <button type="submit" class="process-button">
+                <button type="button" class="process-button" onclick="openPaymentConfirmation()">
                     <span>Process Payment + Send WhatsApp Message</span>
                     <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
@@ -358,6 +358,41 @@
             <p class="empty-state">Invoice not yet generated.</p>
         </div>
         @endif
+    </div>
+</div>
+
+<!-- Payment Confirmation Modal -->
+<div id="paymentConfirmationModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Confirm Payment</h2>
+            <button class="close-btn" onclick="closePaymentConfirmationModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="payment-summary">
+                <div class="summary-row">
+                    <span>Total Due:</span>
+                    <span class="amount">Rs. {{ number_format($calculation['total'], 2) }}</span>
+                </div>
+                <div class="summary-row">
+                    <span>Payment Method:</span>
+                    <span id="confirmPaymentMethod">-</span>
+                </div>
+                <div class="summary-row">
+                    <span>Amount Received:</span>
+                    <span id="confirmAmountReceived">Rs. 0.00</span>
+                </div>
+                <div class="summary-row balance-row">
+                    <span>Balance:</span>
+                    <span id="confirmBalance">Rs. 0.00</span>
+                </div>
+            </div>
+            <p class="confirmation-text">Are you sure you want to process this payment?</p>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="secondary" onclick="closePaymentConfirmationModal()">Back to Edit</button>
+            <button type="button" class="primary" onclick="confirmPayment()">Confirm Payment — Rs. <span id="confirmButtonAmount">{{ number_format($calculation['total'], 2) }}</span></button>
+        </div>
     </div>
 </div>
 
@@ -1632,8 +1667,8 @@ function calculateBalance() {
             <p>Cannot process payment. Till is closed. Please open a new shift first.</p>
         </div>
         <div class="modal-footer">
-            <button type="button" class="secondary" onclick="closeTillClosedModal()">Cancel</button>
-            <button type="button" class="primary" onclick="goToCashier()">Go to Cashier</button>
+            <button type="button" class="secondary" onclick="closeTillClosedModal()">Close</button>
+            <button type="button" class="primary" onclick="goToCashier()">Open New Shift</button>
         </div>
     </div>
 </div>
@@ -1712,6 +1747,50 @@ function calculateBalance() {
     font-size: 16px;
 }
 
+.payment-summary {
+    background: #f8fafc;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
+}
+
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid #e5e7eb;
+    font-size: 14px;
+}
+
+.summary-row:last-child {
+    border-bottom: none;
+}
+
+.summary-row span:first-child {
+    color: #6b7280;
+    font-weight: 500;
+}
+
+.summary-row span:last-child {
+    color: #111827;
+    font-weight: 600;
+}
+
+.summary-row .amount {
+    font-size: 18px;
+    color: #059669;
+}
+
+.summary-row.balance-row span:last-child {
+    color: #dc2626;
+}
+
+.confirmation-text {
+    color: #6b7280;
+    font-size: 14px;
+    margin-bottom: 12px;
+}
+
 .modal-footer {
     display: flex;
     justify-content: flex-end;
@@ -1747,4 +1826,57 @@ function calculateBalance() {
     background: #2563eb;
 }
 </style>
+
+<script>
+function openPaymentConfirmation() {
+    // Check till status first
+    const tenant = window.location.pathname.split('/')[1];
+    
+    fetch('/' + tenant + '/api/check-till-status')
+        .then(response => response.json())
+        .then(data => {
+            if (!data.till_open) {
+                // Show till closed modal instead
+                document.getElementById('tillClosedModal').classList.add('active');
+                return;
+            }
+            
+            // Get payment details
+            const paymentMethod = document.querySelector('input[name="payment_method"]:checked')?.value || '-';
+            const amountReceived = document.getElementById('amountReceived')?.value || '0';
+            const balanceAmount = document.getElementById('balanceAmount')?.textContent || 'Rs. 0.00';
+            
+            // Populate modal
+            document.getElementById('confirmPaymentMethod').textContent = paymentMethod.charAt(0).toUpperCase() + paymentMethod.slice(1);
+            document.getElementById('confirmAmountReceived').textContent = 'Rs. ' + parseFloat(amountReceived).toFixed(2);
+            document.getElementById('confirmBalance').textContent = balanceAmount;
+            document.getElementById('confirmButtonAmount').textContent = '{{ number_format($calculation['total'], 2) }}';
+            
+            // Show modal
+            document.getElementById('paymentConfirmationModal').classList.add('active');
+        })
+        .catch(error => {
+            console.error('Error checking till status:', error);
+            // If error, proceed with confirmation
+            const paymentMethod = document.querySelector('input[name="payment_method"]:checked')?.value || '-';
+            const amountReceived = document.getElementById('amountReceived')?.value || '0';
+            const balanceAmount = document.getElementById('balanceAmount')?.textContent || 'Rs. 0.00';
+            
+            document.getElementById('confirmPaymentMethod').textContent = paymentMethod.charAt(0).toUpperCase() + paymentMethod.slice(1);
+            document.getElementById('confirmAmountReceived').textContent = 'Rs. ' + parseFloat(amountReceived).toFixed(2);
+            document.getElementById('confirmBalance').textContent = balanceAmount;
+            
+            document.getElementById('paymentConfirmationModal').classList.add('active');
+        });
+}
+
+function closePaymentConfirmationModal() {
+    document.getElementById('paymentConfirmationModal').classList.remove('active');
+}
+
+function confirmPayment() {
+    closePaymentConfirmationModal();
+    document.getElementById('paymentForm').submit();
+}
+</script>
 @endsection
