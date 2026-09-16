@@ -55,7 +55,7 @@ Route::get('/migrate', function () {
     ]);
 
     return response()->json([
-        'success' true,
+        'success' => true,
         'message' => 'Database migration completed successfully.',
         'output' => Artisan::output(),
     ]);
