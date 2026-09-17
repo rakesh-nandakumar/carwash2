@@ -62,16 +62,16 @@ class ReturnGrn extends Model
 
     public function isDraft(): bool
     {
-        return $this->status?->key === 'draft';
+        return $this->status?->key === 'return_draft';
     }
 
     public function isConfirmed(): bool
     {
-        return $this->status?->key === 'confirmed';
+        return $this->status?->key === 'return_confirmed';
     }
 
     public function isDeleted(): bool
     {
-        return $this->status?->key === 'deleted';
+        return $this->status?->key === 'return_deleted';
     }
 }

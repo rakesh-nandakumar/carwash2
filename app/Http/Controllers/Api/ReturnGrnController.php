@@ -37,15 +37,20 @@ class ReturnGrnController extends Controller
 
             // Extract status as string
             $statusString = 'Draft';
+            $statusKey = 'draft';
+            
             if ($returnGrn->status) {
                 $statusString = $returnGrn->status->value ?? 'Draft';
+                $statusKey = $returnGrn->status->key ?? 'draft';
             }
 
-            // Unset the status object and set as string
-            unset($returnGrn->status);
-            $returnGrn->status = $statusString;
+            // Convert to array to remove the status object
+            $returnGrnArray = $returnGrn->toArray();
+            unset($returnGrnArray['status']);
+            $returnGrnArray['status'] = $statusString;
+            $returnGrnArray['status_key'] = $statusKey;
 
-            return $returnGrn;
+            return (object) $returnGrnArray;
         });
 
         return response()->json([

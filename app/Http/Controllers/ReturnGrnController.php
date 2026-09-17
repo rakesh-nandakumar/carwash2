@@ -15,6 +15,19 @@ class ReturnGrnController extends Controller
             ->latest('created_at')
             ->get();
 
+        // Add computed status fields to prevent JSON serialization
+        $returnGrns->transform(function ($returnGrn) {
+            if ($returnGrn->status) {
+                $returnGrn->status_display = $returnGrn->status->value ?? 'Draft';
+                $returnGrn->status_key = $returnGrn->status->key ?? 'draft';
+            } else {
+                $returnGrn->status_display = 'Draft';
+                $returnGrn->status_key = 'draft';
+            }
+            unset($returnGrn->status);
+            return $returnGrn;
+        });
+
         return view('return_grns.index', compact('returnGrns'));
     }
 
@@ -38,7 +51,9 @@ class ReturnGrnController extends Controller
         
         // Get supplier products mapping (products each supplier has provided) - only from confirmed GRNs
         $supplierProducts = [];
-        $confirmedStatusId = \App\Models\Setting::where('key', 'confirmed')->first()?->id ?? 45;
+        $confirmedStatusId = \App\Models\Setting::where('group', 'grn_statuses')
+            ->where('key', 'confirmed')
+            ->first()?->id ?? 45;
         $grnItems = \App\Models\GoodsReceiptItem::with('goodsReceipt.supplier')
             ->whereHas('goodsReceipt', function($query) use ($confirmedStatusId) {
                 $query->where('status_id', $confirmedStatusId);
@@ -57,7 +72,9 @@ class ReturnGrnController extends Controller
         // Get supplier references (GRN references for each supplier) - only confirmed GRNs
         $supplierReferences = [];
         $grnItemsMap = []; // Map GRN number to its items with unit costs
-        $confirmedStatusId = \App\Models\Setting::where('key', 'confirmed')->first()?->id ?? 45;
+        $confirmedStatusId = \App\Models\Setting::where('group', 'grn_statuses')
+            ->where('key', 'confirmed')
+            ->first()?->id ?? 45;
         $grns = \App\Models\GoodsReceipt::with(['supplier', 'items'])
             ->where('status_id', $confirmedStatusId)
             ->get();

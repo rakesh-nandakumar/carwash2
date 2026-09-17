@@ -3,7 +3,7 @@
 @section('content')
 <div class="page-head">
     <div>
-        <h1>Return GRN {{ $returnGrn->return_grn_number }}</h1>
+        <h1>RGRN No: <span class="rgrn-number">{{ $returnGrn->return_grn_number }}</span></h1>
         <p>View return GRN details.</p>
     </div>
     <div class="page-actions">
@@ -20,7 +20,7 @@
             </div>
             <div class="info-row">
                 <span class="label">Status:</span>
-                <span class="status-badge status-{{ $returnGrn->status_id == 56 ? 'draft' : ($returnGrn->status_id == 57 ? 'confirmed' : 'deleted') }}">
+                <span class="status-badge status-{{ strtolower($returnGrn->status?->key ?? 'draft') }}">
                     {{ $returnGrn->status?->value ?? 'Draft' }}
                 </span>
             </div>
@@ -420,19 +420,33 @@
     text-transform: uppercase;
 }
 
-.status-badge.status-draft {
+.status-badge.status-draft,
+.status-badge.status-return_draft {
     background: #f59e0b;
     color: white;
 }
 
-.status-badge.status-confirmed {
+.status-badge.status-confirmed,
+.status-badge.status-return_confirmed {
     background: #10b981;
     color: white;
 }
 
-.status-badge.status-deleted {
+.status-badge.status-deleted,
+.status-badge.status-return_deleted {
     background: #ef4444;
     color: white;
+}
+
+.rgrn-number {
+    background: #dbeafe;
+    color: #1e40af;
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9em;
+    letter-spacing: 1px;
+    border: 1px solid #93c5fd;
 }
 
 .toast {
@@ -495,7 +509,8 @@ window.returnGrnCloseConfirm = function() {
 
 window.returnGrnExecuteConfirm = function() {
     const tenant = window.location.pathname.split('/')[1];
-    fetch(`/${tenant}/api/return-grns/${window.returnGrnCurrentId}/confirm`, {
+    const confirmUrl = window.location.origin + '/' + tenant + '/api/return-grns/' + window.returnGrnCurrentId + '/confirm';
+    fetch(confirmUrl, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -530,7 +545,8 @@ window.returnGrnCloseDelete = function() {
 
 window.returnGrnExecuteDelete = function() {
     const tenant = window.location.pathname.split('/')[1];
-    fetch(`/${tenant}/api/return-grns/${window.returnGrnCurrentId}`, {
+    const deleteUrl = window.location.origin + '/' + tenant + '/api/return-grns/' + window.returnGrnCurrentId;
+    fetch(deleteUrl, {
         method: 'DELETE',
         headers: {
             'Content-Type': 'application/json',

@@ -29,7 +29,7 @@ class ReturnGrnService
         return app(\App\Services\CurrentContext::class)->runForTenant(
             app(\App\Services\CurrentContext::class)->tenantId(),
             function () use ($header, $lines) {
-                $returnGrnNumber = 'RGRN-' . date('Y') . '-' . str_pad(ReturnGrn::count() + 1, 6, '0', STR_PAD_LEFT);
+                $returnGrnNumber = 'GRN-' . date('Y') . '-' . str_pad(ReturnGrn::count() + 1, 6, '0', STR_PAD_LEFT);
 
                 $returnGrn = new ReturnGrn();
                 $returnGrn->return_grn_number = $returnGrnNumber;
@@ -112,68 +112,74 @@ class ReturnGrnService
      */
     public function confirm(ReturnGrn $returnGrn, int $confirmedByUserId): ReturnGrn
     {
-        return DB::transaction(function () use ($returnGrn, $confirmedByUserId) {
-            $returnGrn->load([
-                'items.product',
-                'supplier',
-            ]);
+        return app(\App\Services\CurrentContext::class)->runForTenant(
+            $returnGrn->tenant_id,
+            function () use ($returnGrn, $confirmedByUserId) {
+                $returnGrn->load([
+                    'items.product',
+                    'supplier',
+                ]);
 
-            $totalCost = 0.0;
+                $totalCost = 0.0;
 
-            foreach ($returnGrn->items as $item) {
-                $product = $item->product;
-                $quantity = (float) $item->quantity;
+                foreach ($returnGrn->items as $item) {
+                    $product = $item->product;
+                    $quantity = (float) $item->quantity;
 
-                // Reverse inventory by adjusting with negative quantity
-                $this->inventory->adjust(
-                    $product,
-                    null,  // branchId (no branch tracking)
-                    -$quantity,
-                    "Return GRN: {$returnGrn->return_grn_number}",
-                    'supplier_return'
-                );
+                    // Reverse inventory by adjusting with negative quantity
+                    $this->inventory->adjust(
+                        $product,
+                        null,  // branchId (no branch tracking)
+                        -$quantity,
+                        "Return GRN: {$returnGrn->return_grn_number}",
+                        'supplier_return'
+                    );
 
-                if ($item->unit_cost !== null) {
-                    $totalCost += (float) $item->unit_cost * $quantity;
+                    if ($item->unit_cost !== null) {
+                        $totalCost += (float) $item->unit_cost * $quantity;
+                    }
                 }
+
+                // Credit supplier ledger if supplier exists and cost > 0
+                if ($returnGrn->supplier_id && $totalCost > 0) {
+                    $this->suppliers->credit(
+                        Supplier::findOrFail($returnGrn->supplier_id),
+                        $totalCost,
+                        $returnGrn,
+                        "Return GRN {$returnGrn->return_grn_number} sent to supplier"
+                    );
+                }
+
+                // Update return GRN status to confirmed
+                $confirmedStatusId = $this->getStatusId('return_confirmed');
+                $returnGrn->update([
+                    'status_id' => $confirmedStatusId,
+                    'returned_by' => $confirmedByUserId,
+                    'returned_at' => now(),
+                ]);
+
+                // Reload the status relationship to clear cache
+                $returnGrn->load('status');
+
+                // Log the confirmation
+                if (class_exists(\App\Services\AuditService::class)) {
+                    app(\App\Services\AuditService::class)->log(
+                        'return_grn.confirmed',
+                        "Return GRN {$returnGrn->return_grn_number} confirmed",
+                        'info',
+                        'tenant_user',
+                        auth()->user()->email ?? null,
+                        [
+                            'return_grn_number' => $returnGrn->return_grn_number,
+                            'items_count' => $returnGrn->items->count(),
+                            'total_cost' => $totalCost,
+                        ]
+                    );
+                }
+
+                return $returnGrn;
             }
-
-            // Credit supplier ledger if supplier exists and cost > 0
-            if ($returnGrn->supplier_id && $totalCost > 0) {
-                $this->suppliers->credit(
-                    Supplier::findOrFail($returnGrn->supplier_id),
-                    $totalCost,
-                    $returnGrn,
-                    "Return GRN {$returnGrn->return_grn_number} sent to supplier"
-                );
-            }
-
-            // Update return GRN status to confirmed
-            $confirmedStatusId = $this->getStatusId('return_confirmed');
-            $returnGrn->update([
-                'status_id' => $confirmedStatusId,
-                'returned_by' => $confirmedByUserId,
-                'returned_at' => now(),
-            ]);
-
-            // Log the confirmation
-            if (class_exists(\App\Services\AuditService::class)) {
-                app(\App\Services\AuditService::class)->log(
-                    'return_grn.confirmed',
-                    "Return GRN {$returnGrn->return_grn_number} confirmed",
-                    'info',
-                    'tenant_user',
-                    auth()->user()->email ?? null,
-                    [
-                        'return_grn_number' => $returnGrn->return_grn_number,
-                        'items_count' => $returnGrn->items->count(),
-                        'total_cost' => $totalCost,
-                    ]
-                );
-            }
-
-            return $returnGrn;
-        });
+        );
     }
 
     /**
@@ -186,81 +192,88 @@ class ReturnGrnService
             throw new \InvalidArgumentException('Return GRN is already deleted.');
         }
 
-        DB::transaction(function () use ($returnGrn, $deletedByUserId) {
-            $stockReversed = $returnGrn->isConfirmed();
+        app(\App\Services\CurrentContext::class)->runForTenant(
+            $returnGrn->tenant_id,
+            function () use ($returnGrn, $deletedByUserId) {
+                $stockReversed = $returnGrn->isConfirmed();
 
-            if ($stockReversed) {
-                $returnGrn->load([
-                    'items.product',
-                    'supplier',
-                ]);
+                if ($stockReversed) {
+                    $returnGrn->load([
+                        'items.product',
+                        'supplier',
+                    ]);
 
-                $totalCost = 0.0;
+                    $totalCost = 0.0;
 
-                foreach ($returnGrn->items as $item) {
-                    $product = $item->product;
-                    $quantity = (float) $item->quantity;
+                    foreach ($returnGrn->items as $item) {
+                        $product = $item->product;
+                        $quantity = (float) $item->quantity;
 
-                    // Restore inventory by adjusting with positive quantity
-                    $this->inventory->adjust(
-                        $product,
-                        null,  // branchId (no branch tracking)
-                        $quantity,
-                        "Return GRN deletion reversal: {$returnGrn->return_grn_number}",
-                        'adjustment_reversal'
-                    );
+                        // Restore inventory by adjusting with positive quantity
+                        $this->inventory->adjust(
+                            $product,
+                            null,  // branchId (no branch tracking)
+                            $quantity,
+                            "Return GRN deletion reversal: {$returnGrn->return_grn_number}",
+                            'adjustment_reversal'
+                        );
 
-                    if ($item->unit_cost !== null) {
-                        $totalCost += (float) $item->unit_cost * $quantity;
+                        if ($item->unit_cost !== null) {
+                            $totalCost += (float) $item->unit_cost * $quantity;
+                        }
+                    }
+
+                    // Debit supplier ledger if supplier exists and cost > 0
+                    if ($returnGrn->supplier_id && $totalCost > 0) {
+                        $this->suppliers->debit(
+                            Supplier::findOrFail($returnGrn->supplier_id),
+                            $totalCost,
+                            $returnGrn,
+                            "Reversal of Return GRN {$returnGrn->return_grn_number} deletion"
+                        );
                     }
                 }
 
-                // Debit supplier ledger if supplier exists and cost > 0
-                if ($returnGrn->supplier_id && $totalCost > 0) {
-                    $this->suppliers->debit(
-                        Supplier::findOrFail($returnGrn->supplier_id),
-                        $totalCost,
-                        $returnGrn,
-                        "Reversal of Return GRN {$returnGrn->return_grn_number} deletion"
+                // Set status to Deleted and stamp the deletion audit columns
+                $deletedStatusId = $this->getStatusId('return_deleted');
+                $returnGrn->status_id = $deletedStatusId;
+                $returnGrn->deleted_by = $deletedByUserId;
+                $returnGrn->deleted_at = now();
+                $returnGrn->save();
+
+                // Log the deletion
+                if (class_exists(\App\Services\AuditService::class)) {
+                    app(\App\Services\AuditService::class)->log(
+                        'return_grn.deleted',
+                        "Return GRN {$returnGrn->return_grn_number} deleted",
+                        'warning',
+                        'tenant_user',
+                        auth()->user()->email ?? null,
+                        [
+                            'return_grn_number' => $returnGrn->return_grn_number,
+                            'previous_status' => $returnGrn->status?->key ?? 'unknown',
+                            'items_count' => $returnGrn->items->count(),
+                            'stock_reversed' => $stockReversed,
+                        ]
                     );
                 }
             }
-
-            // Set status to Deleted and stamp the deletion audit columns
-            $deletedStatusId = $this->getStatusId('return_deleted');
-            $returnGrn->status_id = $deletedStatusId;
-            $returnGrn->deleted_by = $deletedByUserId;
-            $returnGrn->deleted_at = now();
-            $returnGrn->save();
-
-            // Log the deletion
-            if (class_exists(\App\Services\AuditService::class)) {
-                app(\App\Services\AuditService::class)->log(
-                    'return_grn.deleted',
-                    "Return GRN {$returnGrn->return_grn_number} deleted",
-                    'warning',
-                    'tenant_user',
-                    auth()->user()->email ?? null,
-                    [
-                        'return_grn_number' => $returnGrn->return_grn_number,
-                        'previous_status' => $returnGrn->status?->key ?? 'unknown',
-                        'items_count' => $returnGrn->items->count(),
-                        'stock_reversed' => $stockReversed,
-                    ]
-                );
-            }
-        });
+        );
     }
 
     private function getStatusId(string $status): ?int
     {
         // Try to find the status in settings
-        $setting = \App\Models\Setting::where('key', $status)
+        $setting = \App\Models\Setting::where('group', 'return_grn_statuses')
+            ->where('key', $status)
             ->first();
 
         if ($setting) {
             return (int) $setting->id;
         }
+
+        // Log if not found for debugging
+        \Log::error("Return GRN status not found: group=return_grn_statuses, key={$status}");
 
         return null;
     }

@@ -291,12 +291,12 @@ function renderGrns(grns) {
                 </a>
                 ${g.reference ? `<small>${g.reference}</small>` : ''}
             </td>
-            <td>${new Date(g.received_at).toLocaleDateString()}</td>
+            <td>${new Date(g.received_at).toLocaleString()}</td>
             <td>${g.supplier ? g.supplier.name : '-'}</td>
             <td>${g.items_count || 0}</td>
             <td>Rs. ${parseFloat(g.total_amount || 0).toFixed(2)}</td>
             <td>
-                <span class="status-badge status-${g.status}">${g.status}</span>
+                <span class="status-badge status-${g.status_key}">${g.status}</span>
             </td>
             <td>
                 <a href="${url}" class="view-link">View →</a>
@@ -318,7 +318,7 @@ function renderGrns(grns) {
             <div class="card-details">
                 <div class="detail">
                     <span class="label">Date</span>
-                    <span class="value">${new Date(g.received_at).toLocaleDateString()}</span>
+                    <span class="value">${new Date(g.received_at).toLocaleString()}</span>
                 </div>
                 <div class="detail">
                     <span class="label">Supplier</span>
@@ -335,7 +335,7 @@ function renderGrns(grns) {
                 <div class="detail">
                     <span class="label">Status</span>
                     <span class="value">
-                        <span class="status-badge status-${g.status}">${g.status}</span>
+                        <span class="status-badge status-${g.status_key}">${g.status}</span>
                     </span>
                 </div>
             </div>

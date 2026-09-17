@@ -334,7 +334,8 @@ class GrnService
     private function getStatusId(string $status): ?int
     {
         // Try to find the status in settings
-        $setting = \App\Models\Setting::where('key', $status)
+        $setting = \App\Models\Setting::where('group', 'grn_statuses')
+            ->where('key', $status)
             ->first();
 
         if ($setting) {

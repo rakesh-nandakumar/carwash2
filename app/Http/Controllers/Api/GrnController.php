@@ -42,15 +42,20 @@ class GrnController extends Controller
 
             // Extract status as string
             $statusString = 'Draft';
+            $statusKey = 'draft';
+            
             if ($grn->status) {
                 $statusString = $grn->status->value ?? 'Draft';
+                $statusKey = $grn->status->key ?? 'draft';
             }
 
-            // Unset the status object and set as string
-            unset($grn->status);
-            $grn->status = $statusString;
+            // Convert to array to remove the status object
+            $grnArray = $grn->toArray();
+            unset($grnArray['status']);
+            $grnArray['status'] = $statusString;
+            $grnArray['status_key'] = $statusKey;
 
-            return $grn;
+            return (object) $grnArray;
         });
 
         return response()->json([

@@ -3,7 +3,7 @@
 @section('content')
 <div class="page-head">
     <div>
-        <h1>GRN {{ $grn->grn_number }}</h1>
+        <h1>GRN No: <span class="grn-number">{{ $grn->grn_number }}</span></h1>
         <p>View goods receipt details.</p>
     </div>
     <div class="page-actions">
@@ -387,6 +387,17 @@
     border-top: 4px solid #f59e0b;
 }
 
+.grn-number {
+    background: #fef3c7;
+    color: #92400e;
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9em;
+    letter-spacing: 1px;
+    border: 1px solid #fcd34d;
+}
+
 .toast {
     position: fixed;
     top: 20px;
@@ -506,18 +517,18 @@
 }
 
 .status-badge.status-draft {
-    background: #f59e0b;
-    color: white;
+    background: #fef3c7;
+    color: #92400e;
 }
 
 .status-badge.status-confirmed {
-    background: #10b981;
-    color: white;
+    background: #d1fae5;
+    color: #065f46;
 }
 
 .status-badge.status-deleted {
-    background: #ef4444;
-    color: white;
+    background: #fee2e2;
+    color: #991b1b;
 }
 
 .table tfoot {
@@ -556,7 +567,8 @@ window.grnCloseConfirm = function() {
 
 window.grnExecuteConfirm = function() {
     const tenant = window.location.pathname.split('/')[1];
-    fetch(`/${tenant}/api/grns/${window.grnCurrentId}/confirm`, {
+    const confirmUrl = window.location.origin + '/' + tenant + '/api/grns/' + window.grnCurrentId + '/confirm';
+    fetch(confirmUrl, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -591,7 +603,8 @@ window.grnCloseDelete = function() {
 
 window.grnExecuteDelete = function() {
     const tenant = window.location.pathname.split('/')[1];
-    fetch(`/${tenant}/api/grns/${window.grnCurrentId}`, {
+    const deleteUrl = window.location.origin + '/' + tenant + '/api/grns/' + window.grnCurrentId;
+    fetch(deleteUrl, {
         method: 'DELETE',
         headers: {
             'Content-Type': 'application/json',

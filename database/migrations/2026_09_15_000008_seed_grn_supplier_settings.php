@@ -9,6 +9,22 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // Get all tenants to ensure settings are created for each tenant
+        $tenants = DB::table('tenants')->pluck('id');
+        
+        if ($tenants->isEmpty()) {
+            // If no tenants exist, create without tenant_id for global settings
+            $this->seedSettings(null);
+        } else {
+            // Create settings for each tenant
+            foreach ($tenants as $tenantId) {
+                $this->seedSettings($tenantId);
+            }
+        }
+    }
+
+    private function seedSettings($tenantId): void
+    {
         // Seed GRN statuses
         $grnStatuses = [
             ['group' => 'grn_statuses', 'key' => 'draft', 'value' => 'Draft', 'type' => 'string', 'description' => 'GRN is in draft state'],
@@ -18,8 +34,22 @@ return new class extends Migration
 
         foreach ($grnStatuses as $status) {
             DB::table('settings')->updateOrInsert(
-                ['group' => $status['group'], 'key' => $status['key']],
-                $status
+                ['group' => $status['group'], 'key' => $status['key'], 'tenant_id' => $tenantId],
+                array_merge($status, ['tenant_id' => $tenantId])
+            );
+        }
+
+        // Seed Return GRN statuses
+        $returnGrnStatuses = [
+            ['group' => 'return_grn_statuses', 'key' => 'return_draft', 'value' => 'Draft', 'type' => 'string', 'description' => 'Return GRN is in draft state'],
+            ['group' => 'return_grn_statuses', 'key' => 'return_confirmed', 'value' => 'Confirmed', 'type' => 'string', 'description' => 'Return GRN has been confirmed and stock reversed'],
+            ['group' => 'return_grn_statuses', 'key' => 'return_deleted', 'value' => 'Deleted', 'type' => 'string', 'description' => 'Return GRN has been deleted'],
+        ];
+
+        foreach ($returnGrnStatuses as $status) {
+            DB::table('settings')->updateOrInsert(
+                ['group' => $status['group'], 'key' => $status['key'], 'tenant_id' => $tenantId],
+                array_merge($status, ['tenant_id' => $tenantId])
             );
         }
 
@@ -31,8 +61,8 @@ return new class extends Migration
 
         foreach ($supplierStatuses as $status) {
             DB::table('settings')->updateOrInsert(
-                ['group' => $status['group'], 'key' => $status['key']],
-                $status
+                ['group' => $status['group'], 'key' => $status['key'], 'tenant_id' => $tenantId],
+                array_merge($status, ['tenant_id' => $tenantId])
             );
         }
 
@@ -44,8 +74,8 @@ return new class extends Migration
 
         foreach ($ledgerEntryTypes as $type) {
             DB::table('settings')->updateOrInsert(
-                ['group' => $type['group'], 'key' => $type['key']],
-                $type
+                ['group' => $type['group'], 'key' => $type['key'], 'tenant_id' => $tenantId],
+                array_merge($type, ['tenant_id' => $tenantId])
             );
         }
 
@@ -57,8 +87,8 @@ return new class extends Migration
 
         foreach ($addressTypes as $type) {
             DB::table('settings')->updateOrInsert(
-                ['group' => $type['group'], 'key' => $type['key']],
-                $type
+                ['group' => $type['group'], 'key' => $type['key'], 'tenant_id' => $tenantId],
+                array_merge($type, ['tenant_id' => $tenantId])
             );
         }
 
@@ -71,8 +101,8 @@ return new class extends Migration
 
         foreach ($paymentTerms as $term) {
             DB::table('settings')->updateOrInsert(
-                ['group' => $term['group'], 'key' => $term['key']],
-                $term
+                ['group' => $term['group'], 'key' => $term['key'], 'tenant_id' => $tenantId],
+                array_merge($term, ['tenant_id' => $tenantId])
             );
         }
     }
@@ -80,7 +110,7 @@ return new class extends Migration
     public function down(): void
     {
         DB::table('settings')
-            ->whereIn('group', ['grn_statuses', 'supplier_statuses', 'ledger_entry_types', 'address_types', 'payment_terms'])
+            ->whereIn('group', ['grn_statuses', 'return_grn_statuses', 'supplier_statuses', 'ledger_entry_types', 'address_types', 'payment_terms'])
             ->delete();
     }
 };

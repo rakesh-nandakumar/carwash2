@@ -73,8 +73,8 @@ class InventoryService
 
             InventoryMovement::create([
                 'product_id' => $product->id,
-                'tenant_id' => auth()->user()->tenant_id,
-                'business_id' => auth()->user()->business_id,
+                'tenant_id' => $product->tenant_id,
+                'business_id' => $product->business_id,
                 'branch_id' => $branchId,
                 'type' => $type,
                 'quantity' => $qty,
