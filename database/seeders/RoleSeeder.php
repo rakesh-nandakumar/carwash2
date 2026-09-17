@@ -111,6 +111,12 @@ class RoleSeeder extends Seeder
                     'inventory.adjust_stock',
                     'inventory.transfer_stock',
 
+                    'barcode_labels.access',
+                    'barcode_labels.create',
+                    'barcode_labels.edit',
+                    'barcode_labels.delete',
+                    'barcode_labels.print',
+
                     'stock_adjustments.access',
                     'stock_adjustments.create',
                     'stock_adjustments.reverse',
@@ -125,6 +131,25 @@ class RoleSeeder extends Seeder
                     'services.edit',
                     'services.delete',
                     'services.toggle',
+
+                    'suppliers.access',
+                    'suppliers.create',
+                    'suppliers.edit',
+                    'suppliers.delete',
+
+                    'grns.access',
+                    'grns.create',
+                    'grns.edit',
+                    'grns.delete',
+                    'grns.confirm',
+                    'grns.reverse',
+
+                    'return_grns.access',
+                    'return_grns.create',
+                    'return_grns.edit',
+                    'return_grns.delete',
+                    'return_grns.confirm',
+                    'return_grns.reverse',
 
                     'invoices.access',
                     'invoices.create',
@@ -144,6 +169,16 @@ class RoleSeeder extends Seeder
                     'cashier.cash_drop',
                     'cashier.cash_in',
                     'cashier.cash_out',
+
+                    'cheque_payments.access',
+                    'cheque_payments.confirm',
+                    'cheque_payments.bounce',
+                    'cheque_payments.reverse',
+                    'cheque_payments.edit_bounce',
+
+                    'notifications.access',
+                    'notifications.mark_read',
+                    'notifications.delete',
 
                     'cash_movements.access',
 
@@ -205,6 +240,16 @@ class RoleSeeder extends Seeder
 
                     'services.access',
 
+                    'suppliers.access',
+
+                    'grns.access',
+                    'grns.create',
+                    'grns.confirm',
+
+                    'return_grns.access',
+                    'return_grns.create',
+                    'return_grns.confirm',
+
                     'invoices.access',
                     'invoices.create',
                     'invoices.print',
@@ -226,6 +271,13 @@ class RoleSeeder extends Seeder
                     'job_cards.edit_inspection',
 
                     'inventory.access',
+                    'inventory.edit',
+
+                    'grns.access',
+                    'grns.confirm',
+
+                    'return_grns.access',
+                    'return_grns.confirm',
                 ],
             ],
 
@@ -249,6 +301,13 @@ class RoleSeeder extends Seeder
                     'cashier.cash_in',
                     'cashier.cash_out',
 
+                    'cheque_payments.access',
+                    'cheque_payments.confirm',
+                    'cheque_payments.bounce',
+
+                    'notifications.access',
+                    'notifications.mark_read',
+
                     'cash_movements.access',
                 ],
             ],
@@ -264,7 +323,13 @@ class RoleSeeder extends Seeder
                     'appointments.access',
                     'job_cards.access',
                     'inventory.access',
+                    'barcode_labels.access',
+                    'stock_adjustments.access',
+                    'categories.access',
                     'services.access',
+                    'suppliers.access',
+                    'grns.access',
+                    'return_grns.access',
                     'invoices.access',
 
                     'reports.access',
@@ -274,6 +339,8 @@ class RoleSeeder extends Seeder
                     'reports.services',
                     'reports.customers',
                     'reports.export',
+
+                    'audit_logs.access',
                 ],
             ],
         ];

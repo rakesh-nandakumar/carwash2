@@ -58,10 +58,17 @@ class AuthController extends Controller
                 'vehicles.access' => 'vehicles.index',
                 'appointments.access' => 'appointments.index',
                 'inventory.access' => 'inventory.index',
+                'barcode_labels.access' => 'barcode-labels.index',
+                'stock_adjustments.access' => 'stock-adjustments.index',
                 'categories.access' => 'categories.index',
                 'services.access' => 'services.index',
+                'suppliers.access' => 'suppliers.index',
+                'grns.access' => 'grns.index',
+                'return_grns.access' => 'return_grns.index',
                 'invoices.access' => 'invoices.index',
                 'cashier.access' => 'cashier.index',
+                'cheque_payments.access' => 'cheque-payments.index',
+                'notifications.access' => 'notifications.index',
                 'reports.access' => 'reports',
                 'users.access' => 'users.index',
                 'roles.access' => 'roles.index',
@@ -71,7 +78,7 @@ class AuthController extends Controller
 
             foreach ($permissionToRoute as $permission => $route) {
                 if ($user->hasPermissionTo($permission)) {
-                    return redirect()->intended(route($route));
+                    return redirect()->route($route);
                 }
             }
 

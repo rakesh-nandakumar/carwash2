@@ -89,6 +89,17 @@ class PermissionCatalog
                 ],
             ],
 
+            'barcode_labels' => [
+                'label' => 'Barcode Labels',
+                'actions' => [
+                    'access',
+                    'create',
+                    'edit',
+                    'delete',
+                    'print',
+                ],
+            ],
+
             'stock_adjustments' => [
                 'label' => 'Stock Adjustments',
                 'actions' => [
@@ -119,6 +130,40 @@ class PermissionCatalog
                 ],
             ],
 
+            'suppliers' => [
+                'label' => 'Suppliers',
+                'actions' => [
+                    'access',
+                    'create',
+                    'edit',
+                    'delete',
+                ],
+            ],
+
+            'grns' => [
+                'label' => 'GRN',
+                'actions' => [
+                    'access',
+                    'create',
+                    'edit',
+                    'delete',
+                    'confirm',
+                    'reverse',
+                ],
+            ],
+
+            'return_grns' => [
+                'label' => 'Return GRN',
+                'actions' => [
+                    'access',
+                    'create',
+                    'edit',
+                    'delete',
+                    'confirm',
+                    'reverse',
+                ],
+            ],
+
             'invoices' => [
                 'label' => 'Invoices',
                 'actions' => [
@@ -146,6 +191,26 @@ class PermissionCatalog
                     'cash_drop',
                     'cash_in',
                     'cash_out',
+                ],
+            ],
+
+            'cheque_payments' => [
+                'label' => 'Cheque Payments',
+                'actions' => [
+                    'access',
+                    'confirm',
+                    'bounce',
+                    'reverse',
+                    'edit_bounce',
+                ],
+            ],
+
+            'notifications' => [
+                'label' => 'Notifications',
+                'actions' => [
+                    'access',
+                    'mark_read',
+                    'delete',
                 ],
             ],
 
