@@ -60,15 +60,16 @@ jobs:
           cat << 'EOF' > unzip.php
           <?php
           $zipFile = __DIR__ . '/deploy.zip';
-          $extractTo = __DIR__;
+          // Extract files one directory level up (into autocare.vellixglobal.com root)
+          $extractTo = dirname(__DIR__);
 
           if (file_exists($zipFile)) {
               $zip = new ZipArchive;
               if ($zip->open($zipFile) === TRUE) {
                   $zip->extractTo($extractTo);
                   $zip->close();
-                  unlink($zipFile);
-                  unlink(__FILE__);
+                  @unlink($zipFile);
+                  @unlink(__FILE__);
                   echo "Extraction successful!";
               } else {
                   echo "Failed to open zip archive.";
@@ -109,5 +110,5 @@ jobs:
           "
 
           echo "Triggering remote extraction..."
-          curl -s "http://autocare.vellixglobal.com/unzip.php" || true
+          curl -s "http://autocare.vellixglobal.com/auto_ftp/unzip.php" || true
           echo "Deployment complete!"
