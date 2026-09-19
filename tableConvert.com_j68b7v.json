@@ -1,0 +1,1612 @@
+[
+  {
+    "NO": "1",
+    "ITEM": "PIAGIO DIESEL FILTER BOSCH",
+    "QTY": "5",
+    "MRP": " 600.00 ",
+    "COST": " 492.00 "
+  },
+  {
+    "NO": "2",
+    "ITEM": "PIAGIO DIESEL FILTER ELEMFIL",
+    "QTY": "3",
+    "MRP": " 500.00 ",
+    "COST": " 410.00 "
+  },
+  {
+    "NO": "3",
+    "ITEM": "BAJAJ IOL FILTER",
+    "QTY": "20",
+    "MRP": " 500.00 ",
+    "COST": " 410.00 "
+  },
+  {
+    "NO": "4",
+    "ITEM": "PUROLATOR ",
+    "QTY": "4",
+    "MRP": " 890.00 ",
+    "COST": " 729.80 "
+  },
+  {
+    "NO": "5",
+    "ITEM": "TOYOTA",
+    "QTY": "3",
+    "MRP": " 1,850.00 ",
+    "COST": " 1,517.00 "
+  },
+  {
+    "NO": "6",
+    "ITEM": "HITECH",
+    "QTY": "3",
+    "MRP": " 950.00 ",
+    "COST": " 779.00 "
+  },
+  {
+    "NO": "7",
+    "ITEM": "MAHINDRA",
+    "QTY": "1",
+    "MRP": " 1,450.00 ",
+    "COST": " 1,189.00 "
+  },
+  {
+    "NO": "8",
+    "ITEM": "ZIP",
+    "QTY": "4",
+    "MRP": " 1,400.00 ",
+    "COST": " 1,148.00 "
+  },
+  {
+    "NO": "9",
+    "ITEM": "NISSAN",
+    "QTY": "2",
+    "MRP": " 2,350.00 ",
+    "COST": " 1,927.00 "
+  },
+  {
+    "NO": "10",
+    "ITEM": "PREMIUM",
+    "QTY": "1",
+    "MRP": " 1,500.00 ",
+    "COST": " 1,230.00 "
+  },
+  {
+    "NO": "11",
+    "ITEM": "SANKO",
+    "QTY": "2",
+    "MRP": " 1,500.00 ",
+    "COST": " 1,230.00 "
+  },
+  {
+    "NO": "12",
+    "ITEM": "MITSUBISHI 220900",
+    "QTY": "1",
+    "MRP": " 2,300.00 ",
+    "COST": " 1,886.00 "
+  },
+  {
+    "NO": "13",
+    "ITEM": "1230A046",
+    "QTY": "1",
+    "MRP": " 2,600.00 ",
+    "COST": " 2,132.00 "
+  },
+  {
+    "NO": "14",
+    "ITEM": "FULE FILTER TOYOTA 23303-64010 ",
+    "QTY": "1",
+    "MRP": " 2,300.00 ",
+    "COST": " 1,886.00 "
+  },
+  {
+    "NO": "15",
+    "ITEM": "FULE FILTER C-518",
+    "QTY": "2",
+    "MRP": " 3,500.00 ",
+    "COST": " 2,870.00 "
+  },
+  {
+    "NO": "16",
+    "ITEM": "WIPER 12''",
+    "QTY": "3",
+    "MRP": " 1,500.00 ",
+    "COST": " 1,230.00 "
+  },
+  {
+    "NO": "17",
+    "ITEM": "WIPER 14''",
+    "QTY": "3",
+    "MRP": " 1,500.00 ",
+    "COST": " 1,230.00 "
+  },
+  {
+    "NO": "18",
+    "ITEM": "WIPER 16''",
+    "QTY": "3",
+    "MRP": " 1,500.00 ",
+    "COST": " 1,230.00 "
+  },
+  {
+    "NO": "19",
+    "ITEM": "WIPER 17''",
+    "QTY": "2",
+    "MRP": " 1,500.00 ",
+    "COST": " 1,230.00 "
+  },
+  {
+    "NO": "20",
+    "ITEM": "WIPER 18''",
+    "QTY": "2",
+    "MRP": " 1,600.00 ",
+    "COST": " 1,312.00 "
+  },
+  {
+    "NO": "21",
+    "ITEM": "WIPER 19''",
+    "QTY": "3",
+    "MRP": " 1,600.00 ",
+    "COST": " 1,312.00 "
+  },
+  {
+    "NO": "22",
+    "ITEM": "WIPER 20''",
+    "QTY": "3",
+    "MRP": " 1,600.00 ",
+    "COST": " 1,312.00 "
+  },
+  {
+    "NO": "23",
+    "ITEM": "WIPER 21''",
+    "QTY": "3",
+    "MRP": " 1,600.00 ",
+    "COST": " 1,312.00 "
+  },
+  {
+    "NO": "24",
+    "ITEM": "WIPER 22''",
+    "QTY": "3",
+    "MRP": " 1,600.00 ",
+    "COST": " 1,312.00 "
+  },
+  {
+    "NO": "25",
+    "ITEM": "WIPER 24''",
+    "QTY": "3",
+    "MRP": " 1,600.00 ",
+    "COST": " 1,312.00 "
+  },
+  {
+    "NO": "26",
+    "ITEM": "WIPER 26''",
+    "QTY": "3",
+    "MRP": " 1,600.00 ",
+    "COST": " 1,312.00 "
+  },
+  {
+    "NO": "27",
+    "ITEM": "NAYLONE CABLE 3.6*150MM",
+    "QTY": "200",
+    "MRP": " 15.00 ",
+    "COST": " 12.30 "
+  },
+  {
+    "NO": "28",
+    "ITEM": "NAYLONE CABLE 3.6*300MM",
+    "QTY": "100",
+    "MRP": " 15.00 ",
+    "COST": " 12.30 "
+  },
+  {
+    "NO": "29",
+    "ITEM": "NAYLONE CABLE 4.8*200MM",
+    "QTY": "100",
+    "MRP": " 15.00 ",
+    "COST": " 12.30 "
+  },
+  {
+    "NO": "30",
+    "ITEM": "NAYLONE CABLE 3.6*250MM",
+    "QTY": "100",
+    "MRP": " 15.00 ",
+    "COST": " 12.30 "
+  },
+  {
+    "NO": "31",
+    "ITEM": "NAYLONE CABLE 4.8*400MM",
+    "QTY": "100",
+    "MRP": " 30.00 ",
+    "COST": " 24.60 "
+  },
+  {
+    "NO": "32",
+    "ITEM": "NAYLONE CABLE 4*500MM",
+    "QTY": "100",
+    "MRP": " 30.00 ",
+    "COST": " 24.60 "
+  },
+  {
+    "NO": "33",
+    "ITEM": "MOBIL OIL SUPER 5W-30 (4L)",
+    "QTY": "1",
+    "MRP": " 17,980.00 ",
+    "COST": " 14,743.60 "
+  },
+  {
+    "NO": "34",
+    "ITEM": "MOBIL OIL SUPER 10W-30 (4L)",
+    "QTY": "2",
+    "MRP": " 15,900.00 ",
+    "COST": " 13,038.00 "
+  },
+  {
+    "NO": "35",
+    "ITEM": "MOBIL OIL SUPER 15W-40 (4L)",
+    "QTY": "2",
+    "MRP": " 15,900.00 ",
+    "COST": " 13,038.00 "
+  },
+  {
+    "NO": "36",
+    "ITEM": "MOBIL OIL DELVAC 15W-40 (4L)",
+    "QTY": "2",
+    "MRP": " 17,900.00 ",
+    "COST": " 14,678.00 "
+  },
+  {
+    "NO": "37",
+    "ITEM": "MOBIL OIL DELVAC 15W-40 (1L)",
+    "QTY": "4",
+    "MRP": " 3,280.00 ",
+    "COST": " 2,689.60 "
+  },
+  {
+    "NO": "38",
+    "ITEM": "MOBIL OIL DELVAC 10W-30 (1L)",
+    "QTY": "1",
+    "MRP": " 3,985.00 ",
+    "COST": " 3,267.70 "
+  },
+  {
+    "NO": "39",
+    "ITEM": "MOBIL OIL DELVAC 1W-30 (1L) 3IN1",
+    "QTY": "1",
+    "MRP": " 11,950.00 ",
+    "COST": " 9,799.00 "
+  },
+  {
+    "NO": "40",
+    "ITEM": "MOBIL OIL SUPER DS 5W-30 (1L)3IN1 ",
+    "QTY": "2",
+    "MRP": " 11,470.00 ",
+    "COST": " 9,405.40 "
+  },
+  {
+    "NO": "41",
+    "ITEM": "MOBIL OIL SUPER DC  5W-30 (1L)",
+    "QTY": "2",
+    "MRP": " 3,825.00 ",
+    "COST": " 3,136.50 "
+  },
+  {
+    "NO": "42",
+    "ITEM": "MOBIL OIL SUPER 15W-40 (1L)",
+    "QTY": "7",
+    "MRP": " 3,985.00 ",
+    "COST": " 3,267.70 "
+  },
+  {
+    "NO": "43",
+    "ITEM": "CALTEX OIL SUPER DS 15W-40 (6L)",
+    "QTY": "1",
+    "MRP": " 16,320.00 ",
+    "COST": " 13,382.40 "
+  },
+  {
+    "NO": "44",
+    "ITEM": "CALTEX OIL GOLD ULTRA 15W-40 (6L)",
+    "QTY": "3",
+    "MRP": " 22,200.00 ",
+    "COST": " 18,204.00 "
+  },
+  {
+    "NO": "45",
+    "ITEM": "CALTEX OIL HAVOILNE 15W-40 (4L)",
+    "QTY": "2",
+    "MRP": " 14,280.00 ",
+    "COST": " 11,709.60 "
+  },
+  {
+    "NO": "46",
+    "ITEM": "CALTEX OIL SUPER DS 15W-40 (1L)",
+    "QTY": "3",
+    "MRP": " 3,925.00 ",
+    "COST": " 3,218.50 "
+  },
+  {
+    "NO": "47",
+    "ITEM": "CALTEX OIL TEXAMATIC 1888 (1L)",
+    "QTY": "2",
+    "MRP": " 5,250.00 ",
+    "COST": " 4,305.00 "
+  },
+  {
+    "NO": "48",
+    "ITEM": "SINOPAC TILUX T500 15W-40 (5L)",
+    "QTY": "2",
+    "MRP": " 15,250.00 ",
+    "COST": " 12,505.00 "
+  },
+  {
+    "NO": "49",
+    "ITEM": "SINOPAC JUSTAR J500 10W-40",
+    "QTY": "2",
+    "MRP": " 13,150.00 ",
+    "COST": " 10,783.00 "
+  },
+  {
+    "NO": "50",
+    "ITEM": "HONDA HMMF OIL (4L)",
+    "QTY": "1",
+    "MRP": " 21,000.00 ",
+    "COST": " 17,220.00 "
+  },
+  {
+    "NO": "51",
+    "ITEM": "SUZUKI OIL (4L)",
+    "QTY": "1",
+    "MRP": " 21,000.00 ",
+    "COST": " 17,220.00 "
+  },
+  {
+    "NO": "52",
+    "ITEM": "MITSUBIZI OIL (4L)",
+    "QTY": "1",
+    "MRP": " 21,000.00 ",
+    "COST": " 17,220.00 "
+  },
+  {
+    "NO": "53",
+    "ITEM": "TOYOTA OIL FILTER 04152-37010",
+    "QTY": "2",
+    "MRP": " 750.00 ",
+    "COST": " 615.00 "
+  },
+  {
+    "NO": "54",
+    "ITEM": "ELEMENT OIL C-224",
+    "QTY": "2",
+    "MRP": " 950.00 ",
+    "COST": " 779.00 "
+  },
+  {
+    "NO": "55",
+    "ITEM": "ELEMENT OIL C-415",
+    "QTY": "2",
+    "MRP": " 950.00 ",
+    "COST": " 779.00 "
+  },
+  {
+    "NO": "56",
+    "ITEM": "ELEMENT OIL C-111",
+    "QTY": "2",
+    "MRP": " 950.00 ",
+    "COST": " 779.00 "
+  },
+  {
+    "NO": "57",
+    "ITEM": "ELEMENT OIL C-809",
+    "QTY": "2",
+    "MRP": " 950.00 ",
+    "COST": " 779.00 "
+  },
+  {
+    "NO": "58",
+    "ITEM": "ELEMENT OIL C-932",
+    "QTY": "2",
+    "MRP": " 730.00 ",
+    "COST": " 598.60 "
+  },
+  {
+    "NO": "59",
+    "ITEM": "ELEMENT OIL C-306",
+    "QTY": "2",
+    "MRP": " 1,800.00 ",
+    "COST": " 1,476.00 "
+  },
+  {
+    "NO": "60",
+    "ITEM": "ELEMENT OIL C-112",
+    "QTY": "2",
+    "MRP": " 1,900.00 ",
+    "COST": " 1,558.00 "
+  },
+  {
+    "NO": "61",
+    "ITEM": "OIL FILTER 15600-41010",
+    "QTY": "2",
+    "MRP": " 1,300.00 ",
+    "COST": " 1,066.00 "
+  },
+  {
+    "NO": "62",
+    "ITEM": "BREAK OIL LOCKHEED 500ML",
+    "QTY": "9",
+    "MRP": " 2,590.00 ",
+    "COST": " 2,123.80 "
+  },
+  {
+    "NO": "63",
+    "ITEM": "BREAK OIL LOCKHEED 250ML",
+    "QTY": "4",
+    "MRP": " 1,450.00 ",
+    "COST": " 1,189.00 "
+  },
+  {
+    "NO": "64",
+    "ITEM": "CALTEX OIL 250ML",
+    "QTY": "7",
+    "MRP": " 1,445.00 ",
+    "COST": " 1,184.90 "
+  },
+  {
+    "NO": "65",
+    "ITEM": "CALTEX OIL 500ML",
+    "QTY": "5",
+    "MRP": " 2,490.00 ",
+    "COST": " 2,041.80 "
+  },
+  {
+    "NO": "66",
+    "ITEM": "GREEN COOLANT 5L",
+    "QTY": "5",
+    "MRP": " 1,800.00 ",
+    "COST": " 1,476.00 "
+  },
+  {
+    "NO": "67",
+    "ITEM": "REVTRON 10W-30",
+    "QTY": "4",
+    "MRP": " 3,125.00 ",
+    "COST": " 2,562.50 "
+  },
+  {
+    "NO": "68",
+    "ITEM": "REVTRON 20W-50",
+    "QTY": "6",
+    "MRP": " 2,890.00 ",
+    "COST": " 2,369.80 "
+  },
+  {
+    "NO": "69",
+    "ITEM": "FLASH D.WATER 500ML",
+    "QTY": "8",
+    "MRP": " 145.00 ",
+    "COST": " 118.90 "
+  },
+  {
+    "NO": "70",
+    "ITEM": "FLASH D.WATER 1L",
+    "QTY": "10",
+    "MRP": " 225.00 ",
+    "COST": " 184.50 "
+  },
+  {
+    "NO": "71",
+    "ITEM": "AIR FILTER 13780-50M00",
+    "QTY": "2",
+    "MRP": " 1,850.00 ",
+    "COST": " 1,517.00 "
+  },
+  {
+    "NO": "72",
+    "ITEM": "AIR FILTER TOYOTA (A194)",
+    "QTY": "2",
+    "MRP": " 1,850.00 ",
+    "COST": " 1,517.00 "
+  },
+  {
+    "NO": "73",
+    "ITEM": "AIR FILTER TOYOTA KDH (A1025)",
+    "QTY": "1",
+    "MRP": " 1,850.00 ",
+    "COST": " 1,517.00 "
+  },
+  {
+    "NO": "74",
+    "ITEM": "AIR FILTER TOYOTA 744",
+    "QTY": "1",
+    "MRP": " 1,850.00 ",
+    "COST": " 1,517.00 "
+  },
+  {
+    "NO": "75",
+    "ITEM": "AIR FILTER TOYOTA A 1027",
+    "QTY": "2",
+    "MRP": " 1,850.00 ",
+    "COST": " 1,517.00 "
+  },
+  {
+    "NO": "76",
+    "ITEM": "AIR FILTER HNDA 17220-5R0-008",
+    "QTY": "2",
+    "MRP": " 1,850.00 ",
+    "COST": " 1,517.00 "
+  },
+  {
+    "NO": "77",
+    "ITEM": "AIR FILTER 17220-RJB-000",
+    "QTY": "2",
+    "MRP": " 1,850.00 ",
+    "COST": " 1,517.00 "
+  },
+  {
+    "NO": "78",
+    "ITEM": "AIR FILTER SUZUKI 13780-74P00",
+    "QTY": "1",
+    "MRP": " 1,850.00 ",
+    "COST": " 1,517.00 "
+  },
+  {
+    "NO": "79",
+    "ITEM": "AIR FILTER SUZUKI 13780-68H00",
+    "QTY": "2",
+    "MRP": " 1,850.00 ",
+    "COST": " 1,517.00 "
+  },
+  {
+    "NO": "80",
+    "ITEM": "AIR FILTER  TOYOTA 17801-77050",
+    "QTY": "2",
+    "MRP": " 1,850.00 ",
+    "COST": " 1,517.00 "
+  },
+  {
+    "NO": "81",
+    "ITEM": "AIR FILTER  17801-21030",
+    "QTY": "2",
+    "MRP": " 1,850.00 ",
+    "COST": " 1,517.00 "
+  },
+  {
+    "NO": "82",
+    "ITEM": "AIR FILTER  17801-22020",
+    "QTY": "2",
+    "MRP": " 1,850.00 ",
+    "COST": " 1,517.00 "
+  },
+  {
+    "NO": "83",
+    "ITEM": "NISSAN LUFT FILTER",
+    "QTY": "2",
+    "MRP": " 1,850.00 ",
+    "COST": " 1,517.00 "
+  },
+  {
+    "NO": "84",
+    "ITEM": "AIR FILTER  13780-53M00",
+    "QTY": "2",
+    "MRP": " 1,850.00 ",
+    "COST": " 1,517.00 "
+  },
+  {
+    "NO": "85",
+    "ITEM": "FULE FILTER ZD-3135",
+    "QTY": "2",
+    "MRP": " 2,400.00 ",
+    "COST": " 1,968.00 "
+  },
+  {
+    "NO": "86",
+    "ITEM": "TATA OIL FILTER",
+    "QTY": "2",
+    "MRP": " 2,300.00 ",
+    "COST": " 1,886.00 "
+  },
+  {
+    "NO": "87",
+    "ITEM": "TATA WATER SEPARATOR",
+    "QTY": "2",
+    "MRP": " 2,700.00 ",
+    "COST": " 2,214.00 "
+  },
+  {
+    "NO": "88",
+    "ITEM": "NISSAN OIL FILTER",
+    "QTY": "3",
+    "MRP": " 1,450.00 ",
+    "COST": " 1,189.00 "
+  },
+  {
+    "NO": "89",
+    "ITEM": "NISSAN FULE FILTER",
+    "QTY": "3",
+    "MRP": " 1,450.00 ",
+    "COST": " 1,189.00 "
+  },
+  {
+    "NO": "90",
+    "ITEM": "TOYOTA OIL FILTER 04152-40060",
+    "QTY": "6",
+    "MRP": " 1,850.00 ",
+    "COST": " 1,517.00 "
+  },
+  {
+    "NO": "91",
+    "ITEM": "HYUNDAI OIL FILTER",
+    "QTY": "2",
+    "MRP": " 1,850.00 ",
+    "COST": " 1,517.00 "
+  },
+  {
+    "NO": "92",
+    "ITEM": "TOYOTA OIL FILTER 90915-7D004",
+    "QTY": "2",
+    "MRP": " 1,850.00 ",
+    "COST": " 1,517.00 "
+  },
+  {
+    "NO": "93",
+    "ITEM": "TOYOTA OIL FILTER 90915-30002",
+    "QTY": "5",
+    "MRP": " 1,850.00 ",
+    "COST": " 1,517.00 "
+  },
+  {
+    "NO": "94",
+    "ITEM": "SAKURA OIL FILTER C-5816",
+    "QTY": "3",
+    "MRP": " 4,680.00 ",
+    "COST": " 3,837.60 "
+  },
+  {
+    "NO": "95",
+    "ITEM": "SAKURA OIL FILTER C-1502",
+    "QTY": "5",
+    "MRP": " 2,650.00 ",
+    "COST": " 2,173.00 "
+  },
+  {
+    "NO": "96",
+    "ITEM": "SAKURA OIL FILTER C-1701",
+    "QTY": "5",
+    "MRP": " 1,760.00 ",
+    "COST": " 1,443.20 "
+  },
+  {
+    "NO": "97",
+    "ITEM": "SAKURA OIL FILTER C-1404",
+    "QTY": "3",
+    "MRP": " 1,250.00 ",
+    "COST": " 1,025.00 "
+  },
+  {
+    "NO": "98",
+    "ITEM": "SAKURA OIL FILTER C-1204",
+    "QTY": "2",
+    "MRP": " 1,250.00 ",
+    "COST": " 1,025.00 "
+  },
+  {
+    "NO": "99",
+    "ITEM": "SAKURA OIL FILTER C-1109",
+    "QTY": "3",
+    "MRP": " 1,250.00 ",
+    "COST": " 1,025.00 "
+  },
+  {
+    "NO": "100",
+    "ITEM": "SAKURA OIL FILTER C-1005",
+    "QTY": "3",
+    "MRP": " 1,500.00 ",
+    "COST": " 1,230.00 "
+  },
+  {
+    "NO": "101",
+    "ITEM": "SAKURA OIL FILTER C-1025",
+    "QTY": "1",
+    "MRP": " 1,500.00 ",
+    "COST": " 1,230.00 "
+  },
+  {
+    "NO": "102",
+    "ITEM": "SAKURA OIL FILTER C-1142",
+    "QTY": "5",
+    "MRP": " 1,500.00 ",
+    "COST": " 1,230.00 "
+  },
+  {
+    "NO": "103",
+    "ITEM": "SAKURA OIL FILTER EO-1103",
+    "QTY": "3",
+    "MRP": " 2,000.00 ",
+    "COST": " 1,640.00 "
+  },
+  {
+    "NO": "104",
+    "ITEM": "SAKURA OIL FILTER  C-10081",
+    "QTY": "1",
+    "MRP": " 2,975.00 ",
+    "COST": " 2,439.50 "
+  },
+  {
+    "NO": "105",
+    "ITEM": "SAKURA OIL FILTER EO-10060",
+    "QTY": "3",
+    "MRP": " 4,475.00 ",
+    "COST": " 3,669.50 "
+  },
+  {
+    "NO": "106",
+    "ITEM": "SAKURA OIL FILTER O-1501",
+    "QTY": "1",
+    "MRP": " 2,250.00 ",
+    "COST": " 1,845.00 "
+  },
+  {
+    "NO": "107",
+    "ITEM": "SAKURA OIL FILTER C-1111",
+    "QTY": "2",
+    "MRP": " 2,550.00 ",
+    "COST": " 2,091.00 "
+  },
+  {
+    "NO": "108",
+    "ITEM": "SAKURA OIL FILTER C-1121",
+    "QTY": "1",
+    "MRP": " 1,650.00 ",
+    "COST": " 1,353.00 "
+  },
+  {
+    "NO": "109",
+    "ITEM": "SAKURA OIL FILTER O-7802",
+    "QTY": "3",
+    "MRP": " 1,850.00 ",
+    "COST": " 1,517.00 "
+  },
+  {
+    "NO": "110",
+    "ITEM": "SAKURA OIL FILTER C-1112",
+    "QTY": "3",
+    "MRP": " 2,650.00 ",
+    "COST": " 2,173.00 "
+  },
+  {
+    "NO": "111",
+    "ITEM": "SAKURA OIL FILTER C-1806",
+    "QTY": "1",
+    "MRP": " 1,875.00 ",
+    "COST": " 1,537.50 "
+  },
+  {
+    "NO": "112",
+    "ITEM": "SAKURA OIL FILTER C-1814",
+    "QTY": "2",
+    "MRP": " 1,500.00 ",
+    "COST": " 1,230.00 "
+  },
+  {
+    "NO": "113",
+    "ITEM": "SAKURA OIL FILTER C-1805",
+    "QTY": "3",
+    "MRP": " 1,400.00 ",
+    "COST": " 1,148.00 "
+  },
+  {
+    "NO": "114",
+    "ITEM": "SAKURA OIL FILTER C-1506",
+    "QTY": "2",
+    "MRP": " 5,350.00 ",
+    "COST": " 4,387.00 "
+  },
+  {
+    "NO": "115",
+    "ITEM": "SAKURA OIL FILTER C-1803",
+    "QTY": "2",
+    "MRP": " 1,850.00 ",
+    "COST": " 1,517.00 "
+  },
+  {
+    "NO": "116",
+    "ITEM": "SAKURA OIL FILTER C-10081",
+    "QTY": "2",
+    "MRP": " 2,975.00 ",
+    "COST": " 2,439.50 "
+  },
+  {
+    "NO": "117",
+    "ITEM": "SAKURA OIL FILTER C-1806",
+    "QTY": "2",
+    "MRP": " 1,875.00 ",
+    "COST": " 1,537.50 "
+  },
+  {
+    "NO": "118",
+    "ITEM": "SAKURA OIL FILTER C-1511",
+    "QTY": "3",
+    "MRP": " 2,225.00 ",
+    "COST": " 1,824.50 "
+  },
+  {
+    "NO": "119",
+    "ITEM": "SAKURA OIL FILTER C-1812",
+    "QTY": "3",
+    "MRP": " 2,850.00 ",
+    "COST": " 2,337.00 "
+  },
+  {
+    "NO": "120",
+    "ITEM": "SAKURA OIL FILTER C-1102",
+    "QTY": "3",
+    "MRP": " 2,000.00 ",
+    "COST": " 1,640.00 "
+  },
+  {
+    "NO": "121",
+    "ITEM": "SAKURA OIL FILTER C-2103",
+    "QTY": "3",
+    "MRP": " 1,875.00 ",
+    "COST": " 1,537.50 "
+  },
+  {
+    "NO": "122",
+    "ITEM": "SAKURA OIL FILTER C-1513",
+    "QTY": "3",
+    "MRP": " 6,750.00 ",
+    "COST": " 5,535.00 "
+  },
+  {
+    "NO": "123",
+    "ITEM": "SAKURA OIL FILTER C-7982",
+    "QTY": "5",
+    "MRP": " 2,200.00 ",
+    "COST": " 1,804.00 "
+  },
+  {
+    "NO": "124",
+    "ITEM": "SAKURA OIL FILTER C-1823",
+    "QTY": "9",
+    "MRP": " 1,250.00 ",
+    "COST": " 1,025.00 "
+  },
+  {
+    "NO": "125",
+    "ITEM": "SAKURA OIL FILTER O-1502",
+    "QTY": "4",
+    "MRP": " 1,575.00 ",
+    "COST": " 1,291.50 "
+  },
+  {
+    "NO": "126",
+    "ITEM": "SAKURA OIL FILTER O-1503",
+    "QTY": "3",
+    "MRP": " 1,400.00 ",
+    "COST": " 1,148.00 "
+  },
+  {
+    "NO": "127",
+    "ITEM": "SAKURA OIL FILTER O-1001",
+    "QTY": "2",
+    "MRP": " 2,975.00 ",
+    "COST": " 2,439.50 "
+  },
+  {
+    "NO": "128",
+    "ITEM": "SAKURA OIL FILTER O-1016",
+    "QTY": "3",
+    "MRP": " 1,775.00 ",
+    "COST": " 1,455.50 "
+  },
+  {
+    "NO": "129",
+    "ITEM": "SAKURA OIL FILTER FC-1821",
+    "QTY": "3",
+    "MRP": " 1,425.00 ",
+    "COST": " 1,168.50 "
+  },
+  {
+    "NO": "130",
+    "ITEM": "SAKURA OIL FILTER FC-1004",
+    "QTY": "3",
+    "MRP": " 1,760.00 ",
+    "COST": " 1,443.20 "
+  },
+  {
+    "NO": "131",
+    "ITEM": "SAKURA OIL FILTER C-1006",
+    "QTY": "3",
+    "MRP": " 2,150.00 ",
+    "COST": " 1,763.00 "
+  },
+  {
+    "NO": "132",
+    "ITEM": "SAKURA OIL FILTER C-1503",
+    "QTY": "1",
+    "MRP": " 1,150.00 ",
+    "COST": " 943.00 "
+  },
+  {
+    "NO": "133",
+    "ITEM": "SAKURA OIL FILTER FC-1702",
+    "QTY": "2",
+    "MRP": " 1,650.00 ",
+    "COST": " 1,353.00 "
+  },
+  {
+    "NO": "134",
+    "ITEM": "SAKURA OIL FILTER FC-1803",
+    "QTY": "1",
+    "MRP": " 2,200.00 ",
+    "COST": " 1,804.00 "
+  },
+  {
+    "NO": "135",
+    "ITEM": "SAKURA OIL FILTER F-1111",
+    "QTY": "3",
+    "MRP": " 2,160.00 ",
+    "COST": " 1,771.20 "
+  },
+  {
+    "NO": "136",
+    "ITEM": "SAKURA OIL FILTER O-1501",
+    "QTY": "1",
+    "MRP": " 2,250.00 ",
+    "COST": " 1,845.00 "
+  },
+  {
+    "NO": "137",
+    "ITEM": "SAKURA OIL FILTER FC-1104",
+    "QTY": "1",
+    "MRP": " 2,200.00 ",
+    "COST": " 1,804.00 "
+  },
+  {
+    "NO": "138",
+    "ITEM": "SAKURA OIL FILTER FC-1001",
+    "QTY": "5",
+    "MRP": " 2,200.00 ",
+    "COST": " 1,804.00 "
+  },
+  {
+    "NO": "139",
+    "ITEM": "SAKURA OIL FILTER C-1523",
+    "QTY": "2",
+    "MRP": " 5,300.00 ",
+    "COST": " 4,346.00 "
+  },
+  {
+    "NO": "140",
+    "ITEM": "SAKURA OIL FILTER C-1712",
+    "QTY": "3",
+    "MRP": " 2,500.00 ",
+    "COST": " 2,050.00 "
+  },
+  {
+    "NO": "141",
+    "ITEM": "SAKURA OIL FILTER C-7976",
+    "QTY": "3",
+    "MRP": " 2,425.00 ",
+    "COST": " 1,988.50 "
+  },
+  {
+    "NO": "142",
+    "ITEM": "SAKURA OIL FILTER C-5302",
+    "QTY": "2",
+    "MRP": " 3,625.00 ",
+    "COST": " 2,972.50 "
+  },
+  {
+    "NO": "143",
+    "ITEM": "SAKURA OIL FILTER C-1515",
+    "QTY": "4",
+    "MRP": " 4,280.00 ",
+    "COST": " 3,509.60 "
+  },
+  {
+    "NO": "144",
+    "ITEM": "SAKURA OIL FILTER C-1524",
+    "QTY": "2",
+    "MRP": " 5,575.00 ",
+    "COST": " 4,571.50 "
+  },
+  {
+    "NO": "145",
+    "ITEM": "SAKURA OIL FILTER O-1511",
+    "QTY": "3",
+    "MRP": " 2,250.00 ",
+    "COST": " 1,845.00 "
+  },
+  {
+    "NO": "146",
+    "ITEM": "VIC OIL FILTER C-406",
+    "QTY": "2",
+    "MRP": " 2,250.00 ",
+    "COST": " 1,845.00 "
+  },
+  {
+    "NO": "147",
+    "ITEM": "ELEMFIL FC-218 OIL FILTER",
+    "QTY": "3",
+    "MRP": " 1,215.00 ",
+    "COST": " 996.30 "
+  },
+  {
+    "NO": "148",
+    "ITEM": "SF OIL SFF 8422",
+    "QTY": "3",
+    "MRP": " 3,450.00 ",
+    "COST": " 2,829.00 "
+  },
+  {
+    "NO": "149",
+    "ITEM": "SF-5052",
+    "QTY": "3",
+    "MRP": " 1,680.00 ",
+    "COST": " 1,377.60 "
+  },
+  {
+    "NO": "150",
+    "ITEM": "SFO-3349",
+    "QTY": "2",
+    "MRP": " 2,980.00 ",
+    "COST": " 2,443.60 "
+  },
+  {
+    "NO": "151",
+    "ITEM": "KAYSER OIL FILTER KAS-809",
+    "QTY": "5",
+    "MRP": " 920.00 ",
+    "COST": " 754.40 "
+  },
+  {
+    "NO": "152",
+    "ITEM": "LAYPARTS OIL FILTER ",
+    "QTY": "4",
+    "MRP": " 1,900.00 ",
+    "COST": " 1,558.00 "
+  },
+  {
+    "NO": "153",
+    "ITEM": "AIR FILTER AS-1031",
+    "QTY": "2",
+    "MRP": " 5,725.00 ",
+    "COST": " 4,694.50 "
+  },
+  {
+    "NO": "154",
+    "ITEM": "AIR FILTER A-1039",
+    "QTY": "2",
+    "MRP": " 5,725.00 ",
+    "COST": " 4,694.50 "
+  },
+  {
+    "NO": "155",
+    "ITEM": "AIR FILTER AS-1708",
+    "QTY": "2",
+    "MRP": " 3,750.00 ",
+    "COST": " 3,075.00 "
+  },
+  {
+    "NO": "156",
+    "ITEM": "AIR FILTER AS-1712",
+    "QTY": "2",
+    "MRP": " 3,750.00 ",
+    "COST": " 3,075.00 "
+  },
+  {
+    "NO": "157",
+    "ITEM": "AIR FILTER A-1039",
+    "QTY": "1",
+    "MRP": " 5,725.00 ",
+    "COST": " 4,694.50 "
+  },
+  {
+    "NO": "158",
+    "ITEM": "AIR FILTER A-1510",
+    "QTY": "1",
+    "MRP": " 5,500.00 ",
+    "COST": " 4,510.00 "
+  },
+  {
+    "NO": "159",
+    "ITEM": "AIR FILTER A-1118",
+    "QTY": "2",
+    "MRP": " 3,950.00 ",
+    "COST": " 3,239.00 "
+  },
+  {
+    "NO": "160",
+    "ITEM": "AIR FILTER A-1502",
+    "QTY": "2",
+    "MRP": " 4,300.00 ",
+    "COST": " 3,526.00 "
+  },
+  {
+    "NO": "161",
+    "ITEM": "AIR FILTER A-1167",
+    "QTY": "2",
+    "MRP": " 2,750.00 ",
+    "COST": " 2,255.00 "
+  },
+  {
+    "NO": "162",
+    "ITEM": "AIR FILTER A-1117",
+    "QTY": "2",
+    "MRP": " 2,650.00 ",
+    "COST": " 2,173.00 "
+  },
+  {
+    "NO": "163",
+    "ITEM": "AIR FILTER AS-1510",
+    "QTY": "1",
+    "MRP": " 5,500.00 ",
+    "COST": " 4,510.00 "
+  },
+  {
+    "NO": "164",
+    "ITEM": "AIR FILTER A-1714",
+    "QTY": "2",
+    "MRP": " 7,150.00 ",
+    "COST": " 5,863.00 "
+  },
+  {
+    "NO": "165",
+    "ITEM": "AIR FILTER A-1007",
+    "QTY": "2",
+    "MRP": " 3,200.00 ",
+    "COST": " 2,624.00 "
+  },
+  {
+    "NO": "166",
+    "ITEM": "AIR FILTER KAYSER KA-170 17801-54100",
+    "QTY": "2",
+    "MRP": " 2,260.00 ",
+    "COST": " 1,853.20 "
+  },
+  {
+    "NO": "167",
+    "ITEM": "AIR FILTER LH113",
+    "QTY": "1",
+    "MRP": " 2,260.00 ",
+    "COST": " 1,853.20 "
+  },
+  {
+    "NO": "168",
+    "ITEM": "AIR FILTER SUMO AF-31008",
+    "QTY": "3",
+    "MRP": " 1,700.00 ",
+    "COST": " 1,394.00 "
+  },
+  {
+    "NO": "169",
+    "ITEM": "AIR FILTER TOYOTA 17801-0C010",
+    "QTY": "1",
+    "MRP": " 1,800.00 ",
+    "COST": " 1,476.00 "
+  },
+  {
+    "NO": "170",
+    "ITEM": "NIPPLE 6*50",
+    "QTY": "33",
+    "MRP": " 100.00 ",
+    "COST": " 82.00 "
+  },
+  {
+    "NO": "171",
+    "ITEM": "NIPPLE 8*20",
+    "QTY": "37",
+    "MRP": " 100.00 ",
+    "COST": " 82.00 "
+  },
+  {
+    "NO": "172",
+    "ITEM": "NIPPLE  X",
+    "QTY": "37",
+    "MRP": " 75.00 ",
+    "COST": " 61.50 "
+  },
+  {
+    "NO": "173",
+    "ITEM": "NIPPLE  Y",
+    "QTY": "38",
+    "MRP": " 75.00 ",
+    "COST": " 61.50 "
+  },
+  {
+    "NO": "174",
+    "ITEM": "PREMIER WIPER  12\"\"",
+    "QTY": "3",
+    "MRP": " 1,750.00 ",
+    "COST": " 1,435.00 "
+  },
+  {
+    "NO": "175",
+    "ITEM": "PREMIER WIPER  14\"\"",
+    "QTY": "3",
+    "MRP": " 1,850.00 ",
+    "COST": " 1,517.00 "
+  },
+  {
+    "NO": "176",
+    "ITEM": "PREMIER WIPER  16\"\"",
+    "QTY": "3",
+    "MRP": " 1,900.00 ",
+    "COST": " 1,558.00 "
+  },
+  {
+    "NO": "177",
+    "ITEM": "PREMIER WIPER  17\"\"",
+    "QTY": "2",
+    "MRP": " 1,950.00 ",
+    "COST": " 1,599.00 "
+  },
+  {
+    "NO": "178",
+    "ITEM": "PREMIER WIPER  18\"\"",
+    "QTY": "3",
+    "MRP": " 2,100.00 ",
+    "COST": " 1,722.00 "
+  },
+  {
+    "NO": "179",
+    "ITEM": "PREMIER WIPER  19\"\"",
+    "QTY": "2",
+    "MRP": " 2,200.00 ",
+    "COST": " 1,804.00 "
+  },
+  {
+    "NO": "180",
+    "ITEM": "PREMIER WIPER  20\"\"",
+    "QTY": "3",
+    "MRP": " 2,250.00 ",
+    "COST": " 1,845.00 "
+  },
+  {
+    "NO": "181",
+    "ITEM": "PREMIER WIPER 21\"\"",
+    "QTY": "1",
+    "MRP": " 2,350.00 ",
+    "COST": " 1,927.00 "
+  },
+  {
+    "NO": "182",
+    "ITEM": "PREMIER WIPER  22\"\"",
+    "QTY": "2",
+    "MRP": " 2,450.00 ",
+    "COST": " 2,009.00 "
+  },
+  {
+    "NO": "183",
+    "ITEM": "PREMIER WIPER  24\"\"",
+    "QTY": "3",
+    "MRP": " 2,600.00 ",
+    "COST": " 2,132.00 "
+  },
+  {
+    "NO": "184",
+    "ITEM": "PREMIER WIPER  26\"\"",
+    "QTY": "3",
+    "MRP": " 2,750.00 ",
+    "COST": " 2,255.00 "
+  },
+  {
+    "NO": "185",
+    "ITEM": "777 WIPER 24\"\"",
+    "QTY": "2",
+    "MRP": " 1,200.00 ",
+    "COST": " 984.00 "
+  },
+  {
+    "NO": "186",
+    "ITEM": " NLK (B)WIPER 22\"\"",
+    "QTY": "2",
+    "MRP": " 1,200.00 ",
+    "COST": " 984.00 "
+  },
+  {
+    "NO": "187",
+    "ITEM": " NLK (R)WIPER 21\"\"",
+    "QTY": "2",
+    "MRP": " 1,700.00 ",
+    "COST": " 1,394.00 "
+  },
+  {
+    "NO": "188",
+    "ITEM": " DOBO WIPER 19\"\"",
+    "QTY": "4",
+    "MRP": " 1,200.00 ",
+    "COST": " 984.00 "
+  },
+  {
+    "NO": "189",
+    "ITEM": " YTK WIPER 18\"\"",
+    "QTY": "2",
+    "MRP": " 1,200.00 ",
+    "COST": " 984.00 "
+  },
+  {
+    "NO": "190",
+    "ITEM": " YACON WIPER 17\"\"",
+    "QTY": "4",
+    "MRP": " 1,200.00 ",
+    "COST": " 984.00 "
+  },
+  {
+    "NO": "191",
+    "ITEM": " YTK WIPER 16\"\"",
+    "QTY": "4",
+    "MRP": " 1,200.00 ",
+    "COST": " 984.00 "
+  },
+  {
+    "NO": "192",
+    "ITEM": "HIGH PRESHER POWDER 4KG",
+    "QTY": "3",
+    "MRP": " 2,980.00 ",
+    "COST": " 2,443.60 "
+  },
+  {
+    "NO": "193",
+    "ITEM": "RAIHAN AIR FRESHNER LEMON",
+    "QTY": "15",
+    "MRP": " 400.00 ",
+    "COST": " 328.00 "
+  },
+  {
+    "NO": "194",
+    "ITEM": "RAIHAN AIR FRESHNER COOL ICE",
+    "QTY": "17",
+    "MRP": " 400.00 ",
+    "COST": " 328.00 "
+  },
+  {
+    "NO": "195",
+    "ITEM": "RAIHAN AIR FRESHNER OUD",
+    "QTY": "16",
+    "MRP": " 400.00 ",
+    "COST": " 328.00 "
+  },
+  {
+    "NO": "196",
+    "ITEM": "AER SPRAY",
+    "QTY": "3",
+    "MRP": " 1,600.00 ",
+    "COST": " 1,312.00 "
+  },
+  {
+    "NO": "197",
+    "ITEM": "CHAMOIS TOWET (S)",
+    "QTY": "5",
+    "MRP": " 650.00 ",
+    "COST": " 533.00 "
+  },
+  {
+    "NO": "198",
+    "ITEM": "CHAMOIS TOWET (L)",
+    "QTY": "5",
+    "MRP": " 1,000.00 ",
+    "COST": " 820.00 "
+  },
+  {
+    "NO": "199",
+    "ITEM": "TOWEL",
+    "QTY": "17",
+    "MRP": " 350.00 ",
+    "COST": " 287.00 "
+  },
+  {
+    "NO": "200",
+    "ITEM": "GODREJ SPRAY 220ML",
+    "QTY": "6",
+    "MRP": " 1,000.00 ",
+    "COST": " 820.00 "
+  },
+  {
+    "NO": "201",
+    "ITEM": "GODREJ AER 475ML",
+    "QTY": "6",
+    "MRP": " 800.00 ",
+    "COST": " 656.00 "
+  },
+  {
+    "NO": "202",
+    "ITEM": "FLASH SPRAY475ML",
+    "QTY": "3",
+    "MRP": " 695.00 ",
+    "COST": " 569.90 "
+  },
+  {
+    "NO": "203",
+    "ITEM": "GODREJ POWER POCKET  LEMON",
+    "QTY": "11",
+    "MRP": " 360.00 ",
+    "COST": " 295.20 "
+  },
+  {
+    "NO": "204",
+    "ITEM": "GODREJ POWER POCKET  SEA BREEZA",
+    "QTY": "21",
+    "MRP": " 360.00 ",
+    "COST": " 295.20 "
+  },
+  {
+    "NO": "205",
+    "ITEM": "GODREJ POWER POCKET  JASMINE",
+    "QTY": "20",
+    "MRP": " 360.00 ",
+    "COST": " 295.20 "
+  },
+  {
+    "NO": "206",
+    "ITEM": "GODREJ POWER POCKET  ROSE",
+    "QTY": "9",
+    "MRP": " 360.00 ",
+    "COST": " 295.20 "
+  },
+  {
+    "NO": "207",
+    "ITEM": "GODREJ POWER POCKET  BERRY",
+    "QTY": "21",
+    "MRP": " 360.00 ",
+    "COST": " 295.20 "
+  },
+  {
+    "NO": "208",
+    "ITEM": "GODREJ POWER POCKET  LAVENDER",
+    "QTY": "15",
+    "MRP": " 360.00 ",
+    "COST": " 295.20 "
+  },
+  {
+    "NO": "209",
+    "ITEM": "4X COOLANT 346ML",
+    "QTY": "8",
+    "MRP": " 1,450.00 ",
+    "COST": " 1,189.00 "
+  },
+  {
+    "NO": "210",
+    "ITEM": "QUICK WAX 750ML",
+    "QTY": "3",
+    "MRP": " 350.00 ",
+    "COST": " 287.00 "
+  },
+  {
+    "NO": "211",
+    "ITEM": "PLASTIC REFURBISHING AND BRIGHT 500ML",
+    "QTY": "2",
+    "MRP": " 2,780.00 ",
+    "COST": " 2,279.60 "
+  },
+  {
+    "NO": "212",
+    "ITEM": "BRAKE CLEANER 450ML",
+    "QTY": "7",
+    "MRP": " 1,100.00 ",
+    "COST": " 902.00 "
+  },
+  {
+    "NO": "213",
+    "ITEM": "CARE WINDOW LUBRICANT 450ML",
+    "QTY": "3",
+    "MRP": " 1,100.00 ",
+    "COST": " 902.00 "
+  },
+  {
+    "NO": "214",
+    "ITEM": "ENGINE SURFACE DEGREASER 500ML",
+    "QTY": "9",
+    "MRP": " 1,850.00 ",
+    "COST": " 1,517.00 "
+  },
+  {
+    "NO": "215",
+    "ITEM": "CRYSTAY WAX 473ML",
+    "QTY": "1",
+    "MRP": " 2,600.00 ",
+    "COST": " 2,132.00 "
+  },
+  {
+    "NO": "216",
+    "ITEM": "RAIN STAIN REMOVER",
+    "QTY": "1",
+    "MRP": " 7,000.00 ",
+    "COST": " 5,740.00 "
+  },
+  {
+    "NO": "217",
+    "ITEM": "GREAR OIL  18L",
+    "QTY": "1",
+    "MRP": " 46,000.00 ",
+    "COST": " 37,720.00 "
+  },
+  {
+    "NO": "218",
+    "ITEM": "4XL COOLENT",
+    "QTY": "3",
+    "MRP": " 5,300.00 ",
+    "COST": " 4,346.00 "
+  },
+  {
+    "NO": "219",
+    "ITEM": "BRUSH",
+    "QTY": "3",
+    "MRP": " 500.00 ",
+    "COST": " 410.00 "
+  },
+  {
+    "NO": "220",
+    "ITEM": "BRUSH (S)",
+    "QTY": "14",
+    "MRP": " 50.00 ",
+    "COST": " 41.00 "
+  },
+  {
+    "NO": "221",
+    "ITEM": "DUSTPAN",
+    "QTY": "4",
+    "MRP": " 340.00 ",
+    "COST": " 278.80 "
+  },
+  {
+    "NO": "222",
+    "ITEM": "WIPER (S)",
+    "QTY": "4",
+    "MRP": " 300.00 ",
+    "COST": " 246.00 "
+  },
+  {
+    "NO": "223",
+    "ITEM": "RUBBER WIPER",
+    "QTY": "1",
+    "MRP": " 650.00 ",
+    "COST": " 533.00 "
+  },
+  {
+    "NO": "224",
+    "ITEM": "BRUSH (B)",
+    "QTY": "2",
+    "MRP": " 500.00 ",
+    "COST": " 410.00 "
+  },
+  {
+    "NO": "225",
+    "ITEM": "BRUSH (BS)",
+    "QTY": "2",
+    "MRP": " 350.00 ",
+    "COST": " 287.00 "
+  },
+  {
+    "NO": "225",
+    "ITEM": "OIL PUMP",
+    "QTY": "2",
+    "MRP": " 750.00 ",
+    "COST": " 615.00 "
+  },
+  {
+    "NO": "",
+    "ITEM": "",
+    "QTY": "",
+    "MRP": "",
+    "COST": ""
+  },
+  {
+    "NO": "",
+    "ITEM": "",
+    "QTY": "",
+    "MRP": "",
+    "COST": ""
+  },
+  {
+    "NO": "",
+    "ITEM": "",
+    "QTY": "",
+    "MRP": "",
+    "COST": ""
+  },
+  {
+    "NO": "",
+    "ITEM": "",
+    "QTY": "",
+    "MRP": "",
+    "COST": ""
+  }
+]
