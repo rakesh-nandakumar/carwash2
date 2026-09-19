@@ -371,26 +371,26 @@
         <div class="modal-body">
             <div class="payment-summary">
                 <div class="summary-row">
-                    <span>Total Due:</span>
+                    <span>Total Due</span>
                     <span class="amount">Rs. {{ number_format($calculation['total'], 2) }}</span>
                 </div>
                 <div class="summary-row">
-                    <span>Payment Method:</span>
+                    <span>Payment Method</span>
                     <span id="confirmPaymentMethod">-</span>
                 </div>
                 <div class="summary-row editable">
-                    <span>Amount Received <small style="color: #6b7280; font-weight: normal;">(editable)</small></span>
+                    <span>Amount Received</span>
                     <div class="amount-edit-wrapper">
                         <span class="currency-prefix">Rs.</span>
                         <input type="number" id="editAmountReceived" step="0.01" value="0.00" oninput="updateBalance()" onfocus="this.select()" placeholder="Enter amount">
                     </div>
                 </div>
                 <div class="summary-row balance-row">
-                    <span>Balance:</span>
+                    <span>Balance</span>
                     <span id="confirmBalance">Rs. 0.00</span>
                 </div>
             </div>
-            <p class="confirmation-text">Are you sure you want to process this payment?</p>
+            <p class="confirmation-text">⚠️ Are you sure you want to process this payment?</p>
         </div>
         <div class="modal-footer">
             <button type="button" class="secondary" onclick="closePaymentConfirmationModal()">Cancel</button>
@@ -1697,72 +1697,80 @@ function calculateBalance() {
 
 .modal-content {
     background: white;
-    border-radius: 12px;
-    max-width: 400px;
+    border-radius: 16px;
+    max-width: 480px;
     width: 90%;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    overflow: hidden;
 }
 
 .modal-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 20px 24px;
-    border-bottom: 1px solid #e5e7eb;
+    padding: 24px 28px;
+    border-bottom: 1px solid #f1f5f9;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
 }
 
 .modal-header h2 {
     margin: 0;
-    font-size: 18px;
-    font-weight: 600;
-    color: #111827;
+    font-size: 20px;
+    font-weight: 700;
+    color: #1e293b;
+    letter-spacing: -0.025em;
 }
 
 .close-btn {
-    background: none;
+    background: #f1f5f9;
     border: none;
-    font-size: 28px;
+    font-size: 24px;
     cursor: pointer;
-    color: #6b7280;
+    color: #64748b;
     padding: 0;
-    width: 32px;
-    height: 32px;
+    width: 36px;
+    height: 36px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 6px;
+    border-radius: 8px;
     transition: all 0.2s;
+    font-weight: 300;
 }
 
 .close-btn:hover {
-    background: #f3f4f6;
-    color: #111827;
+    background: #e2e8f0;
+    color: #1e293b;
+    transform: rotate(90deg);
 }
 
 .modal-body {
-    padding: 20px 24px;
-    text-align: center;
+    padding: 28px;
+    text-align: left;
 }
 
 .modal-body p {
     margin: 0;
-    color: #374151;
-    font-size: 16px;
+    color: #64748b;
+    font-size: 15px;
+    line-height: 1.6;
 }
 
 .payment-summary {
-    background: #f8fafc;
-    border-radius: 8px;
-    padding: 16px;
-    margin-bottom: 16px;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 20px;
+    border: 1px solid #e2e8f0;
 }
 
 .summary-row {
     display: flex;
     justify-content: space-between;
-    padding: 8px 0;
-    border-bottom: 1px solid #e5e7eb;
-    font-size: 14px;
+    align-items: center;
+    padding: 16px 0;
+    border-bottom: 1px solid #e2e8f0;
+    font-size: 15px;
 }
 
 .summary-row:last-child {
@@ -1770,32 +1778,59 @@ function calculateBalance() {
 }
 
 .summary-row span:first-child {
-    color: #6b7280;
+    color: #64748b;
     font-weight: 500;
+    font-size: 14px;
 }
 
 .summary-row span:last-child {
-    color: #111827;
+    color: #1e293b;
     font-weight: 600;
+    font-size: 15px;
 }
 
 .summary-row .amount {
-    font-size: 18px;
+    font-size: 20px;
     color: #059669;
+    font-weight: 700;
 }
 
 .summary-row.balance-row span:last-child {
     color: #dc2626;
+    font-weight: 700;
+    font-size: 20px;
+}
+
+.summary-row.editable {
+    padding: 16px 0;
+    background: rgba(59, 130, 246, 0.05);
+    border-radius: 8px;
+    margin: 8px -12px;
+    padding: 16px 12px;
+    border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.summary-row.editable span:first-child {
+    color: #2563eb;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.summary-row.editable small {
+    color: #3b82f6;
+    font-weight: 500;
+    font-size: 12px;
+    margin-left: 4px;
 }
 
 .summary-row.editable input {
-    padding: 10px 12px;
+    padding: 10px 14px;
     border: 2px solid #3b82f6;
     border-radius: 8px;
     font-size: 16px;
     font-weight: 600;
     text-align: right;
-    width: 140px;
+    width: 160px;
     background: white;
     transition: all 0.2s ease;
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
@@ -1811,54 +1846,68 @@ function calculateBalance() {
 .amount-edit-wrapper {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 6px;
 }
 
 .amount-edit-wrapper .currency-prefix {
-    color: #6b7280;
-    font-weight: 600;
+    color: #2563eb;
+    font-weight: 700;
     font-size: 16px;
 }
 
 .confirmation-text {
-    color: #6b7280;
-    font-size: 14px;
-    margin-bottom: 12px;
+    color: #64748b;
+    font-size: 15px;
+    margin-bottom: 20px;
+    padding: 16px;
+    background: #fef3c7;
+    border-left: 4px solid #f59e0b;
+    border-radius: 8px;
+    font-weight: 500;
 }
 
 .modal-footer {
     display: flex;
     justify-content: flex-end;
     gap: 12px;
-    padding: 20px 24px;
-    border-top: 1px solid #e5e7eb;
+    padding: 24px 28px;
+    border-top: 1px solid #f1f5f9;
+    background: #f8fafc;
 }
 
 .modal-footer button {
-    padding: 12px 24px;
+    padding: 14px 28px;
     border: none;
-    border-radius: 8px;
-    font-size: 14px;
+    border-radius: 10px;
+    font-size: 15px;
     font-weight: 600;
     cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .modal-footer button.secondary {
-    background: #e5e7eb;
-    color: #374151;
+    background: white;
+    color: #64748b;
+    border: 2px solid #e2e8f0;
 }
 
 .modal-footer button.secondary:hover {
-    background: #d1d5db;
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+    transform: translateY(-1px);
 }
 
 .modal-footer button.primary {
-    background: #3b82f6;
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
     color: white;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
 .modal-footer button.primary:hover {
-    background: #2563eb;
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
 }
 </style>
 

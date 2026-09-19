@@ -188,7 +188,6 @@ class PermissionCatalog
                     'print_options',
                     'open_shift',
                     'close_shift',
-                    'cash_drop',
                     'cash_in',
                     'cash_out',
                 ],

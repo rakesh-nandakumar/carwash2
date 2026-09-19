@@ -187,8 +187,9 @@ class CashMovementService
             $userId
         ) {
             $till = $this->getSelectedTill();
+            $currentClosure = $this->lastClosure($till);
 
-            $expected = $this->expectedBalance($till);
+            $expected = $this->expectedBalance($till, $currentClosure && !$currentClosure->closed_at ? $currentClosure : null);
 
             if ($amount > $expected) {
                 throw new RuntimeException(
@@ -217,45 +218,34 @@ class CashMovementService
         });
     }
 
-    public function recordCashDrop(
-        float $amount,
-        string $reason = 'Cash Drop',
-        ?string $description = null,
-        ?int $userId = null
-    ): CashMovement {
-        $movement = $this->record(
-            type: 'out',
-            source: 'drop',
-            amount: $amount,
-            reason: $reason,
-            description: $description,
-            userId: $userId,
-        );
-
-        $this->auditService->log('cash.drop', "Cash drop recorded: Rs. {$amount} - {$reason}", 'warning', 'tenant_user', auth()->user()->email, [
-            'movement_id' => $movement->id,
-            'amount' => $amount,
-            'reason' => $reason,
-            'description' => $description,
-        ]);
-
-        return $movement;
-    }
-
-    public function expectedBalance(?Till $till = null): float
+    public function expectedBalance(?Till $till = null, ?TillClosure $closure = null): float
     {
         $till ??= $this->getSelectedTill();
 
-        $in = (float) $till->cashMovements()
+        $movements = $till->cashMovements();
+
+        // Filter by closure if provided
+        if ($closure) {
+            $movements = $movements->where('till_closure_id', $closure->id);
+        }
+
+        $in = (float) $movements
             ->where('type', 'in')
             ->sum('amount');
 
-        $out = (float) $till->cashMovements()
+        $out = (float) $movements
             ->where('type', 'out')
             ->sum('amount');
 
+        $openingBalance = $closure ? $closure->opening_balance : $till->opening_balance;
+
+        // If there are no movements for this closure yet, return just the opening balance
+        if ($in === 0.0 && $out === 0.0 && $closure) {
+            return round((float) $openingBalance, 2);
+        }
+
         return round(
-            (float) $till->opening_balance + $in - $out,
+            (float) $openingBalance + $in - $out,
             2
         );
     }
@@ -301,8 +291,6 @@ class CashMovementService
                 'total_sales' => 0,
                 'cash_in' => 0,
                 'cash_out' => 0,
-                'cash_refunds' => 0,
-                'cash_drops' => 0,
                 'notes' => $notes,
                 'opened_at' => now(),
                 'closed_at' => null,
@@ -336,7 +324,7 @@ class CashMovementService
             }
 
             $sinceOpening = $till->cashMovements()
-                ->where('created_at', '>=', $closure->opened_at);
+                ->where('till_closure_id', $closure->id);
 
             $cashSales = (float) (clone $sinceOpening)
                 ->where('type', 'in')
@@ -353,17 +341,7 @@ class CashMovementService
                 ->where('source', 'manual')
                 ->sum('amount');
 
-            $cashRefunds = (float) (clone $sinceOpening)
-                ->where('type', 'out')
-                ->where('source', 'refund')
-                ->sum('amount');
-
-            $cashDrops = (float) (clone $sinceOpening)
-                ->where('type', 'out')
-                ->where('source', 'drop')
-                ->sum('amount');
-
-            // Get payment method sales from payments
+            // Get payment method sales from payments (since closure opened)
             $payments = \App\Models\Payment::where('created_at', '>=', $closure->opened_at);
 
             $cardSales = (float) (clone $payments)
@@ -392,7 +370,7 @@ class CashMovementService
             $totalSales = $cashSales + $cardSales + $mobileMoneySales + $bankTransferSales + $chequeSales + $otherPaymentSales;
 
             $expectedBalance = round(
-                $closure->opening_balance + $cashSales + $cashIn - $cashOut - $cashRefunds - $cashDrops,
+                $closure->opening_balance + $cashSales + $cashIn - $cashOut,
                 2
             );
 
@@ -411,11 +389,16 @@ class CashMovementService
                 'total_sales' => $totalSales,
                 'cash_in' => $cashIn,
                 'cash_out' => $cashOut,
-                'cash_refunds' => $cashRefunds,
-                'cash_drops' => $cashDrops,
                 'denomination_breakdown' => $denominationBreakdown,
                 'notes' => $notes,
                 'closed_at' => now(),
+            ]);
+
+            \Log::info('Till closed', [
+                'closure_id' => $closure->id,
+                'opening_balance' => $closure->opening_balance,
+                'counted_balance' => $closure->counted_balance,
+                'expected_balance' => $closure->expected_balance,
             ]);
 
             // Release the till when shift is closed so it doesn't show as "In Use"
@@ -428,10 +411,30 @@ class CashMovementService
     public function getCashMovementSummary(?Till $till = null, ?\DateTime $since = null): array
     {
         $till ??= $this->getSelectedTill();
-        $since ??= $this->lastClosure($till)?->opened_at ?? $till->created_at;
+        $currentClosure = $this->lastClosure($till);
+        $since ??= $currentClosure?->opened_at ?? $till->created_at;
 
         $movements = $till->cashMovements()
             ->where('created_at', '>=', $since);
+
+        // Filter by current closure if it's open
+        if ($currentClosure && !$currentClosure->closed_at) {
+            $movements = $movements->where('till_closure_id', $currentClosure->id);
+        } else {
+            // If till is closed, return empty summary
+            return [
+                'cash_sales' => 0,
+                'card_sales' => 0,
+                'mobile_money_sales' => 0,
+                'bank_transfer_sales' => 0,
+                'cheque_sales' => 0,
+                'other_payment_sales' => 0,
+                'total_sales' => 0,
+                'cash_in' => 0,
+                'cash_out' => 0,
+                'net_change' => 0,
+            ];
+        }
 
         $cashSales = (float) (clone $movements)
             ->where('type', 'in')
@@ -448,18 +451,13 @@ class CashMovementService
             ->where('source', 'manual')
             ->sum('amount');
 
-        $cashRefunds = (float) (clone $movements)
-            ->where('type', 'out')
-            ->where('source', 'refund')
-            ->sum('amount');
-
-        $cashDrops = (float) (clone $movements)
-            ->where('type', 'out')
-            ->where('source', 'drop')
-            ->sum('amount');
-
         // Get payment method sales from payments
-        $payments = \App\Models\Payment::where('created_at', '>=', $since);
+        // Filter by current closure if it's open
+        if ($currentClosure && !$currentClosure->closed_at) {
+            $payments = \App\Models\Payment::where('created_at', '>=', $currentClosure->opened_at);
+        } else {
+            $payments = \App\Models\Payment::where('created_at', '>=', $since);
+        }
 
         $cardSales = (float) (clone $payments)
             ->where('method', 'card')
@@ -496,9 +494,7 @@ class CashMovementService
             'total_sales' => $totalSales,
             'cash_in' => $cashIn,
             'cash_out' => $cashOut,
-            'cash_refunds' => $cashRefunds,
-            'cash_drops' => $cashDrops,
-            'net_change' => round($cashSales + $cashIn - $cashOut - $cashRefunds - $cashDrops, 2),
+            'net_change' => round($cashSales + $cashIn - $cashOut, 2),
         ];
     }
 
@@ -519,10 +515,17 @@ class CashMovementService
         }
 
         $till ??= $this->getSelectedTill();
+        $currentClosure = $this->lastClosure($till);
+
+        $closureId = null;
+        if ($currentClosure && !$currentClosure->closed_at) {
+            $closureId = $currentClosure->id;
+        }
 
         $movement = new CashMovement([
             'tenant_id' => $till->tenant_id,
             'till_id' => $till->id,
+            'till_closure_id' => $closureId,
             'user_id' => $userId ?? auth()->id(),
             'type' => $type,
             'source' => $source,

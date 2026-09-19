@@ -28,8 +28,18 @@ class TillClosureController extends Controller
             );
             $previousClosingBalance = 0;
         } else {
-            $summary = $this->cashMovements->getCashMovementSummary($till);
-            $expectedBalance = $this->cashMovements->expectedBalance($till);
+            // When till is closed, show zero for all current shift values
+            $summary = [
+                'cash_sales' => 0,
+                'card_sales' => 0,
+                'mobile_money_sales' => 0,
+                'bank_transfer_sales' => 0,
+                'total_sales' => 0,
+                'cash_in' => 0,
+                'cash_out' => 0,
+                'net_change' => 0,
+            ];
+            $expectedBalance = 0;
             $previousClosingBalance = $currentClosure ? $currentClosure->counted_balance : 0;
         }
 
@@ -68,6 +78,7 @@ class TillClosureController extends Controller
             ->first();
 
         $hasPreviousClosure = $userLastClosure !== null;
+        // Use counted_balance (the manual amount entered when closing) as the previous closing balance
         $userPreviousClosingBalance = $hasPreviousClosure ? $userLastClosure->counted_balance : 0;
 
         return view('cashier.till-action', compact(
@@ -165,6 +176,15 @@ class TillClosureController extends Controller
                 ->latest('closed_at')
                 ->first();
 
+            // Calculate opening balance based on selection
+            if ($data['balance_option'] === 'previous' && $userLastClosure) {
+                $openingBalance = $userLastClosure->counted_balance;
+            } elseif ($data['balance_option'] === 'manual') {
+                $openingBalance = (float) $data['manual_balance'];
+            } else {
+                $openingBalance = 0;
+            }
+
             // Handle till selection
             $selectedTill = \App\Models\Till::findOrFail($data['till_id']);
             
@@ -243,14 +263,8 @@ class TillClosureController extends Controller
                 'user_name' => $user->name,
             ]);
 
-            // Handle balance selection
-            if ($data['balance_option'] === 'previous' && $userLastClosure) {
-                $openingBalance = $userLastClosure->counted_balance;
-                \Log::info('Using previous balance', ['balance' => $openingBalance]);
-            } else {
-                $openingBalance = (float) $data['manual_balance'];
-                \Log::info('Using manual balance', ['balance' => $openingBalance]);
-            }
+            // Handle balance selection - already calculated above (lines 178-185)
+            \Log::info('Opening till with balance', ['balance' => $openingBalance]);
 
             try {
                 \Log::info('Attempting to open shift', ['till_id' => $selectedTill->id, 'balance' => $openingBalance]);

@@ -498,10 +498,6 @@ Route::prefix('{tenant}')
                 ->name('cashier.cash-out')
                 ->middleware('permission:cashier.cash_out');
 
-            Route::post('/cashier/cash-drop', [CashierController::class, 'cashDrop'])
-                ->name('cashier.cash-drop')
-                ->middleware('permission:cashier.cash_drop');
-
             Route::get('/cashier/till-action', [TillClosureController::class, 'showTillAction'])
                 ->name('cashier.till-action')
                 ->middleware('permission:cashier.open_shift');

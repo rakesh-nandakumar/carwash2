@@ -25,8 +25,6 @@ class TillClosure extends Model
         'total_sales' => 'decimal:2',
         'cash_in' => 'decimal:2',
         'cash_out' => 'decimal:2',
-        'cash_refunds' => 'decimal:2',
-        'cash_drops' => 'decimal:2',
         'denomination_breakdown' => 'array',
         'opened_at' => 'datetime',
         'closed_at' => 'datetime',

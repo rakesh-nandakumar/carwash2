@@ -6,166 +6,128 @@
         <p>{{ $isOpen ? 'End your working day by closing the till' : 'Start your working day by opening the till' }}</p>
     </div>
 
-    <div class="till-action-card">
-        <div class="till-info">
-            <h2>{{ $till->name }}</h2>
-            <p>Current Till</p>
+    <div class="till-action-content">
+        <div class="till-info-card">
+            <div class="till-details">
+                <h2>{{ $till->name }} ({{ $till->code }})</h2>
+            </div>
+
+            @if($isOpen)
+                <div class="shift-status-card">
+                    <span class="status-badge {{ $isOpen ? 'active' : 'inactive' }}">{{ $isOpen ? 'Till Open' : 'Till Closed' }}</span>
+                    <p>{{ $isOpen ? 'Opened at ' . $currentClosure->opened_at->format('g:i A') : 'No till is currently open' }}</p>
+                </div>
+            @endif
         </div>
 
         @if($isOpen)
-            <div class="shift-status">
-                <span class="status-badge active">Till Open</span>
-                <p class="status-text">Till opened at {{ $currentClosure->opened_at->format('g:i A') }}</p>
-            </div>
-
-            <div class="balance-summary">
-                <div class="balance-item">
-                    <span>Opening Balance</span>
-                    <strong>Rs. {{ number_format($currentClosure->opening_balance, 2) }}</strong>
-                </div>
-
-                <div class="balance-item">
-                    <span>Cash Sales</span>
-                    <strong>Rs. {{ number_format($summary['cash_sales'], 2) }}</strong>
-                </div>
-
-                <div class="balance-item">
-                    <span>Card Sales</span>
-                    <strong>Rs. {{ number_format($summary['card_sales'], 2) }}</strong>
-                </div>
-
-                <div class="balance-item">
-                    <span>UPI Sales</span>
-                    <strong>Rs. {{ number_format($summary['mobile_money_sales'], 2) }}</strong>
-                </div>
-
-                <div class="balance-item">
-                    <span>Bank Transfer Sales</span>
-                    <strong>Rs. {{ number_format($summary['bank_transfer_sales'], 2) }}</strong>
-                </div>
-
-                <div class="balance-item">
-                    <span>Total Sales</span>
-                    <strong>Rs. {{ number_format($summary['total_sales'], 2) }}</strong>
-                </div>
-
-                <div class="balance-item">
-                    <span>Cash In</span>
-                    <strong>Rs. {{ number_format($summary['cash_in'], 2) }}</strong>
-                </div>
-
-                <div class="balance-item">
-                    <span>Cash Out</span>
-                    <strong>Rs. {{ number_format($summary['cash_out'], 2) }}</strong>
-                </div>
-
-                <div class="balance-item highlight">
-                    <span>Expected Cash Balance</span>
-                    <strong>Rs. {{ number_format($expectedBalance, 2) }}</strong>
+            <div class="balance-summary-card">
+                <h3>Today's Summary</h3>
+                <div class="balance-grid">
+                    <div class="balance-item">
+                        <span>Opening Balance</span>
+                        <strong>Rs. {{ number_format($currentClosure->opening_balance, 2) }}</strong>
+                    </div>
+                    <div class="balance-item">
+                        <span>Cash Sales</span>
+                        <strong>Rs. {{ number_format($summary['cash_sales'], 2) }}</strong>
+                    </div>
+                    <div class="balance-item">
+                        <span>Card Sales</span>
+                        <strong>Rs. {{ number_format($summary['card_sales'], 2) }}</strong>
+                    </div>
+                    <div class="balance-item">
+                        <span>UPI Sales</span>
+                        <strong>Rs. {{ number_format($summary['mobile_money_sales'], 2) }}</strong>
+                    </div>
+                    <div class="balance-item">
+                        <span>Bank Transfer</span>
+                        <strong>Rs. {{ number_format($summary['bank_transfer_sales'], 2) }}</strong>
+                    </div>
+                    <div class="balance-item highlight">
+                        <span>Total Sales</span>
+                        <strong>Rs. {{ number_format($summary['total_sales'], 2) }}</strong>
+                    </div>
+                    <div class="balance-item">
+                        <span>Cash In</span>
+                        <strong>Rs. {{ number_format($summary['cash_in'], 2) }}</strong>
+                    </div>
+                    <div class="balance-item">
+                        <span>Withdrawals</span>
+                        <strong>Rs. {{ number_format($summary['cash_out'], 2) }}</strong>
+                    </div>
+                    <div class="balance-item expected">
+                        <span>Expected Cash Balance</span>
+                        <strong>Rs. {{ number_format($expectedBalance, 2) }}</strong>
+                    </div>
                 </div>
             </div>
 
             <form method="POST" action="{{ route('cashier.till-action') }}" class="till-action-form">
                 @csrf
 
-                <div class="form-group">
-                    <label>Balance Option</label>
-                    <div class="radio-group">
-                        <label class="radio-option">
+                <div class="form-section">
+                    <h3>Cash Counting</h3>
+                    
+                    <div class="balance-choice">
+                        <label class="choice-box {{ $expectedBalance > 0 ? 'recommended' : '' }}">
                             <input type="radio" name="balance_option" value="expected" checked onchange="toggleManualBalance()">
-                            <span>Use Expected Balance (Rs. {{ number_format($expectedBalance, 2) }})</span>
+                            <div class="choice-content">
+                                <div class="choice-title">Expected Balance</div>
+                                <div class="choice-value">Rs. {{ number_format($expectedBalance, 2) }}</div>
+                            </div>
                         </label>
-                        <label class="radio-option">
+                        <label class="choice-box">
                             <input type="radio" name="balance_option" value="manual" onchange="toggleManualBalance()">
-                            <span>Enter Manual Amount</span>
+                            <div class="choice-content">
+                                <div class="choice-title">Manual Count</div>
+                                <div class="choice-subtitle">Count cash yourself</div>
+                            </div>
                         </label>
+                    </div>
+
+                    <div class="form-group manual-balance-group" id="manualBalanceGroup">
+                        <label>Enter the actual cash amount</label>
+                        <input
+                            type="number"
+                            name="manual_balance"
+                            step="0.01"
+                            min="0"
+                            placeholder="0.00"
+                            class="form-input"
+                            id="manualBalanceInput"
+                            autofocus
+                        >
                     </div>
                 </div>
 
-                <div class="form-group" id="manualBalanceGroup" style="display: none;">
-                    <label>Manual Balance</label>
-                    <input
-                        type="number"
-                        name="manual_balance"
-                        step="0.01"
-                        min="0"
-                        placeholder="Enter the actual cash counted"
-                    >
-                    <small>Count the cash in the till and enter the amount</small>
-                </div>
-
-                <div class="form-group">
-                    <label>Notes (Optional)</label>
+                <div class="form-section">
+                    <h3>Additional Notes</h3>
                     <textarea
                         name="notes"
-                        rows="3"
-                        placeholder="Any notes about this till closure..."
+                        rows="2"
+                        placeholder="Add any notes about this till closure..."
+                        class="form-textarea"
                     ></textarea>
-                </div>
-
-                <div class="denomination-breakdown">
-                    <label>Denomination Breakdown (Optional)</label>
-                    <div class="denomination-grid">
-                        <div class="denomination-item">
-                            <label>2000 x</label>
-                            <input type="number" name="denomination_breakdown[2000]" min="0" value="0">
-                        </div>
-                        <div class="denomination-item">
-                            <label>500 x</label>
-                            <input type="number" name="denomination_breakdown[500]" min="0" value="0">
-                        </div>
-                        <div class="denomination-item">
-                            <label>200 x</label>
-                            <input type="number" name="denomination_breakdown[200]" min="0" value="0">
-                        </div>
-                        <div class="denomination-item">
-                            <label>100 x</label>
-                            <input type="number" name="denomination_breakdown[100]" min="0" value="0">
-                        </div>
-                        <div class="denomination-item">
-                            <label>50 x</label>
-                            <input type="number" name="denomination_breakdown[50]" min="0" value="0">
-                        </div>
-                        <div class="denomination-item">
-                            <label>20 x</label>
-                            <input type="number" name="denomination_breakdown[20]" min="0" value="0">
-                        </div>
-                        <div class="denomination-item">
-                            <label>10 x</label>
-                            <input type="number" name="denomination_breakdown[10]" min="0" value="0">
-                        </div>
-                        <div class="denomination-item">
-                            <label>5 x</label>
-                            <input type="number" name="denomination_breakdown[5]" min="0" value="0">
-                        </div>
-                        <div class="denomination-item">
-                            <label>Coins</label>
-                            <input type="number" name="denomination_breakdown[coins]" step="0.01" min="0" value="0">
-                        </div>
-                    </div>
                 </div>
 
                 <input type="hidden" name="expected_balance" value="{{ $expectedBalance }}">
 
                 <div class="form-actions">
-                    <button type="submit" class="btn-primary">
-                        Close Till
-                    </button>
-                    <a href="{{ route('cashier.index') }}" class="btn-secondary">
+                    <a href="{{ route('cashier.index') }}" class="btn-cancel">
                         Cancel
                     </a>
+                    <button type="submit" class="btn-submit">
+                        Close Till
+                    </button>
                 </div>
             </form>
         @else
-            <div class="shift-status">
-                <span class="status-badge inactive">Till Closed</span>
-                <p class="status-text">No till is currently open</p>
-            </div>
-
-            <form method="POST" action="{{ route('cashier.till-action.post') }}" class="till-action-form" onsubmit="console.log('Form submitting'); return true;">
+            <form method="POST" action="{{ route('cashier.till-action.post') }}" class="till-action-form">
                 @csrf
                 @if($errors->any())
                     <div class="alert alert-danger">
+                        <strong>Please fix the following errors:</strong>
                         <ul>
                             @foreach($errors->all() as $error)
                                 <li>{{ $error }}</li>
@@ -174,91 +136,98 @@
                     </div>
                 @endif
 
-                @if($hasPermanentTill)
-                    <div class="form-group">
-                        <label>Your Assigned Till</label>
-                        <div class="permanent-till-info">
-                            <strong>{{ $availableTills->first()->name }} ({{ $availableTills->first()->code }})</strong>
-                            <small>This is your permanently assigned till</small>
-                        </div>
-                        <input type="hidden" name="till_id" value="{{ $availableTills->first()->id }}">
-                    </div>
-                @elseif($availableTills->count() === 1 && $availableTills->first()->id === $till->id)
-                    <div class="form-group">
-                        <label>Your Current Till</label>
-                        <div class="permanent-till-info">
-                            <strong>{{ $availableTills->first()->name }} ({{ $availableTills->first()->code }})</strong>
-                            <small>This till is currently assigned to you</small>
-                        </div>
-                        <input type="hidden" name="till_id" value="{{ $availableTills->first()->id }}">
-                    </div>
-                @else
-                    <div class="form-group">
-                        <label>Select Till</label>
-                        <select name="till_id" id="tillSelect" required>
-                            <option value="">-- Select a Till --</option>
-                            @foreach($availableTills as $tillOption)
-                                <option value="{{ $tillOption->id }}">
-                                    {{ $tillOption->name }} ({{ $tillOption->code }})
-                                    @if($tillOption->location)
-                                        - {{ $tillOption->location }}
-                                    @endif
-                                </option>
-                            @endforeach
-                        </select>
-                        @if(auth()->user()->hasPermissionTo('settings.access'))
-                            <small>You can access any till with your admin privileges. This selection is for this session only.</small>
-                        @else
-                            <small>This will be your permanently assigned till. Choose carefully as it cannot be changed without admin assistance.</small>
-                        @endif
-                    </div>
-                @endif
+                <div class="form-section">
+                    <h3>Select Till</h3>
 
-                <div class="form-group">
-                    <label>Opening Balance Option</label>
-                    <div class="radio-group">
+                    @if($hasPermanentTill)
+                        <div class="till-selection-card selected">
+                            <strong>{{ $availableTills->first()->name }} ({{ $availableTills->first()->code }})</strong>
+                            <small>Your Assigned Till</small>
+                            <input type="hidden" name="till_id" value="{{ $availableTills->first()->id }}">
+                        </div>
+                    @elseif($availableTills->count() === 1 && $availableTills->first()->id === $till->id)
+                        <div class="till-selection-card selected">
+                            <strong>{{ $availableTills->first()->name }} ({{ $availableTills->first()->code }})</strong>
+                            <small>Currently Assigned</small>
+                            <input type="hidden" name="till_id" value="{{ $availableTills->first()->id }}">
+                        </div>
+                    @else
+                        <div class="form-group">
+                            <label>Select Till</label>
+                            <select name="till_id" id="tillSelect" required class="form-select">
+                                <option value="">-- Select a Till --</option>
+                                @foreach($availableTills as $tillOption)
+                                    <option value="{{ $tillOption->id }}">
+                                        {{ $tillOption->name }} ({{ $tillOption->code }})
+                                        @if($tillOption->location)
+                                            - {{ $tillOption->location }}
+                                        @endif
+                                    </option>
+                                @endforeach
+                            </select>
+                            @if(auth()->user()->hasPermissionTo('settings.access'))
+                                <small>You can access any till with your admin privileges. This selection is for this session only.</small>
+                            @else
+                                <small>This will be your permanently assigned till. Choose carefully as it cannot be changed without admin assistance.</small>
+                            @endif
+                        </div>
+                    @endif
+                </div>
+
+                <div class="form-section">
+                    <h3>Opening Balance</h3>
+                    
+                    <div class="balance-choice">
                         @if($hasPreviousClosure)
-                            <label class="radio-option">
+                            <label class="choice-box recommended">
                                 <input type="radio" name="balance_option" value="previous" checked onchange="toggleManualBalance()">
-                                <span>Use Previous Closing Balance (Rs. {{ number_format($userPreviousClosingBalance, 2) }})</span>
+                                <div class="choice-content">
+                                    <div class="choice-title">Previous Closing Balance</div>
+                                    <div class="choice-value">Rs. {{ number_format($userPreviousClosingBalance, 2) }}</div>
+                                </div>
                             </label>
                         @endif
-                        <label class="radio-option">
+                        <label class="choice-box">
                             <input type="radio" name="balance_option" value="manual" @if(!$hasPreviousClosure) checked @endif onchange="toggleManualBalance()">
-                            <span>Enter Manual Amount</span>
+                            <div class="choice-content">
+                                <div class="choice-title">Manual Count</div>
+                                <div class="choice-subtitle">Count cash yourself</div>
+                            </div>
                         </label>
+                    </div>
+
+                    <div class="form-group manual-balance-group" id="manualBalanceGroup">
+                        <label>Enter the opening cash amount</label>
+                        <input
+                            type="number"
+                            name="manual_balance"
+                            step="0.01"
+                            min="0"
+                            placeholder="0.00"
+                            value="{{ $hasPreviousClosure ? '' : '0.00' }}"
+                            class="form-input"
+                            id="manualBalanceInput"
+                        >
                     </div>
                 </div>
 
-                <div class="form-group" id="manualBalanceGroup" style="display: {{ $hasPreviousClosure ? 'none' : 'block' }};">
-                    <label>Manual Opening Balance</label>
-                    <input
-                        type="number"
-                        name="manual_balance"
-                        step="0.01"
-                        min="0"
-                        placeholder="Enter the opening balance"
-                        value="{{ $hasPreviousClosure ? '' : '0.00' }}"
-                    >
-                    <small>Count the cash in the till and enter the opening amount</small>
-                </div>
-
-                <div class="form-group">
-                    <label>Notes (Optional)</label>
+                <div class="form-section">
+                    <h3>Additional Notes</h3>
                     <textarea
                         name="notes"
-                        rows="3"
-                        placeholder="Any notes about starting this till..."
+                        rows="2"
+                        placeholder="Add any notes about starting this till..."
+                        class="form-textarea"
                     ></textarea>
                 </div>
 
                 <div class="form-actions">
-                    <button type="submit" class="btn-primary" id="openTillBtn">
-                        Open Till
-                    </button>
-                    <a href="{{ route('cashier.index') }}" class="btn-secondary">
+                    <a href="{{ route('cashier.index') }}" class="btn-cancel">
                         Cancel
                     </a>
+                    <button type="submit" class="btn-submit" id="openTillBtn">
+                        Open Till
+                    </button>
                 </div>
             </form>
         @endif
@@ -267,17 +236,17 @@
 
 <style>
 .till-action-container {
-    max-width: 900px;
-    margin: 40px auto;
+    max-width: 1000px;
+    margin: 20px auto;
     padding: 0 20px;
 }
 
 .till-action-header {
-    margin-bottom: 24px;
+    margin-bottom: 20px;
 }
 
 .till-action-header h1 {
-    font-size: 28px;
+    font-size: 24px;
     font-weight: 700;
     color: #1e293b;
     margin: 0 0 4px 0;
@@ -289,46 +258,39 @@
     margin: 0;
 }
 
-.till-action-card {
+.till-action-content {
+    display: grid;
+    gap: 16px;
+}
+
+.till-info-card {
     background: white;
-    border-radius: 16px;
-    border: 1px solid #e5e7eb;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-    padding: 32px;
+    border-radius: 8px;
+    padding: 16px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
-.till-info {
-    margin-bottom: 24px;
-    padding-bottom: 20px;
-    border-bottom: 1px solid #f1f5f9;
-}
-
-.till-info h2 {
-    font-size: 20px;
+.till-details h2 {
+    font-size: 18px;
     font-weight: 700;
     color: #1e293b;
-    margin: 0 0 4px 0;
-}
-
-.till-info p {
-    font-size: 13px;
-    color: #64748b;
     margin: 0;
 }
 
-.shift-status {
-    margin-bottom: 24px;
-    padding-bottom: 20px;
-    border-bottom: 1px solid #f1f5f9;
+.shift-status-card {
+    text-align: right;
 }
 
 .status-badge {
     display: inline-block;
+    padding: 4px 12px;
+    border-radius: 4px;
     font-size: 12px;
     font-weight: 600;
-    padding: 6px 12px;
-    border-radius: 999px;
-    margin-bottom: 8px;
+    margin-bottom: 4px;
 }
 
 .status-badge.active {
@@ -341,22 +303,37 @@
     color: #991b1b;
 }
 
-.status-text {
-    font-size: 13px;
+.shift-status-card p {
+    font-size: 12px;
     color: #64748b;
     margin: 0;
 }
 
-.balance-summary {
+.balance-summary-card {
+    background: white;
+    border-radius: 8px;
+    padding: 16px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.balance-summary-card h3 {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0 0 12px 0;
+}
+
+.balance-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 16px;
-    margin-bottom: 24px;
-    padding-bottom: 20px;
-    border-bottom: 1px solid #f1f5f9;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
 }
 
 .balance-item {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 12px;
     display: flex;
     flex-direction: column;
     gap: 4px;
@@ -364,8 +341,12 @@
 
 .balance-item.highlight {
     background: #f0fdf4;
-    border-radius: 8px;
-    padding: 12px;
+    border-color: #bbf7d0;
+}
+
+.balance-item.expected {
+    background: #fef3c7;
+    border-color: #fcd34d;
 }
 
 .balance-item span {
@@ -375,263 +356,308 @@
 }
 
 .balance-item strong {
-    font-size: 16px;
+    font-size: 14px;
     color: #1e293b;
     font-weight: 700;
 }
 
-.balance-item.highlight strong {
-    color: #15803d;
-    font-size: 18px;
+.balance-item.highlight strong,
+.balance-item.expected strong {
+    font-size: 16px;
+    color: #166534;
 }
 
 .till-action-form {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
+    background: white;
+    border-radius: 8px;
+    padding: 16px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.form-section {
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.form-section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.form-section h3 {
+    font-size: 14px;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0 0 12px 0;
+}
+
+.balance-choice {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.choice-box {
+    position: relative;
+    cursor: pointer;
+}
+
+.choice-box input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.choice-content {
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 16px;
+    text-align: center;
+    transition: all 0.2s ease;
+}
+
+.choice-box input[type="radio"]:checked + .choice-content {
+    border-color: #3b82f6;
+    background: #eff6ff;
+}
+
+.choice-box.recommended input[type="radio"]:checked + .choice-content {
+    border-color: #22c55e;
+    background: #f0fdf4;
+}
+
+.choice-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 4px;
+}
+
+.choice-value {
+    font-size: 18px;
+    font-weight: 700;
+    color: #3b82f6;
+}
+
+.choice-box.recommended .choice-value {
+    color: #22c55e;
+}
+
+.choice-subtitle {
+    font-size: 12px;
+    color: #64748b;
 }
 
 .form-group {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
+    margin-bottom: 12px;
 }
 
 .form-group label {
+    display: block;
     font-size: 13px;
     font-weight: 600;
     color: #475569;
+    margin-bottom: 6px;
 }
 
-.radio-group {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.radio-option {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 12px 16px;
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.radio-option:hover {
-    background: #f8fafc;
-    border-color: #cbd5e1;
-}
-
-.radio-option input[type="radio"] {
-    cursor: pointer;
-}
-
-.radio-option span {
-    font-size: 14px;
-    color: #334155;
-}
-
-.radio-option.disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-}
-
-.radio-option.disabled:hover {
-    background: #f8fafc;
-    border-color: #e5e7eb;
-}
-
-.warning-text {
-    color: #dc2626;
-    font-size: 12px;
-    font-weight: 500;
-    display: block;
-    margin-top: 4px;
-}
-
-.form-group input,
-.form-group textarea {
-    padding: 12px 16px;
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    font-size: 14px;
+.form-input,
+.form-select,
+.form-textarea {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 13px;
     background: #f8fafc;
     transition: all 0.2s ease;
+    font-family: inherit;
 }
 
-.form-group input:focus,
-.form-group textarea:focus {
+.form-input:focus,
+.form-select:focus,
+.form-textarea:focus {
     outline: none;
     border-color: #3b82f6;
     background: white;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
 }
 
 .form-group small {
-    font-size: 12px;
+    display: block;
+    font-size: 11px;
     color: #94a3b8;
+    margin-top: 4px;
 }
 
-.denomination-breakdown {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+.manual-balance-group {
+    display: none;
 }
 
-.denomination-breakdown > label {
-    font-size: 13px;
-    font-weight: 600;
-    color: #475569;
+.manual-balance-group.show {
+    display: block;
+    animation: slideDown 0.3s ease;
 }
 
-.denomination-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: 12px;
-}
-
-.denomination-item {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.denomination-item label {
-    font-size: 12px;
-    color: #64748b;
-    font-weight: 500;
-}
-
-.denomination-item input {
-    padding: 8px 12px;
-    border: 1px solid #e5e7eb;
-    border-radius: 6px;
-    font-size: 14px;
-    background: #f8fafc;
-    transition: all 0.2s ease;
-}
-
-.denomination-item input:focus {
-    outline: none;
-    border-color: #3b82f6;
-    background: white;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .form-actions {
     display: flex;
-    gap: 12px;
+    gap: 8px;
     justify-content: flex-end;
-    margin-top: 8px;
+    margin-top: 12px;
 }
 
-.btn-primary {
-    padding: 12px 24px;
-    background: #3b82f6;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    text-align: center;
-    text-decoration: none;
-    display: inline-block;
-}
-
-.btn-primary:hover {
-    background: #2563eb;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-}
-
-.btn-secondary {
-    padding: 12px 24px;
+.btn-cancel {
+    padding: 8px 16px;
     background: white;
     color: #64748b;
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    font-size: 14px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 13px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
     text-align: center;
     text-decoration: none;
-    display: inline-block;
 }
 
-.btn-secondary:hover {
+.btn-cancel:hover {
     background: #f8fafc;
     border-color: #cbd5e1;
 }
 
-.alert {
-    padding: 12px 16px;
-    border-radius: 8px;
-    margin-bottom: 20px;
+.btn-submit {
+    padding: 8px 16px;
+    background: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
 }
 
-.alert-danger {
+.btn-submit:hover {
+    background: #2563eb;
+}
+
+.alert {
+    padding: 12px 16px;
+    border-radius: 6px;
+    margin-bottom: 16px;
     background: #fee2e2;
-    color: #991b1b;
     border: 1px solid #fecaca;
 }
 
-.alert-danger ul {
+.alert strong {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: #991b1b;
+    margin-bottom: 8px;
+}
+
+.alert ul {
     margin: 0;
     padding-left: 20px;
 }
 
-.alert-danger li {
+.alert li {
+    color: #dc2626;
+    font-size: 12px;
     margin: 4px 0;
 }
 
-.permanent-till-info {
-    padding: 12px 16px;
-    background: #f0fdf4;
-    border: 1px solid #bbf7d0;
-    border-radius: 8px;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
+.till-selection-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 12px;
+    margin-bottom: 12px;
 }
 
-.permanent-till-info strong {
+.till-selection-card.selected {
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+}
+
+.till-selection-card strong {
+    display: block;
     font-size: 14px;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 4px;
+}
+
+.till-selection-card small {
+    font-size: 12px;
     color: #166534;
 }
 
-.permanent-till-info small {
-    font-size: 12px;
-    color: #15803d;
+@media (max-width: 768px) {
+    .till-action-container {
+        padding: 0 16px;
+    }
+
+    .till-info-card {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .shift-status-card {
+        text-align: left;
+    }
+
+    .balance-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .form-actions {
+        flex-direction: column;
+    }
+
+    .btn-cancel,
+    .btn-submit {
+        width: 100%;
+    }
 }
 </style>
 
 <script>
 function toggleManualBalance() {
-    const balanceOption = document.querySelector('input[name="balance_option"]:checked').value;
+    const balanceOption = document.querySelector('input[name="balance_option"]:checked')?.value;
     const manualBalanceGroup = document.getElementById('manualBalanceGroup');
+    const manualBalanceInput = document.getElementById('manualBalanceInput');
 
     if (balanceOption === 'manual') {
-        manualBalanceGroup.style.display = 'block';
+        manualBalanceGroup.classList.add('show');
+        // Auto-focus the input after animation
+        setTimeout(() => {
+            manualBalanceInput?.focus();
+        }, 300);
     } else {
-        manualBalanceGroup.style.display = 'none';
+        manualBalanceGroup.classList.remove('show');
     }
 }
 
-// Test button click
 document.addEventListener('DOMContentLoaded', function() {
-    const openTillBtn = document.getElementById('openTillBtn');
-    if (openTillBtn) {
-        openTillBtn.addEventListener('click', function(e) {
-            console.log('Button clicked!');
-            console.log('Event:', e);
-        });
-    }
+    toggleManualBalance();
 });
 </script>
 @endsection

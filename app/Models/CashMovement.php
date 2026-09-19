@@ -22,6 +22,11 @@ class CashMovement extends Model
         return $this->belongsTo(Till::class);
     }
 
+    public function tillClosure(): BelongsTo
+    {
+        return $this->belongsTo(TillClosure::class);
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

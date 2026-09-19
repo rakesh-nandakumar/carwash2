@@ -362,15 +362,6 @@
                     <small>This will be included in the WhatsApp message</small>
                 </div>
 
-                <div class="whatsapp-section">
-                    <div id="whatsappCustomerInfo">
-                        <label class="whatsapp-toggle">
-                            <input type="checkbox" id="sendWhatsapp" checked>
-                            <span class="toggle-label" id="whatsappLabel">Send WhatsApp to customer</span>
-                        </label>
-                    </div>
-                </div>
-
                 <div class="modal-actions">
                     <button type="button" class="btn-secondary" id="closeModalBtn">Skip WhatsApp & Open Job</button>
                     <button type="button" class="btn-primary" id="sendWhatsappBtn">Send WhatsApp & Open Job</button>
@@ -1688,37 +1679,19 @@ async function createJob() {
 }
 
 function setupWhatsappModal() {
-    const whatsappLabel = document.getElementById('whatsappLabel');
-    const whatsappCheckbox = document.getElementById('sendWhatsapp');
-    
-    // Use WhatsApp number from customer creation if available, otherwise phone
-    const phoneNumber = selectedCustomer.whatsapp_number || selectedCustomer.phone;
-    
-    if (phoneNumber) {
-        whatsappLabel.textContent = `Send WhatsApp to customer (${phoneNumber})`;
-        whatsappCheckbox.checked = true;
-        whatsappCheckbox.disabled = false;
-    } else {
-        whatsappLabel.textContent = 'Send WhatsApp to customer';
-        whatsappCheckbox.checked = false;
-        whatsappCheckbox.disabled = true;
-    }
-    
     // Setup button event listeners
     const sendWhatsappBtn = document.getElementById('sendWhatsappBtn');
     const closeModalBtn = document.getElementById('closeModalBtn');
-    
+
     // Remove existing listeners to prevent duplicates
     const newSendBtn = sendWhatsappBtn.cloneNode(true);
     const newCloseBtn = closeModalBtn.cloneNode(true);
     sendWhatsappBtn.parentNode.replaceChild(newSendBtn, sendWhatsappBtn);
     closeModalBtn.parentNode.replaceChild(newCloseBtn, closeModalBtn);
-    
+
     // Add fresh listeners
     newSendBtn.addEventListener('click', function() {
-        const whatsappCheckbox = document.getElementById('sendWhatsapp');
-
-        if (whatsappCheckbox.checked && createdJobData) {
+        if (createdJobData) {
             // Use server-generated URL if available, otherwise generate client-side
             let whatsappUrl = createdJobData.whatsapp_url;
 
@@ -1765,7 +1738,7 @@ function setupWhatsappModal() {
         // Open job page
         window.location.href = createdJobData.redirect;
     });
-    
+
     newCloseBtn.addEventListener('click', function() {
         // Just open job page without WhatsApp (Cancel button)
         if (createdJobData) {
@@ -1777,31 +1750,6 @@ function setupWhatsappModal() {
 function closeWhatsappModal() {
     document.getElementById('whatsappModal').classList.remove('active');
 }
-
-function toggleWhatsappCheckbox() {
-    const whatsappInput = document.getElementById('customerWhatsappNumber');
-    const whatsappCheckbox = document.getElementById('sendWhatsapp');
-
-    if (whatsappInput && whatsappCheckbox) {
-        if (whatsappInput.value.trim().length > 5) {
-            whatsappCheckbox.disabled = false;
-            whatsappCheckbox.checked = true;
-        } else {
-            whatsappCheckbox.disabled = true;
-            whatsappCheckbox.checked = false;
-        }
-    }
-}
-
-// WhatsApp modal button handlers
-
-
-document.getElementById('closeModalBtn').addEventListener('click', function() {
-    // Just open job page without WhatsApp
-    if (createdJobData) {
-        window.location.href = createdJobData.redirect;
-    }
-});
 
 function toggleNav() {
     document.getElementById('navMenu').classList.toggle('active');
@@ -2122,6 +2070,8 @@ document.addEventListener('click', (e) => {
 }
 
 .search-results {
+    z-index: 10000;
+
     min-height: 100px;
 }
 
@@ -2798,32 +2748,6 @@ document.addEventListener('click', (e) => {
     box-shadow: 0 4px 15px rgba(37, 99, 235, 0.35);
 }
 
-.whatsapp-section {
-    margin: 16px 0;
-    padding: 12px;
-    background: #f0fdf4;
-    border: 1px solid #bbf7d0;
-    border-radius: 8px;
-}
-
-.whatsapp-toggle {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    cursor: pointer;
-}
-
-.whatsapp-toggle input[type="checkbox"] {
-    width: 18px;
-    height: 18px;
-    accent-color: #22c55e;
-}
-
-.whatsapp-toggle .toggle-label {
-    font-size: 14px;
-    color: #1f2937;
-}
-
 .modal-actions {
     display: flex;
     gap: 12px;
@@ -2903,7 +2827,7 @@ document.addEventListener('click', (e) => {
 }
 
 .whatsapp-modal .modal-actions .btn-primary {
-    background: #3b82f6;
+    background: #25D366;
     color: white;
     border: none;
     padding: 10px 20px;
@@ -2914,7 +2838,7 @@ document.addEventListener('click', (e) => {
 }
 
 .whatsapp-modal .modal-actions .btn-primary:hover {
-    background: #2563eb;
+    background: #128C7E;
 }
 
 .whatsapp-modal .modal-actions .btn-secondary {

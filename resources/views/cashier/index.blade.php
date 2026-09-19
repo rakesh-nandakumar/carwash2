@@ -100,9 +100,9 @@
 
         <div class="till-stats">
             <div>
-                <span>Opening Balance</span>
+                <span>{{ $isShiftOpen ? 'Opening Balance' : 'Last Closing Balance' }}</span>
                 <strong>
-                    Rs. {{ number_format($till->opening_balance, 2) }}
+                    Rs. {{ number_format($currentClosure ? ($isShiftOpen ? $currentClosure->opening_balance : $currentClosure->counted_balance) : 0, 2) }}
                 </strong>
             </div>
 
@@ -121,16 +121,9 @@
             </div>
 
             <div>
-                <span>Cash Out</span>
+                <span>Withdrawals</span>
                 <strong>
                     Rs. {{ number_format($cashOut, 2) }}
-                </strong>
-            </div>
-
-            <div>
-                <span>Cash Refunds</span>
-                <strong>
-                    Rs. {{ number_format($cashRefunds, 2) }}
                 </strong>
             </div>
 
@@ -163,13 +156,7 @@
 
             @if(auth()->user()->hasPermissionTo('cashier.cash_out'))
                 <button type="button" onclick="openCashModal('cash-out')">
-                    Cash Out
-                </button>
-            @endif
-
-            @if(auth()->user()->hasPermissionTo('cashier.cash_drop'))
-                <button type="button" onclick="openCashModal('cash-drop')">
-                    Cash Drop
+                    Withdrawals
                 </button>
             @endif
 
@@ -1151,13 +1138,8 @@ function openCashModal(type) {
     }
 
     if (type === 'cash-out') {
-        title.textContent = 'Cash Out';
+        title.textContent = 'Withdrawals';
         form.action = '{{ route('cashier.cash-out') }}';
-    }
-
-    if (type === 'cash-drop') {
-        title.textContent = 'Cash Drop';
-        form.action = '{{ route('cashier.cash-drop') }}';
     }
 
     modal.classList.remove('hidden');

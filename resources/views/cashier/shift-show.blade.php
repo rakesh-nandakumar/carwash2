@@ -81,18 +81,8 @@
                 </div>
 
                 <div class="balance-row negative">
-                    <span>Cash Out</span>
+                    <span>Withdrawals</span>
                     <strong>-Rs. {{ number_format($closure->cash_out, 2) }}</strong>
-                </div>
-
-                <div class="balance-row negative">
-                    <span>Cash Refunds</span>
-                    <strong>-Rs. {{ number_format($closure->cash_refunds, 2) }}</strong>
-                </div>
-
-                <div class="balance-row negative">
-                    <span>Cash Drops</span>
-                    <strong>-Rs. {{ number_format($closure->cash_drops, 2) }}</strong>
                 </div>
 
                 <div class="balance-row total">

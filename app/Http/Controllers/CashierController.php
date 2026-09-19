@@ -65,30 +65,47 @@ class CashierController extends Controller
         $currentClosure = $this->cashMovements->lastClosure($till);
         $isShiftOpen = $currentClosure && !$currentClosure->closed_at;
 
+        // If shift is closed, get the most recent closed closure to show its data
+        if (!$isShiftOpen) {
+            $currentClosure = \App\Models\TillClosure::where('till_id', $till->id)
+                ->where('user_id', auth()->id())
+                ->whereNotNull('closed_at')
+                ->latest('closed_at')
+                ->first();
+        }
+
         $movements = $till->cashMovements();
 
-        $cashSales = (float) (clone $movements)
-            ->where('type', 'in')
-            ->where('source', 'sale')
-            ->sum('amount');
+        // Filter movements to only include current shift if shift is open
+        if ($isShiftOpen && $currentClosure) {
+            $movements = $movements->where('till_closure_id', $currentClosure->id);
+        }
 
-        $cashIn = (float) (clone $movements)
-            ->where('type', 'in')
-            ->where('source', 'manual')
-            ->sum('amount');
+        // If shift is closed, show zero for all current shift values
+        if (!$isShiftOpen) {
+            $cashSales = 0;
+            $cashIn = 0;
+            $cashOut = 0;
+        } else {
+            $cashSales = (float) (clone $movements)
+                ->where('type', 'in')
+                ->where('source', 'sale')
+                ->sum('amount');
 
-        $cashOut = (float) (clone $movements)
-            ->where('type', 'out')
-            ->where('source', 'manual')
-            ->sum('amount');
+            $cashIn = (float) (clone $movements)
+                ->where('type', 'in')
+                ->where('source', 'manual')
+                ->sum('amount');
 
-        $cashRefunds = (float) (clone $movements)
-            ->where('type', 'out')
-            ->where('source', 'refund')
-            ->sum('amount');
+            $cashOut = (float) (clone $movements)
+                ->where('type', 'out')
+                ->where('source', 'manual')
+                ->sum('amount');
+        }
 
-        $expectedBalance =
-            $this->cashMovements->expectedBalance($till);
+        $expectedBalance = $isShiftOpen
+            ? $this->cashMovements->expectedBalance($till, $currentClosure)
+            : ($currentClosure ? $currentClosure->counted_balance : 0);
 
         return view('cashier.index', compact(
             'readyForPayment',
@@ -98,7 +115,6 @@ class CashierController extends Controller
             'cashSales',
             'cashIn',
             'cashOut',
-            'cashRefunds',
             'expectedBalance',
         ));
     }
@@ -967,27 +983,5 @@ class CashierController extends Controller
         }
 
         return back()->with('success', 'Cash removed from Till successfully.');
-    }
-
-    public function cashDrop(Request $request)
-    {
-        $data = $request->validate([
-            'amount' => ['required', 'numeric', 'min:0.01'],
-            'reason' => ['nullable', 'string', 'max:255'],
-            'description' => ['nullable', 'string', 'max:2000'],
-        ]);
-
-        try {
-            $this->cashMovements->recordCashDrop(
-                amount: (float) $data['amount'],
-                reason: $data['reason'] ?? 'Cash Drop',
-                description: $data['description'] ?? null,
-                userId: auth()->id(),
-            );
-        } catch (\RuntimeException $e) {
-            return back()->with('error', $e->getMessage());
-        }
-
-        return back()->with('success', 'Cash drop recorded successfully.');
     }
 }

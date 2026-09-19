@@ -21,8 +21,6 @@
         button { width: 100%; padding: 12px; background: #4a90e2; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; margin-top: 6px; }
         .flash { background: #fee2e2; color: #991b1b; padding: 10px 12px; border-radius: 8px; font-size: 13px; margin-bottom: 14px; }
         .footer { text-align: center; margin-top: 24px; color: #64748b; font-size: 12px; }
-        .footer a { color: #4a90e2; text-decoration: none; }
-        .footer a:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
@@ -48,7 +46,7 @@
             </label>
             <button type="submit">Sign in</button>
         </form>
-        <div class="footer">Powered by <a href="https://vellixglobal.com" target="_blank">VellixGlobal</a> © {{ date('Y') }}</div>
+        <div class="footer">Powered by VellixGlobal</div>
     </div>
 </body>
 </html>

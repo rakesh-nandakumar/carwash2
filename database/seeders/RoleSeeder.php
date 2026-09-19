@@ -166,7 +166,7 @@ class RoleSeeder extends Seeder
                     'cashier.print_options',
                     'cashier.open_shift',
                     'cashier.close_shift',
-                    'cashier.cash_drop',
+
                     'cashier.cash_in',
                     'cashier.cash_out',
 
@@ -297,7 +297,7 @@ class RoleSeeder extends Seeder
                     'cashier.print_options',
                     'cashier.open_shift',
                     'cashier.close_shift',
-                    'cashier.cash_drop',
+
                     'cashier.cash_in',
                     'cashier.cash_out',
 

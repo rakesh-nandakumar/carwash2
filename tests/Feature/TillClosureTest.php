@@ -159,8 +159,6 @@ class TillClosureTest extends TestCase
                 $this->assertEquals(0, $closedClosure->total_sales);
                 $this->assertEquals(500, $closedClosure->cash_in);
                 $this->assertEquals(200, $closedClosure->cash_out);
-                $this->assertEquals(0, $closedClosure->cash_refunds);
-                $this->assertEquals(300, $closedClosure->cash_drops);
                 $this->assertNotNull($closedClosure->closed_at);
                 $this->assertEquals('End of day', $closedClosure->notes);
             }
@@ -483,8 +481,7 @@ class TillClosureTest extends TestCase
                 $this->assertEquals(0, $summary['total_sales']);
                 $this->assertEquals(500, $summary['cash_in']);
                 $this->assertEquals(200, $summary['cash_out']);
-                $this->assertEquals(0, $summary['cash_refunds']);
-                $this->assertEquals(0, $summary['cash_drops']);
+                // net_change = cash_sales + cash_in - cash_out = 0 + 500 - 200 = 300
                 $this->assertEquals(300, $summary['net_change']);
             }
         );
