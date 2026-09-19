@@ -37,16 +37,51 @@ jobs:
             --optimize-autoloader \
             --no-interaction
 
-      # 6. Install FTP client
-      - name: Install FTP client
+      # 6. Install Zip & FTP client
+      - name: Install Zip and FTP client
         run: |
           sudo apt-get update
-          sudo apt-get install -y lftp
+          sudo apt-get install -y zip lftp
 
-      # 7. Deploy to cPanel
+      # 7. Compress project files into a single ZIP
+      - name: Archive project files
+        run: |
+          zip -r deploy.zip . \
+            -x ".git/*" \
+            -x ".github/*" \
+            -x "node_modules/*" \
+            -x ".env" \
+            -x ".env.*" \
+            -x "storage/logs/*"
+
+      # 8. Create temporary PHP extractor script
+      - name: Create Unzip Script
+        run: |
+          cat << 'EOF' > unzip.php
+          <?php
+          $zipFile = __DIR__ . '/deploy.zip';
+          $extractTo = __DIR__;
+
+          if (file_exists($zipFile)) {
+              $zip = new ZipArchive;
+              if ($zip->open($zipFile) === TRUE) {
+                  $zip->extractTo($extractTo);
+                  $zip->close();
+                  unlink($zipFile);
+                  unlink(__FILE__);
+                  echo "Extraction successful!";
+              } else {
+                  echo "Failed to open zip archive.";
+              }
+          } else {
+              echo "Zip file not found.";
+          }
+          EOF
+
+      # 9. Deploy ZIP to cPanel and run extraction
       - name: Deploy to cPanel
         env:
-          FTP_SERVER: "ftp.leomotorparts.com"
+          FTP_SERVER: "business196.web-hosting.com"
           FTP_USERNAME: "auto_ftp@autocare.vellixglobal.com"
           FTP_PASSWORD: ",ZAuB1Hj@l?$EZW="
         run: |
@@ -57,7 +92,7 @@ jobs:
             exit 1
           fi
 
-          echo "FTP server resolved successfully."
+          echo "FTP server resolved successfully. Uploading ZIP package..."
 
           lftp -c "
             set ftp:ssl-force true;
@@ -69,17 +104,10 @@ jobs:
 
             open -u \"$FTP_USERNAME\",\"$FTP_PASSWORD\" \"$FTP_SERVER\";
 
-            pwd;
-
-            mirror \
-              --reverse \
-              --verbose \
-              --parallel=4 \
-              --exclude-glob=.git/** \
-              --exclude-glob=.github/** \
-              --exclude-glob=node_modules/** \
-              --exclude-glob=.env \
-              --exclude-glob=.env.* \
-              --exclude-glob=storage/logs/** \
-              ./ /public_html/;
+            put deploy.zip;
+            put unzip.php;
           "
+
+          echo "Triggering remote extraction..."
+          curl -s "http://autocare.vellixglobal.com/unzip.php" || true
+          echo "Deployment complete!"
