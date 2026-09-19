@@ -59,8 +59,8 @@ jobs:
         run: |
           cat << 'EOF' > unzip.php
           <?php
-          $zipFile = __DIR__ . '/deploy.zip';
-          // Extract files one directory level up (into autocare.vellixglobal.com root)
+          // Since this script runs from /public, we look for the zip one level up
+          $zipFile = dirname(__DIR__) . '/deploy.zip';
           $extractTo = dirname(__DIR__);
 
           if (file_exists($zipFile)) {
@@ -75,7 +75,7 @@ jobs:
                   echo "Failed to open zip archive.";
               }
           } else {
-              echo "Zip file not found.";
+              echo "Zip file not found at: " . $zipFile;
           }
           EOF
 
@@ -106,9 +106,11 @@ jobs:
             open -u \"$FTP_USERNAME\",\"$FTP_PASSWORD\" \"$FTP_SERVER\";
 
             put deploy.zip;
-            put unzip.php;
+            # Place the unzip script inside the public folder so it's accessible via URL
+            put unzip.php -o public/unzip.php;
           "
 
           echo "Triggering remote extraction..."
-          curl -s "http://autocare.vellixglobal.com/auto_ftp/unzip.php" || true
+          # The -f flag ensures GitHub catches any 404/500 errors and fails the build if it doesn't work
+          curl -f -s -L "http://autocare.vellixglobal.com/unzip.php"
           echo "Deployment complete!"
