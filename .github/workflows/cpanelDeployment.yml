@@ -16,7 +16,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # 2. Check the available PHP and Composer
+      # 2. Check PHP and Composer
       - name: Check PHP and Composer
         run: |
           php --version
@@ -26,14 +26,11 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
-      # 4. Build frontend assets
+      # 4. Build frontend
       - name: Build frontend
         run: npm run build
 
       # 5. Install Laravel dependencies
-      #
-      # Dev dependencies are included because Laravel is currently
-      # loading the Collision service provider during package discovery.
       - name: Install PHP dependencies
         run: |
           composer install \
@@ -49,10 +46,19 @@ jobs:
       # 7. Deploy to cPanel
       - name: Deploy to cPanel
         env:
-          FTP_SERVER: ${{ secrets.SERVER }}
-          FTP_USERNAME: ${{ secrets.USERNAME }}
-          FTP_PASSWORD: ${{ secrets.PASSWORD }}
+          FTP_SERVER: "ftp.leomotorparts.com"
+          FTP_USERNAME: "auto_ftp@autocare.vellixglobal.com"
+          FTP_PASSWORD: ",ZAuB1Hj@l?$EZW="
         run: |
+          echo "Checking FTP server..."
+
+          if ! getent hosts "$FTP_SERVER"; then
+            echo "FTP server could not be resolved."
+            exit 1
+          fi
+
+          echo "FTP server resolved successfully."
+
           lftp -c "
             set ftp:ssl-force true;
             set ftp:ssl-protect-data true;
@@ -61,7 +67,9 @@ jobs:
             set net:max-retries 3;
             set net:reconnect-interval-base 5;
 
-            open -u $FTP_USERNAME,$FTP_PASSWORD $FTP_SERVER;
+            open -u \"$FTP_USERNAME\",\"$FTP_PASSWORD\" \"$FTP_SERVER\";
+
+            pwd;
 
             mirror \
               --reverse \
