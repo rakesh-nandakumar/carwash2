@@ -1,31 +1,59 @@
-name: Publish Website to CPanel
+name: Deploy Website to cPanel
+
 on:
   push:
     branches:
       - main
+
 jobs:
-  FTP-Deploy-Action:
-    name: FTP-Deploy-Action
+  deploy:
+    name: Build and Deploy
     runs-on: ubuntu-latest
+
     steps:
-    - uses: actions/checkout@v2.1.0
-      with:
-        fetch-depth: 2 
-    - name: Build assets
-      run: npm install && npm run build
 
-    - name: Install PHP and Composer
-      uses: shivammathur/setup-php@v2
-      with:
-          php-version: '8.2' # Adjust to match the PHP version used by your Laravel project
-          tools: 'composer'
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Install PHP dependencies
-      run: composer install --no-dev --optimize-autoloader
-        
-    - name: FTP-Deploy-Action
-      uses: SamKirkland/FTP-Deploy-Action@4.3.3
-      with:
-        server: ${{ secrets.SERVER }}
-        username: ${{ secrets.USERNAME }}
-        password: ${{ secrets.PASSWORD }}
+      - name: Check PHP and Composer
+        run: |
+          php --version
+          composer --version
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Install PHP dependencies
+        run: composer install --no-dev --optimize-autoloader --no-interaction
+
+      - name: Deploy to cPanel
+        env:
+          FTP_SERVER: ${{ secrets.SERVER }}
+          FTP_USERNAME: ${{ secrets.USERNAME }}
+          FTP_PASSWORD: ${{ secrets.PASSWORD }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y lftp
+
+          lftp -c "
+            set ftp:ssl-force true;
+            set ftp:ssl-protect-data true;
+            set ftp:passive-mode true;
+
+            open -u $FTP_USERNAME,$FTP_PASSWORD $FTP_SERVER;
+
+            mirror \
+              --reverse \
+              --verbose \
+              --parallel=4 \
+              --exclude-glob=.git/** \
+              --exclude-glob=.github/** \
+              --exclude-glob=node_modules/** \
+              --exclude-glob=.env \
+              --exclude-glob=.env.* \
+              --exclude-glob=storage/logs/** \
+              ./ /public_html/;
+          "
