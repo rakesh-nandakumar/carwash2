@@ -272,7 +272,6 @@
     @if($job->invoice)
         <div class="invoice-link">
             <a href="{{ route('invoices.show',$job->invoice) }}" class="btn-primary">View Invoice</a>
-            <a href="{{ route('cashier.payment', $job) }}" class="btn-secondary">Go to Cashier</a>
         </div>
     @endif
 </div>
@@ -1245,15 +1244,9 @@ document.getElementById('statusForm').addEventListener('submit', async function(
         }
 
         closeStatusModal();
-        
-        // Redirect to payment processing page if status is ready_for_payment
-        const newStatus = document.getElementById('statusInput').value;
-        if (newStatus === 'ready_for_payment') {
-            const tenant = window.location.pathname.split('/')[1];
-            window.location.href = `/${tenant}/cashier/payment/{{ $job->id }}`;
-        } else {
-            window.location.reload();
-        }
+
+        // Always reload the page instead of redirecting to payment
+        window.location.reload();
 
     } catch (error) {
         console.error(

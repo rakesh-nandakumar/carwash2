@@ -48,10 +48,10 @@ class CashierController extends Controller
                 JobStatus::READY_FOR_PAYMENT->value
             )
             ->whereDoesntHave('invoice', function ($query) {
-                // Exclude jobs with partial payments (have some payments but still have balance)
-                $query->where('paid', '>', 0)
-                      ->where('balance', '>', 0.01);
+                // Exclude jobs with fully paid invoices
+                $query->where('balance', '<=', 0);
             })
+            ->where('status', '!=', JobStatus::DELIVERED->value)
             ->orderBy('updated_at', 'desc')
             ->get();
 
@@ -155,9 +155,29 @@ class CashierController extends Controller
             'invoice'
         ]);
 
+        // Check if job is already delivered (completed payment process)
+        if ($job->status->value === \App\Enums\JobStatus::DELIVERED->value) {
+            return response()->view('cashier.payment-completed', compact('job'))
+                ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+                ->header('Pragma', 'no-cache')
+                ->header('Expires', 'Sat, 01 Jan 2000 00:00:00 GMT');
+        }
+
+        // Check if invoice exists and is already fully paid
+        if ($job->invoice && $job->invoice->balance <= 0) {
+            return response()->view('cashier.payment-completed', compact('job'))
+                ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+                ->header('Pragma', 'no-cache')
+                ->header('Expires', 'Sat, 01 Jan 2000 00:00:00 GMT');
+        }
+
         $calculation = $this->pricing->calculateFinalInvoice($job->id);
 
-        return view('cashier.payment', compact('job', 'calculation'));
+        // Prevent browser caching of payment page
+        return response()->view('cashier.payment', compact('job', 'calculation'))
+            ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+            ->header('Pragma', 'no-cache')
+            ->header('Expires', 'Sat, 01 Jan 2000 00:00:00 GMT');
     }
 
     public function processPayment(Request $request, Job $job)

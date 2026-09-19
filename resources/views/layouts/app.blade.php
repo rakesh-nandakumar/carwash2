@@ -47,6 +47,9 @@
         .toast.error {
             background-color: #ef4444;
         }
+        .toast.info {
+            background-color: #3b82f6;
+        }
         .toast.toast-hide {
             animation: slideOut 0.3s ease-in forwards;
         }
@@ -848,6 +851,9 @@
         @if(session('success'))
             <div class="toast success" id="appToast">{{ session('success') }}</div>
         @endif
+        @if(session('info'))
+            <div class="toast info" id="appToast">{{ session('info') }}</div>
+        @endif
         @if($errors->any())
             <div class="toast error" id="appToast">{{ $errors->first() }}</div>
         @endif
@@ -879,6 +885,8 @@
                 // Mobile - always start closed
                 sidebar.classList.remove('active');
             }
+            // Remove preload class after restoring state to prevent conflicts
+            document.documentElement.classList.remove('sidebar-preload-collapsed');
             updateSidebarToggle();
         }
         function updateSidebarToggle() {
@@ -900,6 +908,9 @@
             }
         }
         sidebarToggle.addEventListener('click', () => {
+            // Remove preload class on first interaction to prevent conflicts
+            document.documentElement.classList.remove('sidebar-preload-collapsed');
+
             if (window.innerWidth <= 1024) {
                 // Mobile / tablet
                 sidebar.classList.toggle('active');
