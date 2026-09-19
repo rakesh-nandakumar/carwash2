@@ -92,27 +92,31 @@
         }
 
         .items-table td {
-            padding: 3px 0;
+            padding: 3px 2px;
         }
 
         .item-name {
             text-align: left;
             font-weight: bold;
+            font-size: 13px;
         }
 
         .item-qty {
             text-align: center;
             font-weight: bold;
+            font-size: 13px;
         }
 
         .item-price {
             text-align: right;
             font-weight: bold;
+            font-size: 13px;
         }
 
         .item-total {
             text-align: right;
             font-weight: 900;
+            font-size: 13px;
         }
 
         .item-discount {
@@ -219,17 +223,20 @@
                 ];
         @endphp
 
-        {{-- Company Logo --}}
+        {{-- Company Logo - Prominently at the top --}}
         @if($settings['logo_path'])
-            <img
-                src="{{ \App\Support\Media::url($settings['logo_path']) }}"
-                alt="Logo"
-                style="
-                    max-width: 50mm;
-                    max-height: {{ $settings['logo_size_thermal'] ?? 40 }}px;
-                    margin-bottom: 10px;
-                "
-            >
+            <div style="text-align: center; margin-bottom: 12px;">
+                <img
+                    src="{{ \App\Support\Media::url($settings['logo_path']) }}"
+                    alt="Logo"
+                    style="
+                        max-width: 60mm;
+                        max-height: {{ $settings['logo_size_thermal'] ?? 50 }}px;
+                        display: block;
+                        margin: 0 auto;
+                    "
+                >
+            </div>
         @endif
 
         {{-- Company Information --}}
@@ -281,10 +288,18 @@
 
         {{-- Invoice Items --}}
         <table class="items-table">
+            {{-- Table Headers --}}
+            <tr style="border-bottom: 1px solid #000;">
+                <td class="item-name" style="font-size: 11px;">ITEM</td>
+                <td class="item-qty" style="font-size: 11px;">QTY</td>
+                <td class="item-price" style="font-size: 11px;">PRICE</td>
+                <td class="item-total" style="font-size: 11px;">TOTAL</td>
+            </tr>
+
             @foreach($invoice->items as $item)
                 <tr>
                     <td class="item-name">
-                        {{ substr($item->description, 0, 20) }}
+                        {{ substr($item->description, 0, 14) }}
 
                         @if((float) $item->discount > 0)
                             <div class="item-discount">

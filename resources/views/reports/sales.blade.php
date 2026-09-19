@@ -724,8 +724,29 @@ function printThermal() {
         <body>
             <div class="thermal">
                 <div class="header">
+                    @php
+                        $business = auth()->user()->business;
+                        $settings = $business ? $business->getBillingSettings() : ['logo_path' => '', 'company_name' => 'AUTOCARE PRO'];
+                    @endphp
+
+                    {{-- Company Logo --}}
+                    @if($settings['logo_path'])
+                        <div class="logo-container">
+                            <img
+                                src="{{ \App\Support\Media::url($settings['logo_path']) }}"
+                                alt="Logo"
+                                style="
+                                    max-width: 60mm;
+                                    max-height: {{ $settings['logo_size_thermal'] ?? 50 }}px;
+                                    display: block;
+                                    margin: 0 auto 12px auto;
+                                "
+                            >
+                        </div>
+                    @endif
+
                     <div class="company">
-                        AUTOCARE PRO
+                        {{ $settings['company_name'] }}
                     </div>
                     <div class="title">
                         SALES REPORT
