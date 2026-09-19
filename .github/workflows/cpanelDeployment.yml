@@ -46,7 +46,7 @@ jobs:
       # 7. Deploy to cPanel
       - name: Deploy to cPanel
         env:
-          FTP_SERVER: "ftp.leomotorparts.com"
+          FTP_SERVER: "business196.web-hosting.com"
           FTP_USERNAME: "auto_ftp@autocare.vellixglobal.com"
           FTP_PASSWORD: ",ZAuB1Hj@l?$EZW="
         run: |
