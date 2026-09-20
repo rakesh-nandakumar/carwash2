@@ -109,7 +109,7 @@ jobs:
       - name: Deploy to cPanel
         env:
           FTP_SERVER: "business196.web-hosting.com"
-          FTP_USERNAME: "test_auto_ftp@autocare.vellixglobal.com"
+          FTP_USERNAME: "test_auto_ftp@test.autocare.vellixglobal.com"
           FTP_PASSWORD: ",ZAuB1Hj@l?$EZW="
         run: |
           echo "Checking FTP server..."
