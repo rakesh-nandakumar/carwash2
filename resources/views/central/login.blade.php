@@ -27,6 +27,7 @@
     <div class="card">
         <div style="text-align: center; margin-bottom: 20px;">
             <h1 style="font-size: 28px; margin: 0;">AutoCare Pro</h1>
+            <span style="color: #4a90e2; font-size: 14px; font-weight: 600;">Master Control</span>
         </div>
         <p>Platform operators only.</p>
         @if($errors->any())
