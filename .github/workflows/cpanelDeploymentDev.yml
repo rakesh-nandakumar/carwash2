@@ -12,7 +12,7 @@ jobs:
 
     steps:
 
-      # 1. G      # 1. Get the latest code
+      # 1. Get the latest code
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -46,21 +46,100 @@ jobs:
       # 7. Compress project files into a single ZIP
       - name: Archive project files
         run: |
-          zip -r deploy.zip . -x ".git/*" ".github/*" "node_modules/*"
+          zip -r deploy.zip . \
+            -x ".git/*" \
+            -x ".github/*" \
+            -x "node_modules/*" \
+            -x ".env" \
+            -x ".env.*" \
+            -x "storage/logs/*"
 
-      # 8. Deploy to cPanel
+      # 8. Create temporary PHP extractor script
+      - name: Create Unzip Script
+        run: |
+          cat << 'EOF' > unzip.php
+          <?php
+          $baseDir = dirname(__DIR__);
+          $zipFile = $baseDir . '/deploy.zip';
+
+          if (file_exists($zipFile)) {
+              $zip = new ZipArchive;
+              if ($zip->open($zipFile) === TRUE) {
+                  // Extract files into root directory
+                  $success = $zip->extractTo($baseDir);
+                  $zip->close();
+                  @unlink($zipFile);
+
+                  if (!$success) {
+                      http_response_code(500);
+                      echo "Extraction failed. Check cPanel directory permissions.";
+                      exit;
+                  }
+
+                  // 1. Clear all Laravel Caches (Views, Bootstrap Cache, Storage Data)
+                  $cachePaths = [
+                      $baseDir . '/storage/framework/views/*.php',
+                      $baseDir . '/bootstrap/cache/*.php',
+                      $baseDir . '/storage/framework/cache/data/*/*'
+                  ];
+                  foreach ($cachePaths as $path) {
+                      foreach (glob($path) ?: [] as $file) {
+                          if (is_file($file)) @unlink($file);
+                      }
+                  }
+
+                  // 2. Reset PHP OPcache (Forces server to stop serving old PHP files from memory)
+                  if (function_exists('opcache_reset')) {
+                      opcache_reset();
+                  }
+
+                  @unlink(__FILE__);
+                  echo "Extraction and Cache Clear successful!";
+              } else {
+                  http_response_code(500);
+                  echo "Failed to open zip archive.";
+              }
+          } else {
+              http_response_code(404);
+              echo "Zip file not found at: " . $zipFile;
+          }
+          EOF
+
+      # 9. Deploy ZIP to cPanel and run extraction
       - name: Deploy to cPanel
         env:
           FTP_SERVER: "business196.web-hosting.com"
-          FTP_USERNAME: "test_auto_ftp@autocare.vellixglobal.com"
+          FTP_USERNAME: "test_auto_ftp@test.autocare.vellixglobal.com"
           FTP_PASSWORD: ",ZAuB1Hj@l?$EZW="
         run: |
           echo "Checking FTP server..."
+
+          if ! getent hosts "$FTP_SERVER"; then
+            echo "FTP server could not be resolved."
+            exit 1
+          fi
+
+          echo "FTP server resolved successfully. Uploading ZIP package..."
+
           lftp -c "
-            set ftp:ssl-allow true;
-            set ssl:verify-certificate false;
-            open -u $FTP_USERNAME,$FTP_PASSWORD $FTP_SERVER;
+            set ftp:ssl-force true;
+            set ftp:ssl-protect-data true;
+            set ftp:passive-mode true;
+            set net:timeout 30;
+            set net:max-retries 3;
+            set net:reconnect-interval-base 5;
+
+            open -u \"$FTP_USERNAME\",\"$FTP_PASSWORD\" \"$FTP_SERVER\";
+
             put deploy.zip;
-            put unzip.php;
-            quit;
+            put unzip.php -o public/unzip.php;
+          "
+
+          echo "Triggering remote extraction and clearing Laravel cache..."
+          curl -f -s -L "http://test.autocare.vellixglobal.com/unzip.php"
+          echo "Deployment complete!"
+
+
+          
+
           "
