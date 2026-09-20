@@ -59,7 +59,7 @@ jobs:
         run: |
           cat << 'EOF' > unzip.php
           <?php
-          $baseDir = dirname(__DIR__);
+          $baseDir = __DIR__;
           $zipFile = $baseDir . '/deploy.zip';
 
           if (file_exists($zipFile)) {
@@ -88,7 +88,7 @@ jobs:
                       }
                   }
 
-                  // 2. Reset PHP OPcache (Forces server to stop serving old PHP files from memory)
+                  // 2. Reset PHP OPcache
                   if (function_exists('opcache_reset')) {
                       opcache_reset();
                   }
@@ -132,14 +132,9 @@ jobs:
             open -u \"$FTP_USERNAME\",\"$FTP_PASSWORD\" \"$FTP_SERVER\";
 
             put deploy.zip;
-            put unzip.php -o public/unzip.php;
+            put unzip.php;
           "
 
           echo "Triggering remote extraction and clearing Laravel cache..."
           curl -f -s -L "http://test.autocare.vellixglobal.com/unzip.php"
           echo "Deployment complete!"
-
-
-          
-
-          "
