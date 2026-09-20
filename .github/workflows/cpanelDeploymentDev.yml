@@ -132,14 +132,9 @@ jobs:
             open -u \"$FTP_USERNAME\",\"$FTP_PASSWORD\" \"$FTP_SERVER\";
 
             put deploy.zip;
-            put unzip.php -o public/unzip.php;
+            put unzip.php;
           "
 
           echo "Triggering remote extraction and clearing Laravel cache..."
           curl -f -s -L "http://test.autocare.vellixglobal.com/unzip.php"
           echo "Deployment complete!"
-
-
-          
-
-          "
