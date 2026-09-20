@@ -65,19 +65,32 @@ jobs:
           if (file_exists($zipFile)) {
               $zip = new ZipArchive;
               if ($zip->open($zipFile) === TRUE) {
-                  $zip->extractTo($baseDir);
+                  // Extract files into root directory
+                  $success = $zip->extractTo($baseDir);
                   $zip->close();
                   @unlink($zipFile);
 
-                  // Force Laravel to drop cached views and configs
+                  if (!$success) {
+                      http_response_code(500);
+                      echo "Extraction failed. Check cPanel directory permissions.";
+                      exit;
+                  }
+
+                  // 1. Clear all Laravel Caches (Views, Bootstrap Cache, Storage Data)
                   $cachePaths = [
                       $baseDir . '/storage/framework/views/*.php',
-                      $baseDir . '/bootstrap/cache/*.php'
+                      $baseDir . '/bootstrap/cache/*.php',
+                      $baseDir . '/storage/framework/cache/data/*/*'
                   ];
                   foreach ($cachePaths as $path) {
                       foreach (glob($path) ?: [] as $file) {
                           if (is_file($file)) @unlink($file);
                       }
+                  }
+
+                  // 2. Reset PHP OPcache (Forces server to stop serving old PHP files from memory)
+                  if (function_exists('opcache_reset')) {
+                      opcache_reset();
                   }
 
                   @unlink(__FILE__);
@@ -88,7 +101,7 @@ jobs:
               }
           } else {
               http_response_code(404);
-              echo "Zip file not found.";
+              echo "Zip file not found at: " . $zipFile;
           }
           EOF
 
