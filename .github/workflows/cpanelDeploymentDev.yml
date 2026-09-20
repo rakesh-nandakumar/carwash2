@@ -11,7 +11,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Get the latest code
+
+      # 1. G      # 1. Get the latest code
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -50,9 +51,9 @@ jobs:
       # 8. Deploy to cPanel
       - name: Deploy to cPanel
         env:
-          FTP_SERVER: ${{ secrets.FTP_SERVER }}
-          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
-          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          FTP_SERVER: "business196.web-hosting.com"
+          FTP_USERNAME: "test_auto_ftp@autocare.vellixglobal.com"
+          FTP_PASSWORD: ",ZAuB1Hj@l?$EZW="
         run: |
           echo "Checking FTP server..."
           lftp -c "
