@@ -59,22 +59,49 @@ jobs:
         run: |
           cat << 'EOF' > unzip.php
           <?php
-          $zipFile = __DIR__ . '/deploy.zip';
-          $extractTo = __DIR__;
+          $baseDir = dirname(__DIR__);
+          $zipFile = $baseDir . '/deploy.zip';
 
           if (file_exists($zipFile)) {
               $zip = new ZipArchive;
               if ($zip->open($zipFile) === TRUE) {
-                  $zip->extractTo($extractTo);
+                  // Extract files into root directory
+                  $success = $zip->extractTo($baseDir);
                   $zip->close();
-                  unlink($zipFile);
-                  unlink(__FILE__);
-                  echo "Extraction successful!";
+                  @unlink($zipFile);
+
+                  if (!$success) {
+                      http_response_code(500);
+                      echo "Extraction failed. Check cPanel directory permissions.";
+                      exit;
+                  }
+
+                  // 1. Clear all Laravel Caches (Views, Bootstrap Cache, Storage Data)
+                  $cachePaths = [
+                      $baseDir . '/storage/framework/views/*.php',
+                      $baseDir . '/bootstrap/cache/*.php',
+                      $baseDir . '/storage/framework/cache/data/*/*'
+                  ];
+                  foreach ($cachePaths as $path) {
+                      foreach (glob($path) ?: [] as $file) {
+                          if (is_file($file)) @unlink($file);
+                      }
+                  }
+
+                  // 2. Reset PHP OPcache (Forces server to stop serving old PHP files from memory)
+                  if (function_exists('opcache_reset')) {
+                      opcache_reset();
+                  }
+
+                  @unlink(__FILE__);
+                  echo "Extraction and Cache Clear successful!";
               } else {
+                  http_response_code(500);
                   echo "Failed to open zip archive.";
               }
           } else {
-              echo "Zip file not found.";
+              http_response_code(404);
+              echo "Zip file not found at: " . $zipFile;
           }
           EOF
 
@@ -105,9 +132,12 @@ jobs:
             open -u \"$FTP_USERNAME\",\"$FTP_PASSWORD\" \"$FTP_SERVER\";
 
             put deploy.zip;
-            put unzip.php;
+            put unzip.php -o public/unzip.php;
           "
 
-          echo "Triggering remote extraction..."
-          curl -s "http://autocare.vellixglobal.com/unzip.php" || true
+          echo "Triggering remote extraction and clearing Laravel cache..."
+          curl -f -s -L "http://autocare.vellixglobal.com/unzip.php"
           echo "Deployment complete!"
+
+
+          
