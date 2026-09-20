@@ -59,13 +59,14 @@ jobs:
         run: |
           cat << 'EOF' > unzip.php
           <?php
-          $baseDir = __DIR__;
+          // Target the project root folder (one level above public/)
+          $baseDir = dirname(__DIR__);
           $zipFile = $baseDir . '/deploy.zip';
 
           if (file_exists($zipFile)) {
               $zip = new ZipArchive;
               if ($zip->open($zipFile) === TRUE) {
-                  // Extract files into root directory
+                  // Extract files into the project root directory
                   $success = $zip->extractTo($baseDir);
                   $zip->close();
                   @unlink($zipFile);
@@ -132,7 +133,7 @@ jobs:
             open -u \"$FTP_USERNAME\",\"$FTP_PASSWORD\" \"$FTP_SERVER\";
 
             put deploy.zip;
-            put unzip.php;
+            put unzip.php -o public/unzip.php;
           "
 
           echo "Triggering remote extraction and clearing Laravel cache..."
