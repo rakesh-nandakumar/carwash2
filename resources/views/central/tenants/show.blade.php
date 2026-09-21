@@ -67,6 +67,21 @@
         </div>
     </div>
 
+    <div class="card" style="border: 2px solid #ef4444;">
+        <h3 style="margin-bottom:12px; color: #ef4444;">Danger Zone</h3>
+        <p style="margin-bottom:12px; color: #6b7280;">Clear all data for this tenant (vehicles, customers, jobs, invoices, notifications, cheques, audit logs, tills). This action cannot be undone.</p>
+        <form method="post" action="{{ route('central.tenants.fresh-data', $tenant) }}" onsubmit="return confirm('Are you sure you want to delete ALL data for tenant {{ $tenant->name }}? This will clear vehicles, customers, jobs, invoices, notifications, cheques, audit logs, and tills. This action cannot be undone.');">
+            @csrf
+            <div style="display:flex;gap:8px;align-items:end;">
+                <label style="margin:0;">
+                    Type <strong>FRESH</strong> to confirm:
+                    <input type="text" name="confirm" required style="min-width:120px; border: 2px solid #ef4444;">
+                </label>
+                <button class="btn btn-danger" type="submit">Fresh Tenant Data</button>
+            </div>
+        </form>
+    </div>
+
     <div class="card">
         <h3 style="margin-bottom:12px;">Test instance</h3>
         @if($tenant->isTestInstance())

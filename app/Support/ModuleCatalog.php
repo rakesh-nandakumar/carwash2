@@ -51,7 +51,7 @@ class ModuleCatalog
             self::INVENTORY => [
                 'name' => 'Inventory & Item Master',
                 'description' => 'Item master, products, stock control categories and purchasing.',
-                'module_keys' => ['item_master', 'categories'],
+                'module_keys' => ['inventory', 'categories', 'grns', 'return_grns'],
             ],
             self::BILLING => [
                 'name' => 'Billing & Cashier',

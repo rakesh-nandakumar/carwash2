@@ -40,18 +40,20 @@
             <label>
                 Category*
                 <select name="category">
+                    <option>Bike</option>
+                    <option>Motorcycle</option>
+                    <option>Three-wheeler</option>
                     <option>Small Car</option>
                     <option>Sedan</option>
+                    <option>Minivan</option>
                     <option>SUV</option>
-                    <option>Luxury</option>
-                    <option>Van</option>
-                    <option>Pickup</option>
                     <option>Jeep</option>
-                    <option>Three-wheeler</option>
-                    <option>Motorcycle</option>
-                    <option>Commercial</option>
+                    <option>Pickup</option>
+                    <option>Van</option>
                     <option>Bus</option>
+                    <option>Lorry</option>
                     <option>JCB Truck</option>
+                    <option>Boom Truck</option>
                 </select>
             </label>
             <label>

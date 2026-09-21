@@ -1,0 +1,141 @@
+name: Deploy Website to cPanel
+
+on:
+  push:
+    branches:
+      - development
+
+jobs:
+  deploy:
+    name: Build and Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+
+      # 1. Get the latest code
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # 2. Check PHP and Composer
+      - name: Check PHP and Composer
+        run: |
+          php --version
+          composer --version
+
+      # 3. Install frontend dependencies
+      - name: Install frontend dependencies
+        run: npm ci
+
+      # 4. Build frontend
+      - name: Build frontend
+        run: npm run build
+
+      # 5. Install Laravel dependencies
+      - name: Install PHP dependencies
+        run: |
+          composer install \
+            --optimize-autoloader \
+            --no-interaction
+
+      # 6. Install Zip & FTP client
+      - name: Install Zip and FTP client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y zip lftp
+
+      # 7. Compress project files into a single ZIP
+      - name: Archive project files
+        run: |
+          zip -r deploy.zip . \
+            -x ".git/*" \
+            -x ".github/*" \
+            -x "node_modules/*" \
+            -x ".env" \
+            -x ".env.*" \
+            -x "storage/logs/*"
+
+      # 8. Create temporary PHP extractor script
+      - name: Create Unzip Script
+        run: |
+          cat << 'EOF' > unzip.php
+          <?php
+          // Target the project root folder (one level above public/)
+          $baseDir = dirname(__DIR__);
+          $zipFile = $baseDir . '/deploy.zip';
+
+          if (file_exists($zipFile)) {
+              $zip = new ZipArchive;
+              if ($zip->open($zipFile) === TRUE) {
+                  // Extract files into the project root directory
+                  $success = $zip->extractTo($baseDir);
+                  $zip->close();
+                  @unlink($zipFile);
+
+                  if (!$success) {
+                      http_response_code(500);
+                      echo "Extraction failed. Check cPanel directory permissions.";
+                      exit;
+                  }
+
+                  // 1. Clear all Laravel Caches (Views, Bootstrap Cache, Storage Data)
+                  $cachePaths = [
+                      $baseDir . '/storage/framework/views/*.php',
+                      $baseDir . '/bootstrap/cache/*.php',
+                      $baseDir . '/storage/framework/cache/data/*/*'
+                  ];
+                  foreach ($cachePaths as $path) {
+                      foreach (glob($path) ?: [] as $file) {
+                          if (is_file($file)) @unlink($file);
+                      }
+                  }
+
+                  // 2. Reset PHP OPcache
+                  if (function_exists('opcache_reset')) {
+                      opcache_reset();
+                  }
+
+                  @unlink(__FILE__);
+                  echo "Extraction and Cache Clear successful!";
+              } else {
+                  http_response_code(500);
+                  echo "Failed to open zip archive.";
+              }
+          } else {
+              http_response_code(404);
+              echo "Zip file not found at: " . $zipFile;
+          }
+          EOF
+
+      # 9. Deploy ZIP to cPanel and run extraction
+      - name: Deploy to cPanel
+        env:
+          FTP_SERVER: "business196.web-hosting.com"
+          FTP_USERNAME: "test_auto_ftp@test.autocare.vellixglobal.com"
+          FTP_PASSWORD: ",ZAuB1Hj@l?$EZW="
+        run: |
+          echo "Checking FTP server..."
+
+          if ! getent hosts "$FTP_SERVER"; then
+            echo "FTP server could not be resolved."
+            exit 1
+          fi
+
+          echo "FTP server resolved successfully. Uploading ZIP package..."
+
+          lftp -c "
+            set ftp:ssl-force true;
+            set ftp:ssl-protect-data true;
+            set ftp:passive-mode true;
+            set net:timeout 30;
+            set net:max-retries 3;
+            set net:reconnect-interval-base 5;
+
+            open -u \"$FTP_USERNAME\",\"$FTP_PASSWORD\" \"$FTP_SERVER\";
+
+            put deploy.zip;
+            put unzip.php -o public/unzip.php;
+          "
+
+          echo "Triggering remote extraction and clearing Laravel cache..."
+          curl -f -s -L "http://test.autocare.vellixglobal.com/unzip.php"
+          echo "Deployment complete!"

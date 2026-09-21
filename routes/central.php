@@ -63,6 +63,7 @@ Route::middleware(['auth:central'])->group(function () {
         Route::post('/tenants/{tenant}/tills', [TenantController::class, 'createTill'])->name('tenants.tills.create');
 
         Route::post('/tenants/{tenant}/impersonate', [ImpersonationController::class, 'store'])->name('tenants.impersonate');
+        Route::post('/tenants/{tenant}/fresh-data', [TenantController::class, 'freshData'])->name('tenants.fresh-data');
 
         Route::post('/tenants/{tenant}/test-instance', [TestInstanceController::class, 'create'])->name('tenants.test-instance.create');
         Route::post('/tenants/{tenant}/test-instance/sync', [TestInstanceController::class, 'sync'])->name('tenants.test-instance.sync');
