@@ -46,7 +46,7 @@
             </label>
             <button type="submit">Sign in</button>
         </form>
-        <div class="footer">Powered by VellixGlobal</div>
+        <div class="footer">Powered by Vellix Global</div>
     </div>
 </body>
 </html>

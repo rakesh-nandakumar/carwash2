@@ -59,13 +59,14 @@ jobs:
         run: |
           cat << 'EOF' > unzip.php
           <?php
+          // Target the project root folder (one level above public/)
           $baseDir = dirname(__DIR__);
           $zipFile = $baseDir . '/deploy.zip';
 
           if (file_exists($zipFile)) {
               $zip = new ZipArchive;
               if ($zip->open($zipFile) === TRUE) {
-                  // Extract files into root directory
+                  // Extract files into the project root directory
                   $success = $zip->extractTo($baseDir);
                   $zip->close();
                   @unlink($zipFile);
@@ -88,7 +89,7 @@ jobs:
                       }
                   }
 
-                  // 2. Reset PHP OPcache (Forces server to stop serving old PHP files from memory)
+                  // 2. Reset PHP OPcache
                   if (function_exists('opcache_reset')) {
                       opcache_reset();
                   }
@@ -109,7 +110,7 @@ jobs:
       - name: Deploy to cPanel
         env:
           FTP_SERVER: "business196.web-hosting.com"
-          FTP_USERNAME: "test_auto_ftp@autocare.vellixglobal.com"
+          FTP_USERNAME: "test_auto_ftp@test.autocare.vellixglobal.com"
           FTP_PASSWORD: ",ZAuB1Hj@l?$EZW="
         run: |
           echo "Checking FTP server..."
@@ -138,6 +139,3 @@ jobs:
           echo "Triggering remote extraction and clearing Laravel cache..."
           curl -f -s -L "http://test.autocare.vellixglobal.com/unzip.php"
           echo "Deployment complete!"
-
-
-          
