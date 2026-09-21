@@ -187,18 +187,20 @@ class VehicleController extends Controller
     public function categories(Request $request)
     {
         $categories = [
-            'Small Car',
-            'Sedan', 
-            'SUV',
-            'Luxury',
-            'Van',
-            'Pickup',
-            'Jeep',
-            'Three-wheeler',
+            'Bike',
             'Motorcycle',
-            'Commercial',
+            'Three-wheeler',
+            'Small Car',
+            'Sedan',
+            'Minivan',
+            'SUV',
+            'Jeep',
+            'Pickup',
+            'Van',
             'Bus',
-            'JCB Truck'
+            'Lorry',
+            'JCB Truck',
+            'Boom Truck'
         ];
 
         return response()->json($categories);

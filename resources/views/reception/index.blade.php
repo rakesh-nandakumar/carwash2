@@ -904,15 +904,20 @@ function loadVehicleCategoriesForModal() {
     const categoryDropdownContainer = document.getElementById('vehicleCategoryDropdown');
     if (categoryDropdownContainer) {
         const categoryData = [
+            { id: 'Bike', label: 'Bike' },
+            { id: 'Motorcycle', label: 'Motorcycle' },
+            { id: 'Three-wheeler', label: 'Three-wheeler' },
             { id: 'Small Car', label: 'Small Car' },
             { id: 'Sedan', label: 'Sedan' },
+            { id: 'Minivan', label: 'Minivan' },
             { id: 'SUV', label: 'SUV' },
-            { id: 'Luxury', label: 'Luxury' },
+            { id: 'Jeep', label: 'Jeep' },
+            { id: 'Pickup', label: 'Pickup' },
             { id: 'Van', label: 'Van' },
             { id: 'Bus', label: 'Bus' },
-            { id: 'Three-wheeler', label: 'Three-wheeler' },
+            { id: 'Lorry', label: 'Lorry' },
             { id: 'JCB Truck', label: 'JCB Truck' },
-            { id: 'Bomb Truck', label: 'Bomb Truck' }
+            { id: 'Boom Truck', label: 'Boom Truck' }
         ];
 
         vehicleCategoryDropdown = new SearchableDropdown(categoryDropdownContainer, {
