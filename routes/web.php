@@ -45,7 +45,7 @@ Route::prefix(config('tenancy.central_prefix'))
     ->middleware(['central_only'])
     ->group(base_path('routes/central.php'));
 
-Route::get('/', fn () => redirect('/'.config('tenancy.central_prefix').'/login'));
+Route::get('/', fn () => abort(403, 'Access Denied'));
 
 // ==================== DATABASE MIGRATION ====================
 // NOT behind `auth` — anyone with this URL can trigger a migration.
