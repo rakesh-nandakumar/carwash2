@@ -54,7 +54,8 @@ class InspectionService
 
     public function uploadPhoto(int $inspectionId, $file, string $category, ?string $caption = null): InspectionPhoto
     {
-        $path = $file->store('inspections/' . $inspectionId, 'public');
+        $storageService = new \App\Services\StorageService();
+        $path = $storageService->uploadImage($file, 'inspections/' . $inspectionId);
         return $this->addPhoto($inspectionId, $category, $path, $caption);
     }
 
@@ -100,12 +101,11 @@ class InspectionService
     public function deletePhoto(int $photoId): void
     {
         $photo = InspectionPhoto::findOrFail($photoId);
-        
+
         // Delete file from storage
-        if (Storage::disk('public')->exists($photo->path)) {
-            Storage::disk('public')->delete($photo->path);
-        }
-        
+        $storageService = new \App\Services\StorageService();
+        $storageService->deleteImage($photo->path);
+
         $photo->delete();
     }
 

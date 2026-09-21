@@ -100,7 +100,8 @@ class TenantSettingController extends Controller
     {
         // Handle logo upload - always process if file is present
         if ($request->hasFile('logo')) {
-            $path = $request->file('logo')->store("tenants/{$tenant->id}/branding", 'public');
+            $storageService = new \App\Services\StorageService();
+            $path = $storageService->uploadImage($request->file('logo'), "tenants/{$tenant->id}/branding");
             Settings::set('branding.logo_path', $path, null, $tenant->id);
         } elseif ($request->filled('remove_logo') && $request->input('remove_logo') == '1') {
             // Only remove if explicitly requested
@@ -110,7 +111,8 @@ class TenantSettingController extends Controller
         // (don't clear it based on empty hidden field) - do nothing here
 
         if ($request->hasFile('reception_background')) {
-            $path = $request->file('reception_background')->store("tenants/{$tenant->id}/reception", 'public');
+            $storageService = new \App\Services\StorageService();
+            $path = $storageService->uploadImage($request->file('reception_background'), "tenants/{$tenant->id}/reception");
             Settings::set('reception.background_image', $path, null, $tenant->id);
         } elseif ($request->filled('remove_background') && $request->input('remove_background') == '1') {
             Settings::set('reception.background_image', '', null, $tenant->id);

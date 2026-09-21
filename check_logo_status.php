@@ -17,11 +17,18 @@ $setting = Setting::withoutTenantScope()
 if ($setting) {
     echo "Current logo path in database: '{$setting->value}'\n";
     echo "Is empty: " . (empty($setting->value) ? 'YES' : 'NO') . "\n";
-    
+
     if (!empty($setting->value)) {
-        echo "File exists: " . (Storage::disk('public')->exists($setting->value) ? 'YES' : 'NO') . "\n";
-        echo "File size: " . Storage::disk('public')->size($setting->value) . " bytes\n";
-        echo "Public URL: http://localhost/storage/" . $setting->value . "\n";
+        // Check if it's a URL (R2) or local path
+        if (filter_var($setting->value, FILTER_VALIDATE_URL)) {
+            echo "Storage type: Cloudflare R2 (URL)\n";
+            echo "Public URL: {$setting->value}\n";
+        } else {
+            echo "Storage type: Local storage\n";
+            echo "File exists: " . (Storage::disk('public')->exists($setting->value) ? 'YES' : 'NO') . "\n";
+            echo "File size: " . Storage::disk('public')->size($setting->value) . " bytes\n";
+            echo "Public URL: http://localhost/storage/" . $setting->value . "\n";
+        }
     }
 } else {
     echo "No logo setting found for tenant 2\n";

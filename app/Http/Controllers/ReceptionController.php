@@ -67,6 +67,15 @@ class ReceptionController extends Controller
             abort(404);
         }
 
+        $storageService = new \App\Services\StorageService();
+        
+        // Check if using R2 storage (URL format) or local storage
+        if (filter_var($vehicle->image, FILTER_VALIDATE_URL)) {
+            // For R2, redirect to the URL
+            return redirect($vehicle->image);
+        }
+
+        // Fallback to local storage
         $disk = Storage::disk('public');
 
         if (!$disk->exists($vehicle->image)) {
@@ -140,7 +149,8 @@ class ReceptionController extends Controller
             if ($request->hasFile('vehicle_image')) {
                 $vehicle = Vehicle::findOrFail($validated['vehicle_id']);
                 $oldImagePath = $vehicle->image;
-                $newImagePath = $request->file('vehicle_image')->store('vehicles', 'public');
+                $storageService = new \App\Services\StorageService();
+                $newImagePath = $storageService->uploadImage($request->file('vehicle_image'), 'vehicles');
             }
 
             $job = DB::transaction(function () use (
@@ -216,7 +226,8 @@ class ReceptionController extends Controller
 
             // Delete old image only after successful transaction
             if ($oldImagePath && $newImagePath) {
-                Storage::disk('public')->delete($oldImagePath);
+                $storageService = new \App\Services\StorageService();
+                $storageService->deleteImage($oldImagePath);
             }
 
             // Generate WhatsApp URL for job creation notification
@@ -265,7 +276,8 @@ class ReceptionController extends Controller
             throw $e;
         } catch (\Exception $e) {
             if (isset($newImagePath) && $newImagePath) {
-                Storage::disk('public')->delete($newImagePath);
+                $storageService = new \App\Services\StorageService();
+                $storageService->deleteImage($newImagePath);
             }
 
             return response()->json([
