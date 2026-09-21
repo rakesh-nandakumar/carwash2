@@ -11,6 +11,8 @@ use App\Support\ModuleCatalog;
 use App\Support\TenantStatus;
 use Database\Seeders\SettingsSeeder;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
 
 /**
@@ -267,6 +269,94 @@ class TenantController extends Controller
             'description' => $definition['description'],
             'enabled' => $enabled->contains($key),
         ])->values()->all();
+    }
+
+    /**
+     * Fresh the tenant's data by clearing specified tables for this tenant.
+     * This is a destructive operation that cannot be undone.
+     */
+    public function freshData(Request $request, Tenant $tenant)
+    {
+        // Add confirmation check
+        if ($request->input('confirm') !== 'FRESH') {
+            return back()->with('error', 'Please type "FRESH" to confirm this destructive operation.');
+        }
+
+        // Tables to clear for this tenant - in dependency order (children first)
+        $tables = [
+            // Job-related
+            'job_status_history',
+            'job_parts',
+            'job_services',
+            'additional_work_requests',
+            'jobs',
+
+            // Invoice-related
+            'invoice_items',
+            'payments', // includes cheque data
+            'invoices',
+
+            // Vehicle-related
+            'vehicles',
+
+            // Customer-related
+            'customers',
+
+            // Appointment-related
+            'appointments',
+
+            // Notification-related
+            'notifications',
+
+            // Till-related
+            'cash_movements',
+            'till_closures',
+            'tills',
+
+            // Audit logs
+            'audit_logs',
+        ];
+
+        DB::beginTransaction();
+
+        try {
+            $deletedCounts = [];
+
+            foreach ($tables as $table) {
+                if (Schema::hasTable($table)) {
+                    $count = DB::table($table)
+                        ->where('tenant_id', $tenant->id)
+                        ->delete();
+
+                    if ($count > 0) {
+                        $deletedCounts[$table] = $count;
+                    }
+                }
+            }
+
+            DB::commit();
+
+            // Log the data fresh operation
+            app(AuditService::class)->log(
+                'tenant.data_freshed',
+                "Tenant '{$tenant->name}' data cleared from " . count($deletedCounts) . " tables",
+                'warning',
+                'central_admin',
+                $request->user('central')->email,
+                [
+                    'tenant_id' => $tenant->id,
+                    'tenant_name' => $tenant->name,
+                    'deleted_counts' => $deletedCounts,
+                ],
+                false,
+                $tenant->id
+            );
+
+            return back()->with('success', 'Tenant data freshed successfully. Cleared ' . array_sum($deletedCounts) . ' records from ' . count($deletedCounts) . ' tables.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Failed to fresh tenant data: ' . $e->getMessage());
+        }
     }
 
     /**

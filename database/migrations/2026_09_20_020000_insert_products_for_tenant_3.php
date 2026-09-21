@@ -244,33 +244,81 @@ return new class extends Migration
             // Clean product name
             $name = trim($product['name']);
             
-            // Insert product
-            $productId = DB::table('products')->insertGetId([
-                'business_id' => 3,
-                'sku' => $sku,
-                'name' => $name,
-                'category' => $this->getCategory($name),
-                'brand' => $this->getBrand($name),
-                'unit' => 'pcs',
-                'cost_price' => $product['cost'],
-                'selling_price' => $product['mrp'],
-                'minimum_stock' => 0,
-                'active' => true,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+            // Get category string
+            $categoryName = $this->getCategory($name);
             
-            // Insert inventory record
-            DB::table('inventory')->insert([
-                'business_id' => 3,
-                'product_id' => $productId,
-                'branch_id' => null,
-                'quantity' => $product['qty'],
-                'reserved_quantity' => 0,
-                'location' => null,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+            // Get or create category for category_id
+            $categoryId = $this->getOrCreateCategory($categoryName);
+            
+            // Check if product already exists
+            $existingProduct = DB::table('products')
+                ->where('tenant_id', 3)
+                ->where('sku', $sku)
+                ->first();
+            
+            if ($existingProduct) {
+                $productId = $existingProduct->id;
+                // Update existing product
+                DB::table('products')
+                    ->where('id', $productId)
+                    ->update([
+                        'name' => $name,
+                        'category' => $categoryName,
+                        'category_id' => $categoryId,
+                        'brand' => $this->getBrand($name),
+                        'cost_price' => $product['cost'],
+                        'selling_price' => $product['mrp'],
+                        'updated_at' => now(),
+                    ]);
+            } else {
+                // Insert new product
+                $productId = DB::table('products')->insertGetId([
+                    'tenant_id' => 3,
+                    'business_id' => 3,
+                    'sku' => $sku,
+                    'name' => $name,
+                    'category' => $categoryName,
+                    'category_id' => $categoryId,
+                    'brand' => $this->getBrand($name),
+                    'unit' => 'pcs',
+                    'cost_price' => $product['cost'],
+                    'selling_price' => $product['mrp'],
+                    'minimum_stock' => 0,
+                    'active' => 1,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+            
+            // Check if inventory exists
+            $existingInventory = DB::table('inventory')
+                ->where('tenant_id', 3)
+                ->where('product_id', $productId)
+                ->whereNull('branch_id')
+                ->first();
+            
+            if ($existingInventory) {
+                // Update existing inventory
+                DB::table('inventory')
+                    ->where('id', $existingInventory->id)
+                    ->update([
+                        'quantity' => $product['qty'],
+                        'updated_at' => now(),
+                    ]);
+            } else {
+                // Insert new inventory record
+                DB::table('inventory')->insert([
+                    'tenant_id' => 3,
+                    'business_id' => 3,
+                    'product_id' => $productId,
+                    'branch_id' => null,
+                    'quantity' => $product['qty'],
+                    'reserved_quantity' => 0,
+                    'location' => null,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
         }
     }
 
@@ -279,13 +327,13 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // Delete products for business_id 3 that were created by this migration
+        // Delete products for tenant_id 3 that were created by this migration
         // Note: This is a simple approach. In production, you might want to be more specific
         DB::table('inventory')->whereIn('product_id', function ($query) {
-            $query->select('id')->from('products')->where('business_id', 3);
+            $query->select('id')->from('products')->where('tenant_id', 3);
         })->delete();
         
-        DB::table('products')->where('business_id', 3)->delete();
+        DB::table('products')->where('tenant_id', 3)->delete();
     }
 
     /**
@@ -348,5 +396,29 @@ return new class extends Migration
         }
         
         return null;
+    }
+
+    /**
+     * Get or create category
+     */
+    private function getOrCreateCategory($categoryName): int
+    {
+        $category = DB::table('categories')
+            ->where('tenant_id', 3)
+            ->where('business_id', 3)
+            ->where('name', $categoryName)
+            ->first();
+        
+        if ($category) {
+            return $category->id;
+        }
+        
+        return DB::table('categories')->insertGetId([
+            'tenant_id' => 3,
+            'business_id' => 3,
+            'name' => $categoryName,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
     }
 };
