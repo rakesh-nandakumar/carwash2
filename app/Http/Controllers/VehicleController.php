@@ -67,7 +67,8 @@ class VehicleController extends Controller
 
             // Save uploaded image if present
             if ($r->hasFile('image')) {
-                $validated['image'] = $r->file('image')->store('vehicles', 'public');
+                $storageService = new \App\Services\StorageService();
+                $validated['image'] = $storageService->uploadImage($r->file('image'), 'vehicles');
             }
 
             $vehicle = Vehicle::create($validated);
@@ -87,9 +88,7 @@ class VehicleController extends Controller
                     'category' => $vehicle->category,
                     'customer_id' => $vehicle->customer_id,
                     'image' => $vehicle->image,
-                    'image_url' => $vehicle->image
-                        ? asset('storage/' . $vehicle->image)
-                        : null,
+                    'image_url' => $vehicle->image,
                 ]);
             }
 
@@ -167,9 +166,11 @@ class VehicleController extends Controller
         // Replace image if a new one is uploaded
         if ($r->hasFile('image')) {
             if ($vehicle->image) {
-                \Storage::disk('public')->delete($vehicle->image);
+                $storageService = new \App\Services\StorageService();
+                $storageService->deleteImage($vehicle->image);
             }
-            $validated['image'] = $r->file('image')->store('vehicles', 'public');
+            $storageService = new \App\Services\StorageService();
+            $validated['image'] = $storageService->uploadImage($r->file('image'), 'vehicles');
         }
 
         $vehicle->update($validated);

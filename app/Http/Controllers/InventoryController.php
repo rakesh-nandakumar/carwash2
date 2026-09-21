@@ -243,7 +243,8 @@ class InventoryController extends Controller
 
             // Handle image upload if provided
             if ($request->hasFile('image')) {
-                $imagePath = $request->file('image')->store('products', 'public');
+                $storageService = new \App\Services\StorageService();
+                $imagePath = $storageService->uploadImage($request->file('image'), 'products');
                 $product->update(['image' => $imagePath]);
             }
 
@@ -346,7 +347,8 @@ class InventoryController extends Controller
 
             // Handle image upload if provided
             if ($request->hasFile('image')) {
-                $imagePath = $request->file('image')->store('products', 'public');
+                $storageService = new \App\Services\StorageService();
+                $imagePath = $storageService->uploadImage($request->file('image'), 'products');
                 $product->update(['image' => $imagePath]);
             }
 
