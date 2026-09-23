@@ -16,15 +16,23 @@
                 <input type="text" name="name" required autofocus style="padding:12px;border:1px solid #e5e7eb;border-radius:8px;width:100%;">
             </div>
             <div class="form-group">
-                <label>Category</label>
-                <div style="display:flex;gap:10px;align-items:flex-start;">
-                    <div class="searchable-dropdown" id="categoryDropdown" style="flex:1;">
-                        <input type="hidden" name="service_category_id" id="service_category_id" value="">
-                        <input type="text" class="searchable-dropdown-input" id="categoryInput" placeholder="Search or select category...">
-                        <div class="searchable-dropdown-options"></div>
-                    </div>
-                    <button type="button" onclick="openCategoryModal()" style="background:#10b981;color:white;padding:12px 16px;border-radius:8px;border:none;cursor:pointer;font-weight:500;white-space:nowrap;">+ Add Category</button>
+                <label>Vehicle Category</label>
+                <div class="searchable-dropdown" id="vehicleCategoryDropdown">
+                    <input type="hidden" name="vehicle_category" id="vehicle_category" value="">
+                    <input type="text" class="searchable-dropdown-input" id="vehicleCategoryInput" placeholder="Select vehicle category...">
+                    <div class="searchable-dropdown-options"></div>
                 </div>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Service Category</label>
+            <div style="display:flex;gap:10px;align-items:flex-start;">
+                <div class="searchable-dropdown" id="categoryDropdown" style="flex:1;">
+                    <input type="hidden" name="service_category_id" id="service_category_id" value="">
+                    <input type="text" class="searchable-dropdown-input" id="categoryInput" placeholder="Search or select category...">
+                    <div class="searchable-dropdown-options"></div>
+                </div>
+                <button type="button" onclick="openCategoryModal()" style="background:#10b981;color:white;padding:12px 16px;border-radius:8px;border:none;cursor:pointer;font-weight:500;white-space:nowrap;">+ Add Category</button>
             </div>
         </div>
         <div class="form-group">
@@ -94,6 +102,12 @@
                        required
                        style="padding:12px;border:1px solid #e5e7eb;border-radius:8px;width:100%;">
             </div>
+            <div class="form-group" style="margin-top:15px;">
+                <label>Vehicle Category</label>
+                <select id="categoryVehicleCategory" name="vehicle_category" style="padding:12px;border:1px solid #e5e7eb;border-radius:8px;width:100%;">
+                    <option value="">Select vehicle category...</option>
+                </select>
+            </div>
 
             <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px;">
                 <button type="button"
@@ -126,15 +140,62 @@ function closeCategoryModal() {
 
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Service create page - loading categories via AJAX');
-    
+
+    // Vehicle categories data (same as in vehicle creation)
+    const vehicleCategories = [
+        { id: 'Bike', label: 'Bike' },
+        { id: 'Motorcycle', label: 'Motorcycle' },
+        { id: 'Three-wheeler', label: 'Three-wheeler' },
+        { id: 'Small Car', label: 'Small Car' },
+        { id: 'Sedan', label: 'Sedan' },
+        { id: 'Minivan', label: 'Minivan' },
+        { id: 'SUV', label: 'SUV' },
+        { id: 'Jeep', label: 'Jeep' },
+        { id: 'Pickup', label: 'Pickup' },
+        { id: 'Van', label: 'Van' },
+        { id: 'Bus', label: 'Bus' },
+        { id: 'Lorry', label: 'Lorry' },
+        { id: 'JCB Truck', label: 'JCB Truck' },
+        { id: 'Boom Truck', label: 'Boom Truck' }
+    ];
+
+    // Initialize vehicle category dropdown
+    const vehicleCategoryContainer = document.getElementById('vehicleCategoryDropdown');
+    let vehicleCategoryDropdown = null;
+    if (vehicleCategoryContainer) {
+        vehicleCategoryDropdown = new SearchableDropdown(vehicleCategoryContainer, {
+            data: vehicleCategories,
+            onSelect: function(item) {
+                // When vehicle category is selected, reload service categories filtered by it
+                loadCategories(item.id);
+            }
+        });
+    }
+
+    // Populate vehicle category select in modal
+    const modalVehicleCategorySelect = document.getElementById('categoryVehicleCategory');
+    if (modalVehicleCategorySelect) {
+        vehicleCategories.forEach(cat => {
+            const option = document.createElement('option');
+            option.value = cat.id;
+            option.textContent = cat.label;
+            modalVehicleCategorySelect.appendChild(option);
+        });
+    }
+
     // Declare categoryData in outer scope so it's accessible everywhere
     let categoryData = [];
     let categoryDropdown = null;
-    
-    // Load categories via AJAX like the reception page
-    async function loadCategories() {
+
+    // Load categories via AJAX with optional vehicle category filter
+    async function loadCategories(vehicleCategory = null) {
         try {
-            const response = await fetch('{{ route('service-categories.list') }}');
+            let url = '{{ route('service-categories.list') }}';
+            if (vehicleCategory) {
+                url += '?vehicle_category=' + encodeURIComponent(vehicleCategory);
+            }
+
+            const response = await fetch(url);
             const categories = await response.json();
 
             const dropdownContainer = document.getElementById('categoryDropdown');
@@ -146,25 +207,32 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 console.log('Category data loaded:', categoryData);
                 console.log('Category data length:', categoryData.length);
+                console.log('Vehicle category filter:', vehicleCategory);
 
-                categoryDropdown = new SearchableDropdown(dropdownContainer, {
-                    data: categoryData
-                });
+                if (categoryDropdown) {
+                    categoryDropdown.updateData(categoryData);
+                } else {
+                    categoryDropdown = new SearchableDropdown(dropdownContainer, {
+                        data: categoryData
+                    });
+                }
                 console.log('SearchableDropdown initialized:', categoryDropdown);
             }
         } catch (error) {
             console.error('Error loading categories:', error);
         }
     }
-    
+
+    // Initial load without filter
     loadCategories();
-    
+
     const categoryForm = document.getElementById('categoryForm');
     if (categoryForm) {
         categoryForm.addEventListener('submit', function(e) {
             e.preventDefault();
 
             const categoryName = document.getElementById('categoryName').value;
+            const vehicleCategory = document.getElementById('categoryVehicleCategory').value;
 
             fetch('{{ route('service-categories.store') }}', {
                 method: 'POST',
@@ -174,20 +242,21 @@ document.addEventListener('DOMContentLoaded', function() {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    name: categoryName
+                    name: categoryName,
+                    vehicle_category: vehicleCategory || null
                 })
             })
             .then(response => response.json())
             .then(data => {
                 console.log('Category creation response:', data);
                 if (data.success) {
-                    // Update dropdown with new category
+                    // Reload categories to include the new one
+                    const selectedVehicleCategory = document.getElementById('vehicle_category').value;
+                    loadCategories(selectedVehicleCategory);
+
+                    // Select the newly created category
                     if (categoryDropdown) {
-                        const newCategory = { id: data.category.id, label: data.category.name };
-                        categoryData = [...categoryData, newCategory];
-                        categoryDropdown.updateData(categoryData);
                         categoryDropdown.setValue(data.category.id, data.category.name);
-                        console.log('Dropdown updated with new category:', newCategory);
                     }
 
                     closeCategoryModal();
