@@ -17,17 +17,21 @@ return new class extends Migration
 
         // Tables to clear for tenant 3 - in dependency order (children first)
         $tables = [
-            // Job-related
+            // Job-related children
             'job_status_history',
             'job_parts',
             'job_services',
             'additional_work_requests',
-            'jobs',
 
-            // Invoice-related
+            // Invoice-related children
             'invoice_items',
             'payments', // includes cheque data
+
+            // Invoice-related (parent)
             'invoices',
+
+            // Job-related (parent)
+            'jobs',
 
             // Vehicle-related
             'vehicles',
