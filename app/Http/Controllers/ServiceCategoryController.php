@@ -7,16 +7,22 @@ use Illuminate\Http\Request;
 
 class ServiceCategoryController extends Controller
 {
-    public function list()
+    public function list(Request $request)
     {
-        $categories = ServiceCategory::select('id', 'name')
-            ->where('business_id', auth()->user()->business_id)
-            ->orderBy('name')
-            ->get();
-        
+        $query = ServiceCategory::select('id', 'name', 'vehicle_category')
+            ->where('business_id', auth()->user()->business_id);
+
+        // Filter by vehicle category if provided
+        if ($request->has('vehicle_category') && $request->vehicle_category) {
+            $query->where('vehicle_category', $request->vehicle_category);
+        }
+
+        $categories = $query->orderBy('name')->get();
+
         \Log::info('ServiceCategoryController::list - User business_id: ' . auth()->user()->business_id);
+        \Log::info('ServiceCategoryController::list - Vehicle category filter: ' . ($request->vehicle_category ?? 'none'));
         \Log::info('ServiceCategoryController::list - Categories found: ' . $categories->count());
-        
+
         return response()->json($categories);
     }
 
@@ -25,6 +31,7 @@ class ServiceCategoryController extends Controller
         try {
             $validated = $request->validate([
                 'name' => 'required|string|max:255|unique:service_categories,name,NULL,id,business_id,' . auth()->user()->business_id,
+                'vehicle_category' => 'nullable|string',
             ]);
 
             $validated['business_id'] = auth()->user()->business_id;

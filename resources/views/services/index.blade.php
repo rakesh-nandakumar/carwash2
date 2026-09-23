@@ -76,7 +76,7 @@
                 <td>
                     <strong>{{ $service->name }}</strong>
                 </td>
-                <td>{{ $service->category ? $service->category->name : '-' }}</td>
+                <td>{{ $service->vehicle_category ?: '-' }}</td>
                 <td>Rs. {{ number_format($service->base_price, 2) }}</td>
                 <td>
                     <label style="position:relative;display:inline-block;width:44px;height:24px;">
@@ -100,6 +100,12 @@
         </tbody>
     </table>
 
+    @if($services->total() > 20)
+    <div class="pagination-wrap">
+        {{ $services->links() }}
+    </div>
+    @endif
+
     <!-- Mobile Cards -->
     <div class="services-cards">
         @forelse($services as $service)
@@ -107,7 +113,7 @@
             <div class="card-top">
                 <div class="card-name">
                     <strong>{{ $service->name }}</strong>
-                    <small>{{ $service->category ? $service->category->name : 'No category' }}</small>
+                    <small>{{ $service->vehicle_category ?: 'No category' }}</small>
                 </div>
                 <label class="status-toggle">
                     <input type="checkbox" {{ $service->active ? 'checked' : '' }} onchange="toggleServiceStatus({{ $service->id }}, this)">
@@ -583,6 +589,148 @@ document.getElementById('filterModal').addEventListener('click', function(event)
 .clear-filters:hover {
     background: rgba(255, 255, 255, 0.2);
     color: #ffffff;
+}
+
+/* Pagination styling */
+.pagination-wrap {
+    margin-top: 28px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+
+.pagination-wrap nav {
+    display: flex;
+    justify-content: center;
+}
+
+.pagination-wrap .pagination,
+.pagination-wrap nav > div {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.pagination-wrap a,
+.pagination-wrap span {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    min-width: 38px;
+    height: 38px;
+    padding: 0 12px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none !important;
+    color: #374151;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    transition: all 0.15s ease;
+    line-height: 1;
+}
+
+.pagination-wrap a:hover {
+    background: #f3f4f6;
+    border-color: #d1d5db;
+    color: #111827;
+}
+
+.pagination-wrap span[aria-current="page"],
+.pagination-wrap .active span,
+.pagination-wrap [aria-current="page"] span {
+    background: #111827 !important;
+    color: #fff !important;
+    border-color: #111827 !important;
+    font-weight: 600;
+}
+
+.pagination-wrap span[aria-disabled="true"],
+.pagination-wrap .disabled span {
+    color: #9ca3af !important;
+    background: #f9fafb !important;
+    border-color: #e5e7eb !important;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.pagination-wrap svg,
+.pagination-wrap .pagination svg,
+nav[role="navigation"] svg {
+    width: 16px !important;
+    height: 16px !important;
+    max-width: 16px !important;
+    max-height: 16px !important;
+}
+
+.pagination-wrap a[rel="prev"],
+.pagination-wrap a[rel="next"] {
+    font-weight: 500;
+    padding: 0 14px;
+}
+
+/* Responsive pagination for mobile */
+@media (max-width: 768px) {
+    .pagination-wrap {
+        margin-top: 20px;
+        gap: 8px;
+    }
+
+    .pagination-wrap .pagination,
+    .pagination-wrap nav > div {
+        gap: 4px;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .pagination-wrap a,
+    .pagination-wrap span {
+        min-width: 32px;
+        height: 32px;
+        padding: 0 8px;
+        font-size: 13px;
+        border-radius: 8px;
+    }
+
+    .pagination-wrap a[rel="prev"],
+    .pagination-wrap a[rel="next"] {
+        padding: 0 10px;
+        font-size: 12px;
+    }
+
+    .pagination-wrap svg,
+    .pagination-wrap .pagination svg,
+    nav[role="navigation"] svg {
+        width: 14px !important;
+        height: 14px !important;
+        max-width: 14px !important;
+        max-height: 14px !important;
+    }
+
+    /* Hide some page numbers on very small screens */
+    @media (max-width: 480px) {
+        .pagination-wrap .pagination {
+            gap: 2px;
+        }
+
+        .pagination-wrap a,
+        .pagination-wrap span {
+            min-width: 28px;
+            height: 28px;
+            padding: 0 6px;
+            font-size: 12px;
+        }
+
+        .pagination-wrap a[rel="prev"],
+        .pagination-wrap a[rel="next"] {
+            padding: 0 8px;
+            font-size: 11px;
+        }
+    }
 }
 
 /* ========== MOBILE ONLY ========== */

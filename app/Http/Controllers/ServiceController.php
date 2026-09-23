@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Service;
-use App\Models\ServiceCategory;
 use App\Services\AuditService;
 use Illuminate\Http\Request;
 
@@ -18,8 +17,7 @@ class ServiceController extends Controller
         $user = auth()->user();
         $search = $request->get('search');
 
-        $query = Service::with('category')
-            ->where('tenant_id', $user->tenant_id)
+        $query = Service::where('tenant_id', $user->tenant_id)
             ->orderBy('name');
 
         if ($search) {
@@ -44,7 +42,7 @@ class ServiceController extends Controller
             'base_price' => 'nullable|numeric|min:0',
             'labor_cost' => 'nullable|numeric|min:0',
             'tax_rate' => 'nullable|numeric|min:0|max:100',
-            'service_category_id' => 'nullable|integer|exists:service_categories,id',
+            'vehicle_category' => 'nullable|string',
             'duration_minutes' => 'nullable|integer|min:1',
             'active' => 'nullable|boolean',
         ]);
@@ -71,14 +69,12 @@ class ServiceController extends Controller
 
     public function show(Service $service)
     {
-        $service->load('category');
         return view('services.show', compact('service'));
     }
 
     public function edit(Service $service)
     {
-        $categories = ServiceCategory::orderBy('name')->get();
-        return view('services.edit', compact('service', 'categories'));
+        return view('services.edit', compact('service'));
     }
 
     public function update(Request $request, Service $service)
@@ -89,7 +85,7 @@ class ServiceController extends Controller
             'base_price' => 'nullable|numeric|min:0',
             'labor_cost' => 'nullable|numeric|min:0',
             'tax_rate' => 'nullable|numeric|min:0|max:100',
-            'service_category_id' => 'nullable|integer|exists:service_categories,id',
+            'vehicle_category' => 'nullable|string',
             'duration_minutes' => 'nullable|integer|min:1',
             'active' => 'nullable|boolean',
         ]);
