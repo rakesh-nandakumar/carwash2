@@ -16,20 +16,39 @@
                 <input type="text" name="name" required autofocus style="padding:12px;border:1px solid #e5e7eb;border-radius:8px;width:100%;">
             </div>
             <div class="form-group">
-                <label>Category</label>
-                <div style="display:flex;gap:10px;align-items:flex-start;">
-                    <div class="searchable-dropdown" id="categoryDropdown" style="flex:1;">
-                        <input type="hidden" name="service_category_id" id="service_category_id" value="">
-                        <input type="text" class="searchable-dropdown-input" id="categoryInput" placeholder="Search or select category...">
-                        <div class="searchable-dropdown-options"></div>
+                <label>Vehicle Category</label>
+                <div class="custom-select" id="vehicleCategorySelect">
+                    <input type="hidden" name="vehicle_category" id="vehicle_category" value="">
+                    <div class="select-trigger" id="vehicleCategoryTrigger">
+                        <input type="text" id="vehicleCategoryInput" placeholder="Search or select vehicle category..." autocomplete="off">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 9l-7 7-7-7"/>
+                        </svg>
                     </div>
-                    <button type="button" onclick="openCategoryModal()" style="background:#10b981;color:white;padding:12px 16px;border-radius:8px;border:none;cursor:pointer;font-weight:500;white-space:nowrap;">+ Add Category</button>
+                    <div class="select-options" id="vehicleCategoryOptions">
+                        <div class="select-option" data-value="">Select vehicle category...</div>
+                        <div class="select-option" data-value="Bike">Bike</div>
+                        <div class="select-option" data-value="Motorcycle">Motorcycle</div>
+                        <div class="select-option" data-value="Three-wheeler">Three-wheeler</div>
+                        <div class="select-option" data-value="Small Car">Small Car</div>
+                        <div class="select-option" data-value="Sedan">Sedan</div>
+                        <div class="select-option" data-value="Minivan">Minivan</div>
+                        <div class="select-option" data-value="SUV">SUV</div>
+                        <div class="select-option" data-value="Jeep">Jeep</div>
+                        <div class="select-option" data-value="Pickup">Pickup</div>
+                        <div class="select-option" data-value="Van">Van</div>
+                        <div class="select-option" data-value="Bus">Bus</div>
+                        <div class="select-option" data-value="Lorry">Lorry</div>
+                        <div class="select-option" data-value="JCB Truck">JCB Truck</div>
+                        <div class="select-option" data-value="Boom Truck">Boom Truck</div>
+                        <div class="select-no-results" id="vehicleCategoryNoResults">No results found</div>
+                    </div>
                 </div>
             </div>
         </div>
         <div class="form-group">
             <label>Description</label>
-            <textarea name="description" rows="3" style="padding:12px;border:1px solid #e5e7eb;border-radius:8px;width:100%;"></textarea>
+            <textarea name="description" rows="1" style="padding:12px;border:1px solid #e5e7eb;border-radius:8px;width:100%;resize:none;"></textarea>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;">
             <div class="form-group">
@@ -81,126 +100,73 @@
     </form>
 </div>
 
-<div id="categoryModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center;">
-    <div style="background:white;padding:30px;border-radius:12px;width:400px;max-width:90%;">
-        <h3 style="margin:0 0 20px 0;">Add New Category</h3>
-        <form id="categoryForm">
-            @csrf
-            <div class="form-group">
-                <label>Category Name *</label>
-                <input type="text"
-                       id="categoryName"
-                       name="name"
-                       required
-                       style="padding:12px;border:1px solid #e5e7eb;border-radius:8px;width:100%;">
-            </div>
-
-            <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px;">
-                <button type="button"
-                        onclick="closeCategoryModal()"
-                        style="background:#6b7280;color:white;padding:10px 20px;border-radius:8px;border:none;cursor:pointer;">
-                    Cancel
-                </button>
-
-                <button type="submit"
-                        style="background:#10b981;color:white;padding:10px 20px;border-radius:8px;border:none;cursor:pointer;">
-                    Add Category
-                </button>
-            </div>
-        </form>
-    </div>
-</div>
-
 <script>
-function openCategoryModal() {
-    const modal = document.getElementById('categoryModal');
-    if (modal) modal.style.display = 'flex';
-}
-
-function closeCategoryModal() {
-    const modal = document.getElementById('categoryModal');
-    const form = document.getElementById('categoryForm');
-    if (modal) modal.style.display = 'none';
-    if (form) form.reset();
-}
-
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Service create page - loading categories via AJAX');
-    
-    // Declare categoryData in outer scope so it's accessible everywhere
-    let categoryData = [];
-    let categoryDropdown = null;
-    
-    // Load categories via AJAX like the reception page
-    async function loadCategories() {
-        try {
-            const response = await fetch('{{ route('service-categories.list') }}');
-            const categories = await response.json();
+    const select = document.getElementById('vehicleCategorySelect');
+    const trigger = document.getElementById('vehicleCategoryTrigger');
+    const options = document.getElementById('vehicleCategoryOptions');
+    const hiddenInput = document.getElementById('vehicle_category');
+    const textInput = document.getElementById('vehicleCategoryInput');
+    const optionElements = options.querySelectorAll('.select-option');
 
-            const dropdownContainer = document.getElementById('categoryDropdown');
-            if (dropdownContainer) {
-                categoryData = Array.isArray(categories) ? categories.map(category => ({
-                    id: category.id,
-                    label: category.name
-                })) : [];
+    // Store all options for filtering (exclude no-results element)
+    const allOptions = Array.from(optionElements).filter(el => !el.classList.contains('select-no-results')).map(el => ({
+        element: el,
+        value: el.getAttribute('data-value'),
+        text: el.textContent
+    }));
 
-                console.log('Category data loaded:', categoryData);
-                console.log('Category data length:', categoryData.length);
+    // Open dropdown when input is focused or clicked
+    textInput.addEventListener('focus', function() {
+        options.classList.add('open');
+    });
 
-                categoryDropdown = new SearchableDropdown(dropdownContainer, {
-                    data: categoryData
-                });
-                console.log('SearchableDropdown initialized:', categoryDropdown);
-            }
-        } catch (error) {
-            console.error('Error loading categories:', error);
-        }
-    }
-    
-    loadCategories();
-    
-    const categoryForm = document.getElementById('categoryForm');
-    if (categoryForm) {
-        categoryForm.addEventListener('submit', function(e) {
-            e.preventDefault();
+    textInput.addEventListener('click', function() {
+        options.classList.add('open');
+    });
 
-            const categoryName = document.getElementById('categoryName').value;
-
-            fetch('{{ route('service-categories.store') }}', {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    name: categoryName
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                console.log('Category creation response:', data);
-                if (data.success) {
-                    // Update dropdown with new category
-                    if (categoryDropdown) {
-                        const newCategory = { id: data.category.id, label: data.category.name };
-                        categoryData = [...categoryData, newCategory];
-                        categoryDropdown.updateData(categoryData);
-                        categoryDropdown.setValue(data.category.id, data.category.name);
-                        console.log('Dropdown updated with new category:', newCategory);
-                    }
-
-                    closeCategoryModal();
-                } else {
-                    alert(data.error || 'Error creating category');
-                }
-            })
-            .catch(error => {
-                console.error(error);
-                alert('Error creating category');
-            });
+    // Filter options based on input
+    textInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        let visibleCount = 0;
+        
+        allOptions.forEach(option => {
+            const matches = option.text.toLowerCase().includes(searchTerm);
+            option.element.style.display = matches ? 'block' : 'none';
+            if (matches) visibleCount++;
         });
-    }
+        
+        // Show/hide no results message
+        const noResults = document.getElementById('vehicleCategoryNoResults');
+        if (noResults) {
+            noResults.style.display = visibleCount === 0 ? 'block' : 'none';
+        }
+        
+        options.classList.add('open');
+    });
+
+    // Select option when clicked
+    optionElements.forEach(option => {
+        option.addEventListener('click', function() {
+            const value = this.getAttribute('data-value');
+            const text = this.textContent;
+            
+            hiddenInput.value = value;
+            textInput.value = text;
+            options.classList.remove('open');
+            
+            // Update selected state
+            optionElements.forEach(opt => opt.classList.remove('selected'));
+            this.classList.add('selected');
+        });
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!select.contains(e.target)) {
+            options.classList.remove('open');
+        }
+    });
 });
 </script>
 
@@ -283,6 +249,129 @@ document.addEventListener('DOMContentLoaded', function() {
 .btn-cancel:hover {
     background: #fecaca;
     color: #b91c1c;
+}
+
+.custom-select {
+    position: relative;
+    width: 100%;
+}
+
+.select-trigger {
+    padding: 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background: white;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 46px;
+}
+
+.select-trigger input {
+    flex: 1;
+    border: none;
+    outline: none;
+    font-size: 14px;
+    color: #374151;
+}
+
+.select-trigger input::placeholder {
+    color: #9ca3af;
+}
+
+.select-trigger input:focus {
+    outline: none;
+}
+
+.select-trigger:focus-within {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.select-no-results {
+    padding: 12px;
+    color: #9ca3af;
+    text-align: center;
+    display: none;
+}
+
+.select-trigger:hover {
+    border-color: #d1d5db;
+}
+
+.select-options {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    margin-top: 4px;
+    max-height: 150px;
+    overflow-y: auto;
+    z-index: 10;
+    display: none;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.select-options.open {
+    display: block;
+}
+
+.select-option {
+    padding: 10px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.select-option:last-child {
+    border-bottom: none;
+}
+
+.select-option:hover {
+    background: #f9fafb;
+}
+
+.select-option.selected {
+    background: #eff6ff;
+    color: #3b82f6;
+}
+@media (max-width: 640px) {    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    margin-top: 4px;
+    max-height: 150px;
+    overflow-y: auto;
+    z-index: 10;
+    display: none;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.select-options.open {
+    display: block;
+}
+
+.select-option {
+    padding: 10px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.select-option:last-child {
+    border-bottom: none;
+}
+
+.select-option:hover {
+    background: #f9fafb;
+}
+
+.select-option.selected {
+    background: #eff6ff;
+    color: #3b82f6;
 }
 @media (max-width: 640px) {
     .form-actions {

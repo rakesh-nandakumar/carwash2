@@ -289,7 +289,7 @@ class ReceptionController extends Controller
 
     public function getServices()
     {
-        $services = Service::with('category')
+        $services = Service::select('id', 'name', 'base_price', 'vehicle_category')
             ->orderBy('name')
             ->get();
 

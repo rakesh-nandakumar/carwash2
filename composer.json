@@ -2,6 +2,15 @@
   "name": "carwash/service-center",
   "type": "project",
   "description": "Car Wash & Vehicle Service Center Management and Automation System",
+  "config": {
+    "allow-plugins": {
+      "php-http/discovery": true
+    },
+    "platform-check": false,
+    "platform": {
+      "php": "8.3.6"
+    }
+  },
   "require": {
     "php": "^8.2",
     "laravel/framework": "^12.0",
