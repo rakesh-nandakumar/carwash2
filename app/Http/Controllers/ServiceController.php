@@ -17,8 +17,7 @@ class ServiceController extends Controller
         $user = auth()->user();
         $search = $request->get('search');
 
-        $query = Service::with('category')
-            ->where('tenant_id', $user->tenant_id)
+        $query = Service::where('tenant_id', $user->tenant_id)
             ->orderBy('name');
 
         if ($search) {
@@ -70,7 +69,6 @@ class ServiceController extends Controller
 
     public function show(Service $service)
     {
-        $service->load('category');
         return view('services.show', compact('service'));
     }
 

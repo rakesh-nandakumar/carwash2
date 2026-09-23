@@ -2,6 +2,8 @@
 
 use App\Models\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\JobService;
+use App\Models\Business;
 
 class Service extends Model
 {
@@ -14,11 +16,6 @@ class Service extends Model
         'labor_cost' => 'decimal:2',
         'tax_rate' => 'decimal:2'
     ];
-
-    public function category()
-    {
-        return $this->belongsTo(ServiceCategory::class, 'service_category_id');
-    }
 
     public function jobServices()
     {

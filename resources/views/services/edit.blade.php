@@ -24,10 +24,32 @@
             {{-- Vehicle Category --}}
             <label>
                 Vehicle Category
-                <div class="searchable-dropdown" id="vehicleCategoryDropdown">
+                <div class="custom-select" id="vehicleCategorySelect">
                     <input type="hidden" name="vehicle_category" id="vehicle_category" value="{{ old('vehicle_category', $service->vehicle_category) }}">
-                    <input type="text" class="searchable-dropdown-input" id="vehicleCategoryInput" placeholder="Select vehicle category..." value="{{ old('vehicle_category', $service->vehicle_category) }}">
-                    <div class="searchable-dropdown-options"></div>
+                    <div class="select-trigger" id="vehicleCategoryTrigger">
+                        <input type="text" id="vehicleCategoryInput" placeholder="Search or select vehicle category..." autocomplete="off" value="{{ old('vehicle_category', $service->vehicle_category) }}">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </div>
+                    <div class="select-options" id="vehicleCategoryOptions">
+                        <div class="select-option" data-value="">Select vehicle category...</div>
+                        <div class="select-option" data-value="Bike">Bike</div>
+                        <div class="select-option" data-value="Motorcycle">Motorcycle</div>
+                        <div class="select-option" data-value="Three-wheeler">Three-wheeler</div>
+                        <div class="select-option" data-value="Small Car">Small Car</div>
+                        <div class="select-option" data-value="Sedan">Sedan</div>
+                        <div class="select-option" data-value="Minivan">Minivan</div>
+                        <div class="select-option" data-value="SUV">SUV</div>
+                        <div class="select-option" data-value="Jeep">Jeep</div>
+                        <div class="select-option" data-value="Pickup">Pickup</div>
+                        <div class="select-option" data-value="Van">Van</div>
+                        <div class="select-option" data-value="Bus">Bus</div>
+                        <div class="select-option" data-value="Lorry">Lorry</div>
+                        <div class="select-option" data-value="JCB Truck">JCB Truck</div>
+                        <div class="select-option" data-value="Boom Truck">Boom Truck</div>
+                        <div class="select-no-results" id="vehicleCategoryNoResults">No results found</div>
+                    </div>
                 </div>
             </label>
 
@@ -246,33 +268,172 @@
 }
 </style>
 
+<style>
+.custom-select {
+    position: relative;
+    width: 100%;
+}
+
+.select-trigger {
+    padding: 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background: white;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 46px;
+}
+
+.select-trigger input {
+    flex: 1;
+    border: none;
+    outline: none;
+    font-size: 14px;
+    color: #374151;
+}
+
+.select-trigger input::placeholder {
+    color: #9ca3af;
+}
+
+.select-trigger input:focus {
+    outline: none;
+}
+
+.select-trigger:focus-within {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.select-no-results {
+    padding: 12px;
+    color: #9ca3af;
+    text-align: center;
+    display: none;
+}
+
+.select-trigger:hover {
+    border-color: #d1d5db;
+}
+
+.select-options {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    margin-top: 4px;
+    max-height: 150px;
+    overflow-y: auto;
+    z-index: 10;
+    display: none;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.select-options.open {
+    display: block;
+}
+
+.select-option {
+    padding: 10px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.select-option:last-child {
+    border-bottom: none;
+}
+
+.select-option:hover {
+    background: #f9fafb;
+}
+
+.select-option.selected {
+    background: #eff6ff;
+    color: #3b82f6;
+}
+</style>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Vehicle categories data (same as in vehicle creation)
-    const vehicleCategories = [
-        { id: 'Bike', label: 'Bike' },
-        { id: 'Motorcycle', label: 'Motorcycle' },
-        { id: 'Three-wheeler', label: 'Three-wheeler' },
-        { id: 'Small Car', label: 'Small Car' },
-        { id: 'Sedan', label: 'Sedan' },
-        { id: 'Minivan', label: 'Minivan' },
-        { id: 'SUV', label: 'SUV' },
-        { id: 'Jeep', label: 'Jeep' },
-        { id: 'Pickup', label: 'Pickup' },
-        { id: 'Van', label: 'Van' },
-        { id: 'Bus', label: 'Bus' },
-        { id: 'Lorry', label: 'Lorry' },
-        { id: 'JCB Truck', label: 'JCB Truck' },
-        { id: 'Boom Truck', label: 'Boom Truck' }
-    ];
+    const select = document.getElementById('vehicleCategorySelect');
+    const trigger = document.getElementById('vehicleCategoryTrigger');
+    const options = document.getElementById('vehicleCategoryOptions');
+    const hiddenInput = document.getElementById('vehicle_category');
+    const textInput = document.getElementById('vehicleCategoryInput');
+    const optionElements = options.querySelectorAll('.select-option');
+    const currentValue = hiddenInput.value;
 
-    // Initialize vehicle category dropdown
-    const vehicleCategoryContainer = document.getElementById('vehicleCategoryDropdown');
-    if (vehicleCategoryContainer) {
-        new SearchableDropdown(vehicleCategoryContainer, {
-            data: vehicleCategories
+    // Store all options for filtering (exclude no-results element)
+    const allOptions = Array.from(optionElements).filter(el => !el.classList.contains('select-no-results')).map(el => ({
+        element: el,
+        value: el.getAttribute('data-value'),
+        text: el.textContent
+    }));
+
+    // Open dropdown when input is focused or clicked
+    textInput.addEventListener('focus', function() {
+        options.classList.add('open');
+    });
+
+    textInput.addEventListener('click', function() {
+        options.classList.add('open');
+    });
+
+    // Filter options based on input
+    textInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        let visibleCount = 0;
+        
+        allOptions.forEach(option => {
+            const matches = option.text.toLowerCase().includes(searchTerm);
+            option.element.style.display = matches ? 'block' : 'none';
+            if (matches) visibleCount++;
         });
+        
+        // Show/hide no results message
+        const noResults = document.getElementById('vehicleCategoryNoResults');
+        if (noResults) {
+            noResults.style.display = visibleCount === 0 ? 'block' : 'none';
+        }
+        
+        options.classList.add('open');
+    });
+
+    // Select option when clicked
+    optionElements.forEach(option => {
+        option.addEventListener('click', function() {
+            const value = this.getAttribute('data-value');
+            const text = this.textContent;
+            
+            hiddenInput.value = value;
+            textInput.value = text;
+            options.classList.remove('open');
+            
+            // Update selected state
+            optionElements.forEach(opt => opt.classList.remove('selected'));
+            this.classList.add('selected');
+        });
+    });
+
+    // Set initial value if editing
+    if (currentValue) {
+        const selectedOption = Array.from(optionElements).find(opt => opt.getAttribute('data-value') === currentValue);
+        if (selectedOption) {
+            selectedOption.classList.add('selected');
+        }
     }
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!select.contains(e.target)) {
+            options.classList.remove('open');
+        }
+    });
 });
 </script>
 @endsection

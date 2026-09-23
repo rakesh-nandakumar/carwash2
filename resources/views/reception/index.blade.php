@@ -1262,16 +1262,22 @@ function showJobForm() {
         </p>
     `;
 
-    loadServices();
+    loadServices(category);
     loadProducts();
     calculateReceptionTotals();
 }
 
-async function loadServices() {
+async function loadServices(vehicleCategory = null) {
     const response = await fetch('{{ route('reception.services') }}');
     const services = await response.json();
 
-    receptionServices = services;
+    // Filter services by vehicle category if provided
+    if (vehicleCategory) {
+        receptionServices = services.filter(service => service.vehicle_category === vehicleCategory);
+    } else {
+        receptionServices = services;
+    }
+
     renderReceptionServices(receptionServices);
 }
 
@@ -1282,6 +1288,7 @@ function renderReceptionServices(services) {
             <input type="checkbox" value="${service.id}" data-price="${service.base_price}" ${selectedServices.includes(String(service.id)) ? 'checked' : ''}>
             <div class="service-info">
                 <span class="service-name">${service.name}</span>
+                <span class="service-category">${service.vehicle_category || 'General'}</span>
                 <span class="service-price">LKR ${service.base_price.toLocaleString()}</span>
             </div>
         </label>
@@ -2424,6 +2431,15 @@ document.addEventListener('click', (e) => {
     font-weight: 600;
     font-size: 14px;
     white-space: nowrap;
+}
+
+.service-category {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.5);
+    font-weight: 400;
+    padding: 2px 6px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
 }
 
 /* Services section */
