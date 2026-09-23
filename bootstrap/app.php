@@ -24,10 +24,9 @@ return Application::configure(basePath: dirname(__DIR__))
         );
 
         // IdentifyTenant runs at the END of the web group — after StartSession
-        // (it inspects the session) and SubstituteBindings, but before every
-        // route-level middleware (auth, permission): the tenant resolves
-        // before any model binding or authorization, and the session-hijack
-        // guard can read the session.
+        // (it inspects the session) and before every route-level middleware
+        // (auth, permission): the tenant resolves before any model binding or
+        // authorization, and the session-hijack guard can read the session.
         $middleware->appendToGroup('web', App\Http\Middleware\IdentifyTenant::class);
     })
     ->withExceptions(function (Exceptions $exceptions) {})
