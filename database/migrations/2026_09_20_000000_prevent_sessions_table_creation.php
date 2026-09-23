@@ -12,13 +12,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Mark the sessions table migration as already run
-        // This prevents Laravel from trying to create the sessions table
-        if (!DB::table('migrations')->where('migration', '2026_09_20_014139_create_sessions_table')->exists()) {
-            DB::table('migrations')->insert([
-                'migration' => '2026_09_20_014139_create_sessions_table',
-                'batch' => 1,
-            ]);
+        // Check if sessions table already exists and mark the migration as run
+        if (Schema::hasTable('sessions')) {
+            if (!DB::table('migrations')->where('migration', '2026_09_20_014139_create_sessions_table')->exists()) {
+                DB::table('migrations')->insert([
+                    'migration' => '2026_09_20_014139_create_sessions_table',
+                    'batch' => 1,
+                ]);
+            }
         }
     }
 
