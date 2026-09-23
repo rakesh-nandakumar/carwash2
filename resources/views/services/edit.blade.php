@@ -21,22 +21,13 @@
                 <input type="text" name="name" value="{{ old('name', $service->name) }}" required autofocus>
             </label>
 
-            {{-- Category --}}
+            {{-- Vehicle Category --}}
             <label>
-                Category
-                <div style="display:flex; gap:10px; align-items:flex-start;">
-                    <select name="service_category_id" id="categorySelect" style="flex:1;">
-                        <option value="">Select Category</option>
-                        @foreach($categories as $category)
-                            <option value="{{ $category->id }}"
-                                {{ old('service_category_id', $service->service_category_id) == $category->id ? 'selected' : '' }}>
-                                {{ $category->name }}
-                            </option>
-                        @endforeach
-                    </select>
-                    <button type="button" class="secondary" onclick="openCategoryModal()" style="white-space:nowrap;">
-                        + Add Category
-                    </button>
+                Vehicle Category
+                <div class="searchable-dropdown" id="vehicleCategoryDropdown">
+                    <input type="hidden" name="vehicle_category" id="vehicle_category" value="{{ old('vehicle_category', $service->vehicle_category) }}">
+                    <input type="text" class="searchable-dropdown-input" id="vehicleCategoryInput" placeholder="Select vehicle category..." value="{{ old('vehicle_category', $service->vehicle_category) }}">
+                    <div class="searchable-dropdown-options"></div>
                 </div>
             </label>
 
@@ -97,26 +88,6 @@
             </a>
         </div>
     </form>
-</div>
-
-{{-- Add Category Modal --}}
-<div id="categoryModal" class="modal">
-    <div class="modal-content">
-        <h3>Add New Category</h3>
-
-        <form id="categoryForm">
-            @csrf
-            <label>
-                Category Name *
-                <input type="text" id="categoryName" name="name" required>
-            </label>
-
-            <div class="modal-actions">
-                <button type="button" class="secondary" onclick="closeCategoryModal()">Cancel</button>
-                <button type="submit" class="primary">Add Category</button>
-            </div>
-        </form>
-    </div>
 </div>
 
 <style>
@@ -276,44 +247,32 @@
 </style>
 
 <script>
-function openCategoryModal() {
-    document.getElementById('categoryModal').style.display = 'flex';
-}
+document.addEventListener('DOMContentLoaded', function() {
+    // Vehicle categories data (same as in vehicle creation)
+    const vehicleCategories = [
+        { id: 'Bike', label: 'Bike' },
+        { id: 'Motorcycle', label: 'Motorcycle' },
+        { id: 'Three-wheeler', label: 'Three-wheeler' },
+        { id: 'Small Car', label: 'Small Car' },
+        { id: 'Sedan', label: 'Sedan' },
+        { id: 'Minivan', label: 'Minivan' },
+        { id: 'SUV', label: 'SUV' },
+        { id: 'Jeep', label: 'Jeep' },
+        { id: 'Pickup', label: 'Pickup' },
+        { id: 'Van', label: 'Van' },
+        { id: 'Bus', label: 'Bus' },
+        { id: 'Lorry', label: 'Lorry' },
+        { id: 'JCB Truck', label: 'JCB Truck' },
+        { id: 'Boom Truck', label: 'Boom Truck' }
+    ];
 
-function closeCategoryModal() {
-    document.getElementById('categoryModal').style.display = 'none';
-    document.getElementById('categoryForm').reset();
-}
-
-document.getElementById('categoryForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-
-    const name = document.getElementById('categoryName').value;
-
-    fetch('{{ route('service-categories.store') }}', {
-        method: 'POST',
-        headers: {
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ name })
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (data.success) {
-            const select = document.getElementById('categorySelect');
-            const option = document.createElement('option');
-            option.value = data.category.id;
-            option.textContent = data.category.name;
-            option.selected = true;
-            select.appendChild(option);
-            closeCategoryModal();
-        } else {
-            alert(data.error || 'Error creating category');
-        }
-    })
-    .catch(() => alert('Error creating category. Please try again.'));
+    // Initialize vehicle category dropdown
+    const vehicleCategoryContainer = document.getElementById('vehicleCategoryDropdown');
+    if (vehicleCategoryContainer) {
+        new SearchableDropdown(vehicleCategoryContainer, {
+            data: vehicleCategories
+        });
+    }
 });
 </script>
 @endsection
