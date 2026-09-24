@@ -360,11 +360,13 @@ class CashMovementService
 
             // Get payment method sales from payments (since closure opened)
             if ($closure->opened_at) {
-                $payments = \App\Models\Payment::where('created_at', '>=', $closure->opened_at);
+                $payments = \App\Models\Payment::where('tenant_id', $till->tenant_id)
+                    ->where('created_at', '>=', $closure->opened_at);
 
                 \Log::info('Payments during closure', [
                     'closure_id' => $closure->id,
                     'opened_at' => $closure->opened_at,
+                    'tenant_id' => $till->tenant_id,
                     'payment_count' => $payments->count(),
                 ]);
             } else {
