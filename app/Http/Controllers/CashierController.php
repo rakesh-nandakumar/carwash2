@@ -180,6 +180,28 @@ class CashierController extends Controller
             ->header('Expires', 'Sat, 01 Jan 2000 00:00:00 GMT');
     }
 
+    /**
+     * Payment page for POS-created invoices (no job)
+     */
+    public function paymentForInvoice(Invoice $invoice)
+    {
+        $invoice->load(['customer', 'items']);
+
+        // Check if invoice is already fully paid
+        if ($invoice->balance <= 0) {
+            return response()->view('cashier.payment-completed-pos', compact('invoice'))
+                ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+                ->header('Pragma', 'no-cache')
+                ->header('Expires', 'Sat, 01 Jan 2000 00:00:00 GMT');
+        }
+
+        // Prevent browser caching of payment page
+        return response()->view('cashier.payment-pos', compact('invoice'))
+            ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+            ->header('Pragma', 'no-cache')
+            ->header('Expires', 'Sat, 01 Jan 2000 00:00:00 GMT');
+    }
+
     public function processPayment(Request $request, Job $job)
     {
         // Check if till is closed (no open shift)
@@ -917,6 +939,99 @@ class CashierController extends Controller
                 ->with('success', 'Payment processed successfully. ' . $balanceMessage)
                 ->with('whatsapp_url', $whatsappUrl);
         });
+    }
+
+    /**
+     * Process payment for POS-created invoices (no job)
+     */
+    public function processPaymentForInvoice(Request $request, Invoice $invoice)
+    {
+        // Check if till is closed (no open shift)
+        $till = $this->cashMovements->getSelectedTill();
+        if ($till) {
+            $lastClosure = $this->cashMovements->lastClosure($till);
+            if (!$lastClosure || $lastClosure->closed_at) {
+                return back()->with('error', 'Cannot process payment. Till is closed. Please open a new shift first.');
+            }
+        }
+
+        $request->validate([
+            'payment_method' => 'required|string|in:cash,card,upi,bank_transfer,cheque',
+            'amount_received' => 'required|numeric|min:0',
+            'cheque_number' => 'nullable|string|required_if:payment_method,cheque',
+            'bank_name' => 'nullable|string|required_if:payment_method,cheque',
+            'cheque_due_date' => 'nullable|date|required_if:payment_method,cheque',
+        ]);
+
+        return DB::transaction(function () use ($request, $invoice) {
+            $invoice->load(['items', 'customer']);
+
+            $amountReceived = (float) $request->amount_received;
+            $paymentMethod = $request->payment_method;
+
+            // Simple payment processing for POS (no complex discounts like job payments)
+            $invoiceBalance = $invoice->balance;
+            $finalTotal = $invoice->total;
+
+            // Create payment
+            $payment = Payment::create([
+                'tenant_id' => auth()->user()->tenant_id,
+                'invoice_id' => $invoice->id,
+                'job_id' => null, // POS sale has no job
+                'payment_method' => $paymentMethod,
+                'amount' => $amountReceived,
+                'payment_date' => now(),
+                'reference' => $request->reference ?? null,
+                'cheque_number' => $request->cheque_number ?? null,
+                'bank_name' => $request->bank_name ?? null,
+                'cheque_due_date' => $request->cheque_due_date ?? null,
+                'status' => 'completed',
+            ]);
+
+            // Update invoice
+            $invoice->paid += $amountReceived;
+            $invoice->balance = max(0, $invoice->total - $invoice->paid);
+
+            if ($invoice->balance <= 0) {
+                $invoice->status = 'paid';
+            }
+
+            $invoice->save();
+
+            // Record cash movement for cash payments
+            if ($paymentMethod === 'cash' && $amountReceived > 0) {
+                $this->cashMovements->recordSale(
+                    amount: $amountReceived,
+                    reference: $payment,
+                    userId: auth()->id(),
+                );
+            }
+
+            // Log audit
+            $this->audit->logPayment($payment->id, [
+                'invoice_id' => $invoice->id,
+                'invoice_number' => $invoice->invoice_number,
+                'customer_name' => $invoice->customer?->full_name ?? 'Walk-in',
+                'payment_method' => $paymentMethod,
+                'amount' => $amountReceived,
+                'final_total' => $finalTotal,
+                'balance_due' => $invoice->balance,
+            ]);
+
+            return redirect()
+                ->route('cashier.print-pos-invoice', $invoice)
+                ->with('success', 'Payment processed successfully.');
+        });
+    }
+
+    /**
+     * Print options for POS invoice
+     */
+    public function printPosInvoice(Invoice $invoice)
+    {
+        $invoice->load(['customer', 'items']);
+
+        return view('cashier.print-pos-options', compact('invoice'));
     }
 
     public function printOptions(Job $job)

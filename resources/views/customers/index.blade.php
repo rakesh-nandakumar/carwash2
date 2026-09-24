@@ -9,6 +9,15 @@
     <a class="primary" href="{{ route('customers.create') }}">+ New Customer</a>
 </div>
 
+<script>
+console.log('Customers page loaded');
+console.log('Document title:', document.title);
+console.log('Body children count:', document.body.children.length);
+for (let i = 0; i < document.body.children.length; i++) {
+    console.log('Body child', i, document.body.children[i].tagName, document.body.children[i].className);
+}
+</script>
+
 <div class="search">
     <input id="customerSearch" placeholder="Search name or phone" oninput="filterCustomers()">
 </div>
