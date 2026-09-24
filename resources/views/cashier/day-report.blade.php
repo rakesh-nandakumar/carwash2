@@ -321,7 +321,7 @@
         @if($cashInMovements->count() > 0)
             @foreach($cashInMovements as $movement)
                 <div style="font-size: 13px; padding: 2px 0;">
-                    {{ $movement->reason }} @if($movement->description) - {{ $movement->description }} @endif
+                    {{ $movement->reason }} @if($movement->description) - {{ $movement->description }} @endif - Rs. {{ number_format($movement->amount, 0) }}
                 </div>
             @endforeach
         @else
@@ -334,7 +334,7 @@
         @if($cashOutMovements->count() > 0)
             @foreach($cashOutMovements as $movement)
                 <div style="font-size: 13px; padding: 2px 0;">
-                    {{ $movement->reason }} @if($movement->description) - {{ $movement->description }} @endif
+                    {{ $movement->reason }} @if($movement->description) - {{ $movement->description }} @endif - Rs. {{ number_format($movement->amount, 0) }}
                 </div>
             @endforeach
         @else

@@ -852,26 +852,36 @@
 
 .payment-back {
     margin-top: 16px;
+    display: flex;
+    justify-content: center;
 }
 
 .back-button {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 8px;
-    padding: 12px 24px;
-    background: white;
     color: #64748b;
-    border: 2px solid #e2e8f0;
-    border-radius: 10px;
     text-decoration: none;
-    font-weight: 600;
-    transition: all 0.2s;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 12px 20px;
+    border-radius: 10px;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    transition: all 0.15s;
 }
 
 .back-button:hover {
-    background: #f8fafc;
-    color: #1e293b;
-    border-color: #cbd5e1;
+    background: #e2e8f0;
+    color: #334155;
+}
+
+/* ========== RESPONSIVE ========== */
+@media (max-width: 768px) {
+    .back-button {
+        width: 100%;
+        justify-content: center;
+    }
 }
 
 .modal {
