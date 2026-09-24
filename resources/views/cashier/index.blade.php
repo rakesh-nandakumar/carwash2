@@ -149,13 +149,13 @@
             @endif
 
             @if(auth()->user()->hasPermissionTo('cashier.cash_in'))
-                <button type="button" onclick="openCashModal('cash-in')">
+                <button type="button" onclick="openCashModal('cash-in')" @if(!$isShiftOpen) disabled @endif>
                     Cash In
                 </button>
             @endif
 
             @if(auth()->user()->hasPermissionTo('cashier.cash_out'))
-                <button type="button" onclick="openCashModal('cash-out')">
+                <button type="button" onclick="openCashModal('cash-out')" @if(!$isShiftOpen) disabled @endif>
                     Withdrawals
                 </button>
             @endif
@@ -573,7 +573,14 @@
     transition: all 0.2s ease;
 }
 
-.till-actions button:hover {
+.till-actions button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: #f1f5f9;
+    color: #94a3b8;
+}
+
+.till-actions button:hover:not(:disabled) {
     background: #3b82f6;
     color: white;
     border-color: #3b82f6;
@@ -605,7 +612,7 @@
     border-color: #10b981 !important;
 }
 
-.btn-shift-open:hover {
+.btn-shift-open:hover:not(:disabled) {
     background: #059669 !important;
     border-color: #059669 !important;
 }
@@ -616,7 +623,7 @@
     border-color: #f59e0b !important;
 }
 
-.btn-shift-close:hover {
+.btn-shift-close:hover:not(:disabled) {
     background: #d97706 !important;
     border-color: #d97706 !important;
 }
@@ -803,7 +810,7 @@
     border-color: #6366f1 !important;
 }
 
-.btn-history:hover {
+.btn-history:hover:not(:disabled) {
     background: #4f46e5 !important;
     border-color: #4f46e5 !important;
 }
@@ -814,7 +821,7 @@
     border-color: #8b5cf6 !important;
 }
 
-.btn-change-till:hover {
+.btn-change-till:hover:not(:disabled) {
     background: #7c3aed !important;
     border-color: #7c3aed !important;
 }
@@ -1187,6 +1194,12 @@
 
 <script>
 function openCashModal(type) {
+    // Check if till is open
+    @if(!$isShiftOpen)
+        showTillNotOpenToast();
+        return;
+    @endif
+
     const modal = document.getElementById('cashMovementModal');
     const form = document.getElementById('cashMovementForm');
     const title = document.getElementById('cashModalTitle');

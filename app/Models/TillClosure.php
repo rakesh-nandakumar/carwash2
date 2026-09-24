@@ -21,6 +21,7 @@ class TillClosure extends Model
         'card_sales' => 'decimal:2',
         'mobile_money_sales' => 'decimal:2',
         'bank_transfer_sales' => 'decimal:2',
+        'cheque_sales' => 'decimal:2',
         'other_payment_sales' => 'decimal:2',
         'total_sales' => 'decimal:2',
         'cash_in' => 'decimal:2',
@@ -28,6 +29,33 @@ class TillClosure extends Model
         'denomination_breakdown' => 'array',
         'opened_at' => 'datetime',
         'closed_at' => 'datetime',
+        'opening_variance' => 'decimal:2',
+    ];
+
+    protected $fillable = [
+        'till_id',
+        'user_id',
+        'tenant_id',
+        'opening_balance',
+        'expected_balance',
+        'counted_balance',
+        'discrepancy',
+        'cash_sales',
+        'card_sales',
+        'mobile_money_sales',
+        'bank_transfer_sales',
+        'cheque_sales',
+        'other_payment_sales',
+        'total_sales',
+        'cash_in',
+        'cash_out',
+        'denomination_breakdown',
+        'notes',
+        'variance_reason',
+        'opening_variance_reason',
+        'opening_variance',
+        'opened_at',
+        'closed_at',
     ];
 
     public function till(): BelongsTo

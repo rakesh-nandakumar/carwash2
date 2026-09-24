@@ -15,7 +15,7 @@
             @if($isOpen)
                 <div class="shift-status-card">
                     <span class="status-badge {{ $isOpen ? 'active' : 'inactive' }}">{{ $isOpen ? 'Till Open' : 'Till Closed' }}</span>
-                    <p>{{ $isOpen ? 'Opened at ' . $currentClosure->opened_at->format('g:i A') : 'No till is currently open' }}</p>
+                    <p>{{ $isOpen && $currentClosure && $currentClosure->opened_at ? 'Opened at ' . $currentClosure->opened_at->format('g:i A') : 'No till is currently open' }}</p>
                 </div>
             @endif
         </div>
@@ -63,7 +63,7 @@
                 </div>
             </div>
 
-            <form method="POST" action="{{ route('cashier.till-action') }}" class="till-action-form">
+            <form method="POST" action="{{ route('cashier.till-action.post') }}" class="till-action-form">
                 @csrf
 
                 <div class="form-section">
@@ -97,6 +97,25 @@
                             class="form-input"
                             id="manualBalanceInput"
                             autofocus
+                            oninput="calculateVariance()"
+                        >
+                        <div id="varianceDisplay" class="variance-display hidden">
+                            <div class="variance-label">Variance:</div>
+                            <div class="variance-amount" id="varianceAmount">Rs. 0.00</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section manual-balance-group" id="varianceReasonGroup">
+                    <h3>Reason for Variance <span class="required">*</span></h3>
+                    <div class="form-group">
+                        <label>Please explain why the counted amount differs from the expected amount</label>
+                        <input
+                            type="text"
+                            name="variance_reason"
+                            class="form-input"
+                            id="varianceReasonInput"
+                            placeholder="e.g., Cash counting error, Petty cash used, etc."
                         >
                     </div>
                 </div>
@@ -207,6 +226,25 @@
                             value="{{ $hasPreviousClosure ? '' : '0.00' }}"
                             class="form-input"
                             id="manualBalanceInput"
+                            oninput="calculateVariance()"
+                        >
+                        <div id="varianceDisplay" class="variance-display hidden">
+                            <div class="variance-label">Variance:</div>
+                            <div class="variance-amount" id="varianceAmount">Rs. 0.00</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section manual-balance-group" id="varianceReasonGroup">
+                    <h3>Reason for Variance <span class="required">*</span></h3>
+                    <div class="form-group">
+                        <label>Please explain why the opening amount differs from the expected amount</label>
+                        <input
+                            type="text"
+                            name="variance_reason"
+                            class="form-input"
+                            id="varianceReasonInput"
+                            placeholder="e.g., Cash counting error, Petty cash used, etc."
                         >
                     </div>
                 </div>
@@ -502,6 +540,46 @@
     animation: slideDown 0.3s ease;
 }
 
+.variance-display {
+    margin-top: 12px;
+    padding: 12px;
+    border-radius: 8px;
+    background: #fef3c7;
+    border: 2px solid #f59e0b;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.variance-display.hidden {
+    display: none;
+}
+
+.variance-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #92400e;
+}
+
+.variance-amount {
+    font-size: 16px;
+    font-weight: 900;
+    color: #b45309;
+}
+
+.variance-amount.positive {
+    color: #059669;
+}
+
+.variance-amount.negative {
+    color: #dc2626;
+}
+
+.required {
+    color: #dc2626;
+    font-weight: 700;
+}
+
 @keyframes slideDown {
     from {
         opacity: 0;
@@ -644,15 +722,48 @@ function toggleManualBalance() {
     const balanceOption = document.querySelector('input[name="balance_option"]:checked')?.value;
     const manualBalanceGroup = document.getElementById('manualBalanceGroup');
     const manualBalanceInput = document.getElementById('manualBalanceInput');
+    const varianceReasonGroup = document.getElementById('varianceReasonGroup');
 
     if (balanceOption === 'manual') {
         manualBalanceGroup.classList.add('show');
+        varianceReasonGroup.classList.add('show');
         // Auto-focus the input after animation
         setTimeout(() => {
             manualBalanceInput?.focus();
         }, 300);
     } else {
         manualBalanceGroup.classList.remove('show');
+        varianceReasonGroup.classList.remove('show');
+        // Reset variance display
+        document.getElementById('varianceDisplay').classList.add('hidden');
+    }
+}
+
+function calculateVariance() {
+    const manualBalanceInput = document.getElementById('manualBalanceInput');
+    const varianceDisplay = document.getElementById('varianceDisplay');
+    const varianceAmount = document.getElementById('varianceAmount');
+
+    if (!manualBalanceInput) return;
+
+    const expectedBalance = {{ $isOpen ? $expectedBalance : ($hasPreviousClosure ? $userPreviousClosingBalance : 0) }};
+
+    const manualBalance = parseFloat(manualBalanceInput.value) || 0;
+    const variance = manualBalance - expectedBalance;
+
+    console.log('Variance calculation:', { manualBalance, expectedBalance, variance });
+
+    if (manualBalance > 0 && Math.abs(variance) > 0.01) {
+        varianceDisplay.classList.remove('hidden');
+        varianceAmount.textContent = (variance > 0 ? '+' : '') + 'Rs. ' + Math.abs(variance).toFixed(2);
+        varianceAmount.classList.remove('positive', 'negative');
+        if (variance > 0) {
+            varianceAmount.classList.add('positive');
+        } else if (variance < 0) {
+            varianceAmount.classList.add('negative');
+        }
+    } else {
+        varianceDisplay.classList.add('hidden');
     }
 }
 
