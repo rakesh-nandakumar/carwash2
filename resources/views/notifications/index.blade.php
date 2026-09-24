@@ -61,7 +61,7 @@
                     <tr>
                         <td><span class="invoice-badge">#{{ $payment['invoice_number'] }}</span></td>
                         <td>{{ $payment['customer_name'] }}</td>
-                        <td>{{ $payment['vehicle_registration'] }}</td>
+                        <td>{{ $payment['vehicle_registration'] ?? 'N/A' }}</td>
                         <td>Rs. {{ number_format($payment['total_amount'], 2) }}</td>
                         <td>Rs. {{ number_format($payment['paid_amount'], 2) }}</td>
                         <td><span class="balance-amount">Rs. {{ number_format($payment['balance'], 2) }}</span></td>
@@ -90,8 +90,12 @@
                 </div>
                 <div class="card-details">
                     <div class="detail">
+                        <span class="label">Customer</span>
+                        <span class="value">{{ $payment['customer_name'] }}</span>
+                    </div>
+                    <div class="detail">
                         <span class="label">Vehicle</span>
-                        <span class="value">{{ $payment['vehicle_registration'] }}</span>
+                        <span class="value">{{ $payment['vehicle_registration'] ?? 'N/A' }}</span>
                     </div>
                     <div class="detail">
                         <span class="label">Total</span>
@@ -164,7 +168,7 @@
                             </div>
                         </td>
                         <td>{{ $cheque['customer_name'] }}</td>
-                        <td>{{ $cheque['vehicle_registration'] }}</td>
+                        <td>{{ $cheque['vehicle_registration'] ?? 'N/A' }}</td>
                         <td>Rs. {{ number_format($cheque['amount'], 2) }}</td>
                         <td>
                             <a href="{{ route('cheque-payments.confirm', $cheque['payment_id']) }}?from=notifications" class="action-btn process-btn">
@@ -200,7 +204,7 @@
                     </div>
                     <div class="detail">
                         <span class="label">Vehicle</span>
-                        <span class="value">{{ $cheque['vehicle_registration'] }}</span>
+                        <span class="value">{{ $cheque['vehicle_registration'] ?? 'N/A' }}</span>
                     </div>
                     <div class="detail">
                         <span class="label">Amount</span>
@@ -248,6 +252,7 @@
                         <th>Cheque Number</th>
                         <th>Bank</th>
                         <th>Customer</th>
+                        <th>Vehicle</th>
                         <th>Amount</th>
                         <th>Follow-up Date</th>
                         <th></th>
@@ -259,6 +264,7 @@
                         <td><span class="cheque-badge bounced">{{ $cheque['cheque_number'] }}</span></td>
                         <td>{{ $cheque['bank_name'] }}</td>
                         <td>{{ $cheque['customer_name'] }}</td>
+                        <td>{{ $cheque['vehicle_registration'] ?? 'N/A' }}</td>
                         <td>Rs. {{ number_format($cheque['amount'], 2) }}</td>
                         <td>
                             <div class="date-cell">
@@ -305,6 +311,10 @@
                     <div class="detail">
                         <span class="label">Customer</span>
                         <span class="value">{{ $cheque['customer_name'] }}</span>
+                    </div>
+                    <div class="detail">
+                        <span class="label">Vehicle</span>
+                        <span class="value">{{ $cheque['vehicle_registration'] ?? 'N/A' }}</span>
                     </div>
                     <div class="detail">
                         <span class="label">Amount</span>

@@ -140,6 +140,17 @@
             </div>
         @endif
 
+        @if($closure->closed_at)
+        <div class="print-section">
+            <a href="{{ route('cashier.day-report', $closure) }}" class="btn-print">
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+                </svg>
+                Print Day Report
+            </a>
+        </div>
+        @endif
+
         <div class="back-link">
             <a href="{{ route('cashier.shift-history') }}" class="btn-secondary">
                 Back to History
@@ -375,6 +386,38 @@
     padding: 16px;
     background: #f8fafc;
     border-radius: 8px;
+}
+
+.print-section {
+    margin-bottom: 24px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.btn-print {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    background: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+}
+
+.btn-print:hover {
+    background: #2563eb;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+}
+
+.btn-print svg {
+    flex-shrink: 0;
 }
 
 .back-link {

@@ -39,18 +39,29 @@
     <div class="info-section">
         <h3>Customer & Job Details</h3>
         <div class="info-grid">
-            <div class="info-item">
-                <span class="label">Customer</span>
-                <span class="value">{{ $payment->invoice->job->customer->full_name }}</span>
-            </div>
-            <div class="info-item">
-                <span class="label">Vehicle</span>
-                <span class="value">{{ $payment->invoice->job->vehicle->registration_number }}</span>
-            </div>
-            <div class="info-item">
-                <span class="label">Job Number</span>
-                <span class="value">{{ $payment->invoice->job->job_number }}</span>
-            </div>
+            @if($payment->invoice->job)
+                <div class="info-item">
+                    <span class="label">Customer</span>
+                    <span class="value">{{ $payment->invoice->job->customer->full_name ?? 'N/A' }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Vehicle</span>
+                    <span class="value">{{ $payment->invoice->job->vehicle->registration_number ?? 'N/A' }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Job Number</span>
+                    <span class="value">{{ $payment->invoice->job->job_number ?? 'N/A' }}</span>
+                </div>
+            @else
+                <div class="info-item">
+                    <span class="label">Customer</span>
+                    <span class="value">{{ $payment->invoice->customer->full_name ?? 'N/A' }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Type</span>
+                    <span class="value">POS Sale</span>
+                </div>
+            @endif
             <div class="info-item">
                 <span class="label">Invoice Total</span>
                 <span class="value">Rs. {{ number_format($payment->invoice->total, 2) }}</span>

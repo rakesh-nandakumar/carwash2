@@ -193,6 +193,14 @@ class PermissionCatalog
                 ],
             ],
 
+            'pos' => [
+                'label' => 'POS',
+                'actions' => [
+                    'access',
+                    'checkout',
+                ],
+            ],
+
             'cheque_payments' => [
                 'label' => 'Cheque Payments',
                 'actions' => [

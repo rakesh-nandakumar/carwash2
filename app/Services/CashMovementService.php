@@ -260,12 +260,13 @@ class CashMovementService
     public function openShift(
         float $openingBalance,
         ?string $notes = null,
+        ?string $varianceReason = null,
         ?int $userId = null,
         ?Till $till = null
     ): TillClosure {
         $till = $till ?? $this->getSelectedTill();
 
-        return DB::transaction(function () use ($till, $openingBalance, $notes, $userId) {
+        return DB::transaction(function () use ($till, $openingBalance, $notes, $varianceReason, $userId) {
             $lastClosure = $this->lastClosure($till);
 
             if ($lastClosure && !$lastClosure->closed_at) {
@@ -273,6 +274,10 @@ class CashMovementService
                     'Cannot open new shift. Previous shift is still open.'
                 );
             }
+
+            // Calculate opening variance from previous closing balance
+            $previousClosingBalance = $lastClosure ? $lastClosure->counted_balance : 0;
+            $openingVariance = $openingBalance - $previousClosingBalance;
 
             $closure = TillClosure::create([
                 'tenant_id' => $till->tenant_id,
@@ -292,8 +297,19 @@ class CashMovementService
                 'cash_in' => 0,
                 'cash_out' => 0,
                 'notes' => $notes,
+                'variance_reason' => null, // Closing variance (null on open)
+                'opening_variance_reason' => $varianceReason,
+                'opening_variance' => $openingVariance,
                 'opened_at' => now(),
                 'closed_at' => null,
+            ]);
+
+            \Log::info('Closure created with variance', [
+                'closure_id' => $closure->id,
+                'opening_variance' => $openingVariance,
+                'opening_variance_reason' => $varianceReason,
+                'saved_opening_variance' => $closure->opening_variance,
+                'saved_opening_variance_reason' => $closure->opening_variance_reason,
             ]);
 
             return $closure;
@@ -304,11 +320,12 @@ class CashMovementService
         float $countedBalance,
         ?array $denominationBreakdown = null,
         ?string $notes = null,
+        ?string $varianceReason = null,
         ?int $userId = null
     ): TillClosure {
         $till = $this->getSelectedTill();
 
-        return DB::transaction(function () use ($till, $countedBalance, $denominationBreakdown, $notes, $userId) {
+        return DB::transaction(function () use ($till, $countedBalance, $denominationBreakdown, $notes, $varianceReason, $userId) {
             $closure = $this->lastClosure($till);
 
             if (!$closure) {
@@ -342,7 +359,19 @@ class CashMovementService
                 ->sum('amount');
 
             // Get payment method sales from payments (since closure opened)
-            $payments = \App\Models\Payment::where('created_at', '>=', $closure->opened_at);
+            if ($closure->opened_at) {
+                $payments = \App\Models\Payment::where('tenant_id', $till->tenant_id)
+                    ->where('created_at', '>=', $closure->opened_at);
+
+                \Log::info('Payments during closure', [
+                    'closure_id' => $closure->id,
+                    'opened_at' => $closure->opened_at,
+                    'tenant_id' => $till->tenant_id,
+                    'payment_count' => $payments->count(),
+                ]);
+            } else {
+                $payments = \App\Models\Payment::where('id', '<', 0); // Return empty query
+            }
 
             $cardSales = (float) (clone $payments)
                 ->where('method', 'card')
@@ -391,20 +420,27 @@ class CashMovementService
                 'cash_out' => $cashOut,
                 'denomination_breakdown' => $denominationBreakdown,
                 'notes' => $notes,
+                'variance_reason' => $varianceReason, // Closing variance reason
                 'closed_at' => now(),
             ]);
+
+            \Log::info('Closure updated with closed_at', ['closure_id' => $closure->id, 'closed_at' => $closure->closed_at]);
 
             \Log::info('Till closed', [
                 'closure_id' => $closure->id,
                 'opening_balance' => $closure->opening_balance,
                 'counted_balance' => $closure->counted_balance,
                 'expected_balance' => $closure->expected_balance,
+                'closed_at' => $closure->closed_at,
             ]);
 
             // Release the till when shift is closed so it doesn't show as "In Use"
             $till->release();
 
-            return $closure->fresh();
+            $freshClosure = $closure->fresh();
+            \Log::info('Fresh closure after close', ['closed_at' => $freshClosure->closed_at]);
+
+            return $freshClosure;
         });
     }
 
@@ -453,7 +489,7 @@ class CashMovementService
 
         // Get payment method sales from payments
         // Filter by current closure if it's open
-        if ($currentClosure && !$currentClosure->closed_at) {
+        if ($currentClosure && !$currentClosure->closed_at && $currentClosure->opened_at) {
             $payments = \App\Models\Payment::where('created_at', '>=', $currentClosure->opened_at);
         } else {
             $payments = \App\Models\Payment::where('created_at', '>=', $since);

@@ -71,7 +71,8 @@ class TenantModules
      */
     public static function isEnabled(string $fineModuleKey): bool
     {
-        if (Auth::guard('central')->check()) {
+        // Only bypass module check when NOT impersonating and actually logged in as central admin
+        if (!session('impersonated_by_central') && Auth::guard('central')->check()) {
             return true;
         }
 

@@ -20,21 +20,21 @@ class ChequePaymentController extends Controller
      */
     public function index(Request $request)
     {
-        $pendingCheques = Payment::with(['invoice.job.customer', 'invoice.job.vehicle', 'receivedBy'])
+        $pendingCheques = Payment::with(['invoice.job.customer', 'invoice.job.vehicle', 'invoice.customer', 'receivedBy'])
             ->where('method', 'cheque')
             ->where('payment_received', false)
             ->where('is_bounced', false)
             ->orderBy('cheque_due_date', 'asc')
             ->get();
 
-        $clearedCheques = Payment::with(['invoice.job.customer', 'invoice.job.vehicle', 'receivedBy'])
+        $clearedCheques = Payment::with(['invoice.job.customer', 'invoice.job.vehicle', 'invoice.customer', 'receivedBy'])
             ->where('method', 'cheque')
             ->where('payment_received', true)
             ->where('is_bounced', false)
             ->orderBy('payment_received_at', 'desc')
             ->get();
 
-        $bouncedCheques = Payment::with(['invoice.job.customer', 'invoice.job.vehicle', 'receivedBy'])
+        $bouncedCheques = Payment::with(['invoice.job.customer', 'invoice.job.vehicle', 'invoice.customer', 'receivedBy'])
             ->where('method', 'cheque')
             ->where('is_bounced', true)
             ->orderBy('bounced_at', 'desc')

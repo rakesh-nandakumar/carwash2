@@ -12,7 +12,7 @@
 <div class="page-head">
     <div>
         <h1>{{ $invoice->invoice_number }}</h1>
-        <p>{{ $invoice->customer->full_name }} · {{ $invoice->job->vehicle->registration_number }}</p>
+        <p>{{ $invoice->customer->full_name }} · {{ $invoice->job && $invoice->job->vehicle ? $invoice->job->vehicle->registration_number : 'N/A' }}</p>
     </div>
     <div class="page-head-actions">
         @if($settings['a4_enabled'])
@@ -59,9 +59,14 @@
             </div>
             <div class="text-right">
                 <h4>Vehicle Details:</h4>
+                @if($invoice->job && $invoice->job->vehicle)
                 <p class="strong">{{ $invoice->job->vehicle->registration_number }}</p>
                 <p class="muted">{{ $invoice->job->vehicle->make }} {{ $invoice->job->vehicle->model }}</p>
                 <p class="muted">Job #{{ $invoice->job->job_number }}</p>
+                @else
+                <p class="strong">N/A</p>
+                <p class="muted">POS Sale</p>
+                @endif
             </div>
         </div>
 

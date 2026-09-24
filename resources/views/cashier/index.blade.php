@@ -149,13 +149,13 @@
             @endif
 
             @if(auth()->user()->hasPermissionTo('cashier.cash_in'))
-                <button type="button" onclick="openCashModal('cash-in')">
+                <button type="button" onclick="openCashModal('cash-in')" @if(!$isShiftOpen) disabled @endif>
                     Cash In
                 </button>
             @endif
 
             @if(auth()->user()->hasPermissionTo('cashier.cash_out'))
-                <button type="button" onclick="openCashModal('cash-out')">
+                <button type="button" onclick="openCashModal('cash-out')" @if(!$isShiftOpen) disabled @endif>
                     Withdrawals
                 </button>
             @endif
@@ -215,14 +215,56 @@
                 </div>
             </div>
         @empty
+        @endforelse
+
+        {{-- POS Invoices --}}
+        @forelse($posInvoices as $invoice)
+            <div class="vehicle-card pos-card {{ $isShiftOpen ? '' : 'till-closed' }}"
+                 @if($isShiftOpen)
+                 onclick="window.location.href='{{ route('cashier.payment-invoice', $invoice) }}'"
+                 @else
+                 onclick="showTillNotOpenToast()"
+                 @endif
+            >
+                <div class="card-header">
+                    <div class="vehicle-reg">POS Sale</div>
+                    <div class="job-number">{{ $invoice->invoice_number }}</div>
+                </div>
+                <div class="card-body">
+                    <div class="customer-name">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                        </svg>
+                        {{ $invoice->customer->full_name ?? 'Walk-in Customer' }}
+                    </div>
+                    <div class="time-ago">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        {{ $invoice->created_at->diffForHumans() }}
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <div class="amount">Rs. {{ number_format($invoice->total, 2) }}</div>
+                    <div class="action-arrow">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        @empty
+        @endforelse
+
+        @if($readyForPayment->isEmpty() && $posInvoices->isEmpty())
             <div class="empty-state">
                 <svg width="64" height="64" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                 </svg>
-                <h3>No vehicles ready for payment</h3>
-                <p>Completed vehicles will appear here automatically</p>
+                <h3>No payments pending</h3>
+                <p>Completed vehicles and POS sales will appear here automatically</p>
             </div>
-        @endforelse
+        @endif
     </div>
 </div>
 
@@ -531,7 +573,14 @@
     transition: all 0.2s ease;
 }
 
-.till-actions button:hover {
+.till-actions button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: #f1f5f9;
+    color: #94a3b8;
+}
+
+.till-actions button:hover:not(:disabled) {
     background: #3b82f6;
     color: white;
     border-color: #3b82f6;
@@ -563,7 +612,7 @@
     border-color: #10b981 !important;
 }
 
-.btn-shift-open:hover {
+.btn-shift-open:hover:not(:disabled) {
     background: #059669 !important;
     border-color: #059669 !important;
 }
@@ -574,7 +623,7 @@
     border-color: #f59e0b !important;
 }
 
-.btn-shift-close:hover {
+.btn-shift-close:hover:not(:disabled) {
     background: #d97706 !important;
     border-color: #d97706 !important;
 }
@@ -761,7 +810,7 @@
     border-color: #6366f1 !important;
 }
 
-.btn-history:hover {
+.btn-history:hover:not(:disabled) {
     background: #4f46e5 !important;
     border-color: #4f46e5 !important;
 }
@@ -772,7 +821,7 @@
     border-color: #8b5cf6 !important;
 }
 
-.btn-change-till:hover {
+.btn-change-till:hover:not(:disabled) {
     background: #7c3aed !important;
     border-color: #7c3aed !important;
 }
@@ -1073,6 +1122,23 @@
     transform: none;
 }
 
+/* POS Card styling - gray background to differentiate from job cards */
+.vehicle-card.pos-card {
+    background: #f3f4f6;
+    border-color: #d1d5db;
+}
+
+.vehicle-card.pos-card .card-header,
+.vehicle-card.pos-card .card-body,
+.vehicle-card.pos-card .card-footer {
+    color: #1f2937;
+}
+
+.vehicle-card.pos-card:hover {
+    background: #e5e7eb;
+    border-color: #6b7280;
+}
+
 @media (max-width: 768px) {
     .cashier-header {
         flex-direction: column;
@@ -1128,6 +1194,12 @@
 
 <script>
 function openCashModal(type) {
+    // Check if till is open
+    @if(!$isShiftOpen)
+        showTillNotOpenToast();
+        return;
+    @endif
+
     const modal = document.getElementById('cashMovementModal');
     const form = document.getElementById('cashMovementForm');
     const title = document.getElementById('cashModalTitle');

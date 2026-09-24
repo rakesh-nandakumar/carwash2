@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="job-detail-container">
+<div class="job-detail-container" data-tenant-slug="{{ request()->route('tenant') }}">
     <!-- Header Section -->
     <div class="job-header">
         <div class="job-info">
@@ -12,8 +12,16 @@
                 <span class="customer-name">{{ $job->customer->full_name }}</span>
             </div>
         </div>
-        <div class="status-badge status-{{ $job->status->getColor() }}">
-            {{ $job->status->getLabel() }}
+        <div class="header-actions">
+            <button onclick="openPendingJobsModal()" class="pending-jobs-btn">
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                </svg>
+                Pending Jobs ({{ $pendingJobs->count() }})
+            </button>
+            <div class="status-badge status-{{ $job->status->getColor() }}">
+                {{ $job->status->getLabel() }}
+            </div>
         </div>
     </div>
 
@@ -161,10 +169,7 @@
                         <div class="service-actions">
                             <span class="service-price">Rs. {{ number_format($service->unit_price,2) }}</span>
                             @if($service->approval_status === 'pending')
-                                <form class="inline-form" method="post" action="{{ route('jobs.services.apply', [$job, $service]) }}">
-                                    @csrf
-                                    <button type="submit" class="confirm-btn">Confirm Apply</button>
-                                </form>
+                                <button type="button" class="confirm-btn" data-service-id="{{ $service->id }}" data-apply-service-route="{{ route('jobs.services.apply', [$job, ':id']) }}" onclick="applyService(this)">Confirm Apply</button>
                             @endif
                             <button type="button" class="close-btn" onclick="showCloseModal('service', {{ $service->id }}, '{{ $service->name_snapshot }}')">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -184,7 +189,7 @@
                     $addedServiceIds = $job->services->pluck('service_id')->toArray();
                     $availableServices = $services->whereNotIn('id', $addedServiceIds);
                 @endphp
-                <form class="inline-form" method="post" action="{{ route('jobs.services.add', $job) }}">
+                <form class="inline-form" id="addServiceForm">
                     @csrf
                     <select name="service_id" class="responsive-select" required>
                         <option value="">Select Service</option>
@@ -215,10 +220,7 @@
                         <div class="part-actions">
                             <span class="part-price">Rs. {{ number_format($part->unit_price * $part->quantity,2) }}</span>
                             @if(!$part->applied)
-                                <form class="inline-form" method="post" action="{{ route('jobs.parts.apply', [$job, $part]) }}">
-                                    @csrf
-                                    <button type="submit" class="confirm-btn">Confirm Apply</button>
-                                </form>
+                                <button type="button" class="confirm-btn" data-part-id="{{ $part->id }}" data-apply-part-route="{{ route('jobs.parts.apply', [$job, ':id']) }}" onclick="applyPart(this)">Confirm Apply</button>
                             @endif
                             <button type="button" class="close-btn" onclick="showCloseModal('part', {{ $part->id }}, '{{ $part->product->name }}')">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -234,23 +236,17 @@
             </div>
             <div class="add-part-form">
                 <h4>Consume Part</h4>
-                @php
-                    $pendingProductIds = $job->parts->where('applied', false)->pluck('product_id')->toArray();
-                    $availableProducts = $products->whereNotIn('id', $pendingProductIds);
-                @endphp
-                <form class="inline-form" method="post" action="{{ route('jobs.consume-part',$job) }}">
+                <form class="inline-form" id="addPartForm">
                     @csrf
                     <select name="product_id" id="productSelect" class="responsive-select" onchange="updateSellingPrice(); updateStockInfo()">
                         <option value="">Select Product</option>
-                        @forelse($availableProducts as $p)
+                        @foreach($products as $p)
                             @php
                                 $inventory = \App\Models\Inventory::where('product_id', $p->id)->where('branch_id', $job->branch_id)->first();
                                 $availableStock = $inventory ? $inventory->quantity : 0;
                             @endphp
                             <option value="{{ $p->id }}" data-price="{{ $p->selling_price }}" data-stock="{{ $availableStock }}">{{ $p->name }} (Stock: {{ $availableStock }})</option>
-                        @empty
-                            <option value="" disabled>All products already pending</option>
-                        @endforelse
+                        @endforeach
                     </select>
                     <input name="quantity" type="number" step=".001" value="1" min="0.001" placeholder="Qty">
                     <input name="unit_price" type="number" step=".01" placeholder="Price" id="unitPriceInput">
@@ -358,6 +354,12 @@
     color: white;
     box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
     animation: fadeInDown 0.5s ease;
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
 }
 
 .job-info h1 {
@@ -879,6 +881,17 @@
         margin-bottom: 20px;
     }
 
+    .header-actions {
+        flex-direction: column;
+        gap: 8px;
+        width: 100%;
+    }
+
+    .pending-jobs-btn {
+        width: 100%;
+        justify-content: center;
+    }
+
     .job-info h1 {
         font-size: 20px;
     }
@@ -1060,6 +1073,17 @@
 
 <script>
 function changeStatus(status) {
+    // Check if trying to mark as ready for payment
+    if (status === 'ready_for_payment') {
+        const appliedServices = document.querySelectorAll('.service-applied').length;
+        const appliedParts = document.querySelectorAll('.part-applied').length;
+
+        if (appliedServices === 0 && appliedParts === 0) {
+            alert('Cannot mark job as ready for payment. No services or parts have been applied.');
+            return;
+        }
+    }
+
     const statusLabels = {
         'checked_in': 'Checked In',
         'inspection_pending': 'Inspection Pending',
@@ -1300,5 +1324,389 @@ document.querySelector('input[name="quantity"]')?.addEventListener('input', upda
 document.getElementById('statusModal').addEventListener('click', function(e) {
     if (e.target === this) closeStatusModal();
 });
+
+// Pending Jobs Modal
+function openPendingJobsModal() {
+    document.getElementById('pendingJobsModal').style.display = 'flex';
+}
+
+function closePendingJobsModal() {
+    document.getElementById('pendingJobsModal').style.display = 'none';
+}
+
+function goToJob(jobId) {
+    const currentUrl = window.location.href;
+    const urlParts = currentUrl.split('/');
+    const tenantSlug = urlParts[3]; // Get tenant from URL (http://127.0.0.1:8000/{tenant}/jobs/{id})
+    window.location.href = `/${tenantSlug}/jobs/${jobId}`;
+}
+
+async function applyService(button) {
+    const serviceId = button.getAttribute('data-service-id');
+    const route = button.getAttribute('data-apply-service-route').replace(':id', serviceId);
+    
+    button.disabled = true;
+    button.textContent = 'Applying...';
+
+    try {
+        const response = await fetch(route, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            credentials: 'same-origin'
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            showToast(data.message, 'success');
+            // Update the status in DOM without reload
+            const serviceItem = button.closest('.service-item');
+            const statusSpan = serviceItem.querySelector('.service-status');
+            statusSpan.textContent = 'Applied';
+            statusSpan.classList.remove('status-yellow');
+            statusSpan.classList.add('status-green');
+            serviceItem.classList.remove('service-pending');
+            serviceItem.classList.add('service-applied');
+            button.remove();
+        } else {
+            showToast(data.message, 'error');
+            button.disabled = false;
+            button.textContent = 'Confirm Apply';
+        }
+    } catch (error) {
+        showToast('Failed to apply service', 'error');
+        button.disabled = false;
+        button.textContent = 'Confirm Apply';
+    }
+}
+
+async function applyPart(button) {
+    const partId = button.getAttribute('data-part-id');
+    const route = button.getAttribute('data-apply-part-route').replace(':id', partId);
+    
+    button.disabled = true;
+    button.textContent = 'Applying...';
+
+    try {
+        const response = await fetch(route, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            credentials: 'same-origin'
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            showToast(data.message, 'success');
+            // Update the status in DOM without reload
+            const partItem = button.closest('.part-item');
+            const statusSpan = partItem.querySelector('.part-status');
+            statusSpan.textContent = 'Applied';
+            statusSpan.classList.remove('status-yellow');
+            statusSpan.classList.add('status-green');
+            partItem.classList.remove('part-pending');
+            partItem.classList.add('part-applied');
+            button.remove();
+        } else {
+            showToast(data.message, 'error');
+            button.disabled = false;
+            button.textContent = 'Confirm Apply';
+        }
+    } catch (error) {
+        showToast('Failed to apply part', 'error');
+        button.disabled = false;
+        button.textContent = 'Confirm Apply';
+    }
+}
+
+async function applyPart(button) {
+    const partId = button.getAttribute('data-part-id');
+    const route = button.getAttribute('data-apply-part-route').replace(':id', partId);
+    
+    button.disabled = true;
+    button.textContent = 'Applying...';
+
+    try {
+        const response = await fetch(route, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            credentials: 'same-origin'
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            showToast(data.message, 'success');
+            // Update the status in DOM without reload
+            const partItem = button.closest('.part-item');
+            const statusSpan = partItem.querySelector('.part-status');
+            statusSpan.textContent = 'Applied';
+            statusSpan.classList.remove('status-yellow');
+            statusSpan.classList.add('status-green');
+            partItem.classList.remove('part-pending');
+            partItem.classList.add('part-applied');
+            button.remove();
+        } else {
+            showToast(data.message, 'error');
+            button.disabled = false;
+            button.textContent = 'Confirm Apply';
+        }
+    } catch (error) {
+        showToast('Failed to apply part', 'error');
+        button.disabled = false;
+        button.textContent = 'Confirm Apply';
+    }
+}
+
+// Handle add service form
+document.getElementById('addServiceForm')?.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const form = this;
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalText = submitBtn.textContent;
+    
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Adding...';
+
+    const formData = new FormData(form);
+    formData.append('_token', document.querySelector('meta[name="csrf-token"]').content);
+
+    try {
+        const response = await fetch('{{ route('jobs.services.add', $job) }}', {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: formData,
+            credentials: 'same-origin'
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            showToast(data.message, 'success');
+            location.reload();
+        } else {
+            showToast(data.message, 'error');
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalText;
+        }
+    } catch (error) {
+        showToast('Failed to add service', 'error');
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
+    }
+});
+
+// Handle add part form
+document.getElementById('addPartForm')?.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const form = this;
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalText = submitBtn.textContent;
+    
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Adding...';
+
+    const formData = new FormData(form);
+    formData.append('_token', document.querySelector('meta[name="csrf-token"]').content);
+
+    try {
+        const response = await fetch('{{ route('jobs.consume-part', $job) }}', {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: formData,
+            credentials: 'same-origin'
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            showToast(data.message, 'success');
+            location.reload();
+        } else {
+            showToast(data.message, 'error');
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalText;
+        }
+    } catch (error) {
+        showToast('Failed to add part', 'error');
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
+    }
+});
+
+function showToast(message, type = 'success') {
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.textContent = message;
+    toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 16px 24px;
+        background: ${type === 'success' ? '#10b981' : '#ef4444'};
+        color: white;
+        border-radius: 8px;
+        font-weight: 600;
+        z-index: 10000;
+        animation: slideIn 0.3s ease;
+    `;
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+        toast.style.animation = 'slideOut 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
 </script>
+
+<style>
+@keyframes slideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes slideOut {
+    from { transform: translateX(0); opacity: 1; }
+    to { transform: translateX(100%); opacity: 0; }
+}
+</style>
+
+<!-- Pending Jobs Modal -->
+<div id="pendingJobsModal" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 600px; max-height: 80vh; overflow-y: auto;">
+        <div class="modal-header">
+            <h2>Pending Jobs</h2>
+            <button class="close-btn" onclick="closePendingJobsModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            @if($pendingJobs->count() > 0)
+                <div class="pending-jobs-list">
+                    @foreach($pendingJobs as $pendingJob)
+                        <div class="pending-job-item" onclick="goToJob({{ $pendingJob->id }})">
+                            <div class="pending-job-info">
+                                <div class="pending-job-number">{{ $pendingJob->job_number }}</div>
+                                <div class="pending-job-vehicle">{{ $pendingJob->vehicle->registration_number }}</div>
+                                <div class="pending-job-customer">{{ $pendingJob->customer->full_name }}</div>
+                            </div>
+                            <div class="pending-job-status status-{{ $pendingJob->status->getColor() }}">
+                                {{ $pendingJob->status->getLabel() }}
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            @else
+                <div class="empty-state">
+                    <p>No pending jobs found.</p>
+                </div>
+            @endif
+        </div>
+    </div>
+</div>
+
+<style>
+.pending-jobs-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.pending-jobs-btn:hover {
+    background: #2563eb;
+    transform: translateY(-1px);
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.pending-jobs-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.pending-job-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background: #f8fafc;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.pending-job-item:hover {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+    transform: translateX(4px);
+}
+
+.pending-job-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.pending-job-number {
+    font-size: 14px;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.pending-job-vehicle {
+    font-size: 13px;
+    font-weight: 600;
+    color: #475569;
+}
+
+.pending-job-customer {
+    font-size: 12px;
+    color: #64748b;
+}
+
+.pending-job-status {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #64748b;
+}
+</style>
 @endsection

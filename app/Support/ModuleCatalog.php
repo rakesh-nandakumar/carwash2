@@ -27,6 +27,8 @@ class ModuleCatalog
 
     public const REPORTS = 'reports';
 
+    public const POS = 'pos';
+
     /**
      * @return array<string, array{name: string, description: string, module_keys: list<string>}>
      */
@@ -55,13 +57,18 @@ class ModuleCatalog
             ],
             self::BILLING => [
                 'name' => 'Billing & Cashier',
-                'description' => 'Invoicing, payments, refunds and the cashier counter.',
+                'description' => 'Invoicing, payments, refunds and cashier counter.',
                 'module_keys' => ['invoices', 'cashier'],
             ],
             self::REPORTS => [
                 'name' => 'Reports & Analytics',
                 'description' => 'Sales, stock and service reporting.',
                 'module_keys' => ['reports'],
+            ],
+            self::POS => [
+                'name' => 'POS',
+                'description' => 'Point of Sale terminal for walk-in customers.',
+                'module_keys' => ['pos'],
             ],
         ];
     }
@@ -72,7 +79,11 @@ class ModuleCatalog
      */
     public static function catalogKeyFor(string $fineModuleKey): ?string
     {
-        foreach (self::definitions() as $catalogKey => $definition) {
+        $keys = self::keys();
+        // Check in reverse order so POS module is checked before BILLING
+        for ($i = count($keys) - 1; $i >= 0; $i--) {
+            $catalogKey = $keys[$i];
+            $definition = self::definitions()[$catalogKey];
             if (in_array($fineModuleKey, $definition['module_keys'], true)) {
                 return $catalogKey;
             }
