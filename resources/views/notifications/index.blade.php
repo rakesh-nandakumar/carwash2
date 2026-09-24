@@ -49,9 +49,7 @@
                     <tr>
                         <th>Invoice #</th>
                         <th>Customer</th>
-                        @if(collect($partialPayments)->contains(fn($p) => isset($p['vehicle_registration']) && $p['vehicle_registration'] !== 'N/A'))
                         <th>Vehicle</th>
-                        @endif
                         <th>Total</th>
                         <th>Paid</th>
                         <th>Balance</th>
@@ -63,24 +61,15 @@
                     <tr>
                         <td><span class="invoice-badge">#{{ $payment['invoice_number'] }}</span></td>
                         <td>{{ $payment['customer_name'] }}</td>
-                        @if(isset($payment['vehicle_registration']) && $payment['vehicle_registration'] !== 'N/A')
-                        <td>{{ $payment['vehicle_registration'] }}</td>
-                        @endif
+                        <td>{{ $payment['vehicle_registration'] ?? 'N/A' }}</td>
                         <td>Rs. {{ number_format($payment['total_amount'], 2) }}</td>
                         <td>Rs. {{ number_format($payment['paid_amount'], 2) }}</td>
                         <td><span class="balance-amount">Rs. {{ number_format($payment['balance'], 2) }}</span></td>
                         <td>
-                            @if(isset($payment['job_id']) && $payment['job_id'])
                             <a href="{{ route('invoices.show', $payment['id']) }}?from=notifications" class="action-btn process-btn">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
                                 Complete
                             </a>
-                            @else
-                            <a href="{{ route('cashier.payment-invoice', $payment['id']) }}?from=notifications" class="action-btn process-btn">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
-                                Complete
-                            </a>
-                            @endif
                         </td>
                     </tr>
                     @endforeach
@@ -100,12 +89,14 @@
                     <span class="status-badge pending">Partial</span>
                 </div>
                 <div class="card-details">
-                    @if(isset($payment['vehicle_registration']) && $payment['vehicle_registration'] !== 'N/A')
+                    <div class="detail">
+                        <span class="label">Customer</span>
+                        <span class="value">{{ $payment['customer_name'] }}</span>
+                    </div>
                     <div class="detail">
                         <span class="label">Vehicle</span>
-                        <span class="value">{{ $payment['vehicle_registration'] }}</span>
+                        <span class="value">{{ $payment['vehicle_registration'] ?? 'N/A' }}</span>
                     </div>
-                    @endif
                     <div class="detail">
                         <span class="label">Total</span>
                         <span class="value">Rs. {{ number_format($payment['total_amount'], 2) }}</span>
@@ -120,17 +111,10 @@
                     </div>
                 </div>
                 <div class="card-actions">
-                    @if(isset($payment['job_id']) && $payment['job_id'])
                     <a href="{{ route('invoices.show', $payment['id']) }}?from=notifications" class="btn-action process">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
                         Complete Payment
                     </a>
-                    @else
-                    <a href="{{ route('cashier.payment-invoice', $payment['id']) }}?from=notifications" class="btn-action process">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
-                        Complete Payment
-                    </a>
-                    @endif
                 </div>
             </div>
             @endforeach
@@ -165,9 +149,7 @@
                         <th>Bank</th>
                         <th>Due Date</th>
                         <th>Customer</th>
-                        @if(collect($pendingCheques)->contains(fn($c) => isset($c['vehicle_registration']) && $c['vehicle_registration'] !== 'N/A'))
                         <th>Vehicle</th>
-                        @endif
                         <th>Amount</th>
                         <th></th>
                     </tr>
@@ -186,9 +168,7 @@
                             </div>
                         </td>
                         <td>{{ $cheque['customer_name'] }}</td>
-                        @if(isset($cheque['vehicle_registration']) && $cheque['vehicle_registration'] !== 'N/A')
-                        <td>{{ $cheque['vehicle_registration'] }}</td>
-                        @endif
+                        <td>{{ $cheque['vehicle_registration'] ?? 'N/A' }}</td>
                         <td>Rs. {{ number_format($cheque['amount'], 2) }}</td>
                         <td>
                             <a href="{{ route('cheque-payments.confirm', $cheque['payment_id']) }}?from=notifications" class="action-btn process-btn">
@@ -222,12 +202,10 @@
                         <span class="label">Customer</span>
                         <span class="value">{{ $cheque['customer_name'] }}</span>
                     </div>
-                    @if(isset($cheque['vehicle_registration']) && $cheque['vehicle_registration'] !== 'N/A')
                     <div class="detail">
                         <span class="label">Vehicle</span>
-                        <span class="value">{{ $cheque['vehicle_registration'] }}</span>
+                        <span class="value">{{ $cheque['vehicle_registration'] ?? 'N/A' }}</span>
                     </div>
-                    @endif
                     <div class="detail">
                         <span class="label">Amount</span>
                         <span class="value">Rs. {{ number_format($cheque['amount'], 2) }}</span>
@@ -274,9 +252,7 @@
                         <th>Cheque Number</th>
                         <th>Bank</th>
                         <th>Customer</th>
-                        @if(collect($bouncedCheques)->contains(fn($c) => isset($c['vehicle_registration']) && $c['vehicle_registration'] !== 'N/A'))
                         <th>Vehicle</th>
-                        @endif
                         <th>Amount</th>
                         <th>Follow-up Date</th>
                         <th></th>
@@ -288,9 +264,7 @@
                         <td><span class="cheque-badge bounced">{{ $cheque['cheque_number'] }}</span></td>
                         <td>{{ $cheque['bank_name'] }}</td>
                         <td>{{ $cheque['customer_name'] }}</td>
-                        @if(isset($cheque['vehicle_registration']) && $cheque['vehicle_registration'] !== 'N/A')
-                        <td>{{ $cheque['vehicle_registration'] }}</td>
-                        @endif
+                        <td>{{ $cheque['vehicle_registration'] ?? 'N/A' }}</td>
                         <td>Rs. {{ number_format($cheque['amount'], 2) }}</td>
                         <td>
                             <div class="date-cell">
@@ -338,12 +312,10 @@
                         <span class="label">Customer</span>
                         <span class="value">{{ $cheque['customer_name'] }}</span>
                     </div>
-                    @if(isset($cheque['vehicle_registration']) && $cheque['vehicle_registration'] !== 'N/A')
                     <div class="detail">
                         <span class="label">Vehicle</span>
-                        <span class="value">{{ $cheque['vehicle_registration'] }}</span>
+                        <span class="value">{{ $cheque['vehicle_registration'] ?? 'N/A' }}</span>
                     </div>
-                    @endif
                     <div class="detail">
                         <span class="label">Amount</span>
                         <span class="value">Rs. {{ number_format($cheque['amount'], 2) }}</span>

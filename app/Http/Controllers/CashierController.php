@@ -1184,7 +1184,10 @@ class CashierController extends Controller
             $this->audit->logPayment($payment->id, [
                 'invoice_id' => $invoice->id,
                 'invoice_number' => $invoice->invoice_number,
+                'job_id' => null,
+                'job_number' => null,
                 'customer_name' => $invoice->customer?->full_name ?? 'Walk-in',
+                'vehicle_registration' => null,
                 'payment_method' => $paymentMethod,
                 'amount' => $amountReceived,
                 'discount_amount' => $discountAmount,
