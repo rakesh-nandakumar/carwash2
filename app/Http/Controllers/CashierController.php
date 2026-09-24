@@ -44,6 +44,7 @@ class CashierController extends Controller
             'vehicle',
             'invoice'
         ])
+            ->where('tenant_id', auth()->user()->tenant_id)
             ->where(
                 'status',
                 JobStatus::READY_FOR_PAYMENT->value

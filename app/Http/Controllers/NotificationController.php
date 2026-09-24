@@ -98,6 +98,7 @@ class NotificationController extends Controller
 
         // Get jobs ready for payment (excluding jobs that have partial payments)
         $readyForPayment = Job::with(['customer', 'vehicle', 'invoice'])
+            ->where('tenant_id', auth()->user()->tenant_id)
             ->where('status', JobStatus::READY_FOR_PAYMENT->value)
             ->whereNotIn('id', $partialPaymentJobIds) // Exclude jobs with partial payments
             ->whereDoesntHave('invoice', function ($query) {
