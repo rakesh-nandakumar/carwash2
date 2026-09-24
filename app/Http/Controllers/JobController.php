@@ -134,7 +134,17 @@ class JobController extends Controller
         $pendingApprovals = $this->approvals->getPendingApprovals($job->id);
         $calculation = $this->pricing->calculateFinalInvoice($job->id);
 
-        return view('jobs.show', compact('job', 'services', 'products', 'pendingApprovals', 'calculation'));
+        // Get pending jobs (not delivered, cancelled, or paid)
+        $pendingJobs = Job::with(['customer', 'vehicle'])
+            ->where('id', '!=', $job->id)
+            ->where('status', '!=', JobStatus::DELIVERED->value)
+            ->where('status', '!=', JobStatus::CANCELLED->value)
+            ->where('status', '!=', JobStatus::PAID->value)
+            ->orderBy('checked_in_at', 'desc')
+            ->limit(20)
+            ->get();
+
+        return view('jobs.show', compact('job', 'services', 'products', 'pendingApprovals', 'calculation', 'pendingJobs'));
     }
 
     public function edit(Job $job)
@@ -188,6 +198,17 @@ class JobController extends Controller
         }
 
         if ($newStatus === JobStatus::READY_FOR_PAYMENT) {
+            // Check if there are any applied services or parts
+            $appliedServicesCount = $job->services()->where('approval_status', 'approved')->count();
+            $appliedPartsCount = $job->parts()->where('applied', true)->count();
+
+            if ($appliedServicesCount === 0 && $appliedPartsCount === 0) {
+                if ($r->expectsJson()) {
+                    return response()->json(['success' => false, 'message' => 'Cannot mark job as ready for payment. No services or parts have been applied.'], 400);
+                }
+                return back()->with('error', 'Cannot mark job as ready for payment. No services or parts have been applied.');
+            }
+
             try {
                 DB::transaction(function () use ($job, $newStatus, $r, $oldStatus) {
 
@@ -339,13 +360,45 @@ class JobController extends Controller
         ]);
 
         $product = Product::find($d['product_id']);
+
+        // Check if there's already a pending part for this product
+        $existingPart = JobPart::where('job_id', $job->id)
+            ->where('product_id', $d['product_id'])
+            ->where('applied', false)
+            ->first();
+
+        if ($existingPart) {
+            // Update existing part quantity
+            $existingPart->quantity += $d['quantity'];
+            $existingPart->save();
+
+            $this->auditService->log('job.part_updated', "Part '{$product->name}' quantity updated to {$existingPart->quantity} for job #{$job->job_number}", 'info', 'tenant_user', auth()->user()->email, [
+                'job_id' => $job->id,
+                'job_number' => $job->job_number,
+                'job_part_id' => $existingPart->id,
+                'product_id' => $d['product_id'],
+                'product_name' => $product->name,
+                'quantity' => $existingPart->quantity,
+                'unit_price' => $existingPart->unit_price,
+            ]);
+
+            $this->syncJobInvoice($job);
+
+            if ($r->expectsJson()) {
+                return response()->json(['success' => true, 'message' => 'Part quantity updated.']);
+            }
+
+            return back()->with('success', 'Part quantity updated.');
+        }
+
+        // Check inventory for new part
         $availability = $this->inventory->checkAvailability($product, $job->branch_id ?? null, $d['quantity']);
 
         if (!$availability['sufficient']) {
-            return back()->with(
-                'error',
-                'Insufficient stock for ' . $product->name . '. Available: ' . $availability['available'] . ', Required: ' . $d['quantity']
-            );
+            if ($r->expectsJson()) {
+                return response()->json(['success' => false, 'message' => 'Insufficient stock for ' . $product->name . '. Available: ' . $availability['available'] . ', Required: ' . $d['quantity']]);
+            }
+            return back()->with('error', 'Insufficient stock for ' . $product->name . '. Available: ' . $availability['available'] . ', Required: ' . $d['quantity']);
         }
 
         $jobPart = JobPart::create([
@@ -371,6 +424,10 @@ class JobController extends Controller
 
         $this->syncJobInvoice($job);
 
+        if ($r->expectsJson()) {
+            return response()->json(['success' => true, 'message' => 'Part added. Please confirm to apply.']);
+        }
+
         return back()->with('success', 'Part added. Please confirm to apply.');
     }
 
@@ -381,10 +438,10 @@ class JobController extends Controller
         }
 
         if ($part->applied) {
-            return back()->with(
-                'error',
-                'This part has already been applied.'
-            );
+            if ($r->expectsJson()) {
+                return response()->json(['success' => false, 'message' => 'This part has already been applied.']);
+            }
+            return back()->with('error', 'This part has already been applied.');
         }
 
         try {
@@ -399,15 +456,16 @@ class JobController extends Controller
                 'applied' => true,
             ]);
 
-            return back()->with(
-                'success',
-                'Part applied successfully.'
-            );
+            if ($r->expectsJson()) {
+                return response()->json(['success' => true, 'message' => 'Part applied successfully.']);
+            }
+
+            return back()->with('success', 'Part applied successfully.');
         } catch (\Throwable $e) {
-            return back()->with(
-                'error',
-                $e->getMessage()
-            );
+            if ($r->expectsJson()) {
+                return response()->json(['success' => false, 'message' => $e->getMessage()]);
+            }
+            return back()->with('error', $e->getMessage());
         }
     }
 
@@ -436,6 +494,10 @@ class JobController extends Controller
             'old_status' => $oldStatus,
             'new_status' => 'approved',
         ]);
+
+        if ($r->expectsJson()) {
+            return response()->json(['success' => true, 'message' => 'Service applied successfully.']);
+        }
 
         return back()->with('success', 'Service applied successfully.');
     }
@@ -482,6 +544,12 @@ class JobController extends Controller
             'service_name' => $service->name,
             'unit_price' => $service->base_price,
         ]);
+
+        $this->syncJobInvoice($job);
+
+        if ($request->expectsJson()) {
+            return response()->json(['success' => true, 'message' => 'Service added successfully.']);
+        }
 
         return back()->with('success', 'Service added. Please confirm to apply.');
     }
