@@ -324,29 +324,36 @@
 <div id="paymentConfirmationModal" class="modal">
     <div class="modal-content">
         <div class="modal-header">
-            <h3>Confirm Payment</h3>
-            <button onclick="closePaymentConfirmation()" class="close-modal">&times;</button>
+            <h2>Confirm Payment</h2>
+            <button class="close-btn" onclick="closePaymentConfirmation()">&times;</button>
         </div>
         <div class="modal-body">
-            <div class="confirmation-details">
-                <div class="detail-row">
-                    <span>Payment Method:</span>
-                    <strong id="confirmPaymentMethod">Cash</strong>
+            <div class="payment-summary">
+                <div class="summary-row">
+                    <span>Total Due</span>
+                    <span class="amount" id="confirmTotalDue">Rs. 0.00</span>
                 </div>
-                <div class="detail-row">
-                    <span>Amount:</span>
-                    <strong id="confirmAmount">Rs. 0.00</strong>
+                <div class="summary-row">
+                    <span>Payment Method</span>
+                    <span id="confirmPaymentMethod">-</span>
                 </div>
-                <div class="detail-row" id="confirmReferenceRow" style="display: none;">
-                    <span>Reference:</span>
-                    <strong id="confirmReference">-</strong>
+                <div class="summary-row editable">
+                    <span>Amount Received</span>
+                    <div class="amount-edit-wrapper">
+                        <span class="currency-prefix">Rs.</span>
+                        <input type="number" id="editAmountReceived" step="0.01" value="0.00" oninput="updateConfirmBalance()" onfocus="this.select()" placeholder="Enter amount">
+                    </div>
+                </div>
+                <div class="summary-row balance-row">
+                    <span>Balance</span>
+                    <span id="confirmBalance">Rs. 0.00</span>
                 </div>
             </div>
-            <p class="confirmation-warning">Are you sure you want to process this payment?</p>
+            <p class="confirmation-text">⚠️ Are you sure you want to process this payment?</p>
         </div>
         <div class="modal-footer">
-            <button onclick="closePaymentConfirmation()" class="btn-secondary">Cancel</button>
-            <button onclick="submitPayment()" class="btn-primary">Confirm Payment</button>
+            <button type="button" class="secondary" onclick="closePaymentConfirmation()">Cancel</button>
+            <button type="button" class="primary" onclick="submitPayment()">Confirm Payment — Rs. <span id="confirmButtonAmount">0.00</span></button>
         </div>
     </div>
 </div>
@@ -868,85 +875,218 @@
 }
 
 .modal {
-    display: none;
     position: fixed;
     top: 0;
     left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 1000;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(15px);
+    display: none;
     align-items: center;
     justify-content: center;
+    z-index: 10000;
+}
+
+.modal.active {
+    display: flex;
 }
 
 .modal-content {
     background: white;
     border-radius: 16px;
-    padding: 24px;
-    max-width: 500px;
+    max-width: 480px;
     width: 90%;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    overflow: hidden;
 }
 
 .modal-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px;
+    padding: 24px 28px;
+    border-bottom: 1px solid #f1f5f9;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
 }
 
-.modal-header h3 {
+.modal-header h2 {
+    margin: 0;
     font-size: 20px;
     font-weight: 700;
     color: #1e293b;
-    margin: 0;
+    letter-spacing: -0.025em;
 }
 
-.close-modal {
-    background: none;
+.close-btn {
+    background: #f1f5f9;
     border: none;
-    font-size: 28px;
+    font-size: 24px;
     cursor: pointer;
-    color: #6b7280;
+    color: #64748b;
+    padding: 0;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    transition: all 0.2s;
+    font-weight: 300;
 }
 
-.confirmation-details {
-    background: #f8fafc;
-    border-radius: 10px;
-    padding: 16px;
-    margin-bottom: 16px;
-    border: 2px solid #e2e8f0;
+.close-btn:hover {
+    background: #e2e8f0;
+    color: #1e293b;
+    transform: rotate(90deg);
 }
 
-.confirmation-warning {
-    color: #dc2626;
+.modal-body {
+    padding: 28px;
+    text-align: left;
+}
+
+.modal-body p {
+    margin: 0;
+    color: #64748b;
+    font-size: 15px;
+    line-height: 1.6;
+}
+
+.payment-summary {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 20px;
+    border: 1px solid #e2e8f0;
+}
+
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 0;
+    border-bottom: 1px solid #e2e8f0;
+    font-size: 15px;
+}
+
+.summary-row:last-child {
+    border-bottom: none;
+}
+
+.summary-row span:first-child {
+    color: #64748b;
+    font-weight: 500;
+    font-size: 14px;
+}
+
+.summary-row span:last-child {
+    color: #1e293b;
     font-weight: 600;
-    margin-bottom: 16px;
+    font-size: 15px;
+}
+
+.summary-row .amount {
+    font-size: 20px;
+    color: #059669;
+    font-weight: 700;
+}
+
+.summary-row.balance-row span:last-child {
+    color: #dc2626;
+    font-weight: 700;
+    font-size: 20px;
+}
+
+.summary-row.editable {
+    padding: 18px 0;
+}
+
+.summary-row.editable input {
+    padding: 10px 14px;
+    border: 2px solid #3b82f6;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    text-align: right;
+    width: 160px;
+    background: white;
+    transition: all 0.2s ease;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.summary-row.editable input:focus {
+    outline: none;
+    border-color: #2563eb;
+    background: white;
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
+}
+
+.amount-edit-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.amount-edit-wrapper .currency-prefix {
+    color: #2563eb;
+    font-weight: 700;
+    font-size: 16px;
+}
+
+.confirmation-text {
+    color: #64748b;
+    font-size: 15px;
+    margin-bottom: 20px;
+    padding: 16px;
+    background: #fef3c7;
+    border-left: 4px solid #f59e0b;
+    border-radius: 8px;
+    font-weight: 500;
 }
 
 .modal-footer {
     display: flex;
-    gap: 12px;
     justify-content: flex-end;
+    gap: 12px;
+    padding: 24px 28px;
+    border-top: 1px solid #f1f5f9;
+    background: #f8fafc;
 }
 
-.btn-secondary, .btn-primary {
-    padding: 10px 20px;
+.modal-footer button {
+    padding: 14px 28px;
+    border: none;
     border-radius: 10px;
+    font-size: 15px;
     font-weight: 600;
     cursor: pointer;
-    border: none;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-.btn-secondary {
-    background: #e2e8f0;
-    color: #475569;
+.modal-footer button.secondary {
+    background: white;
+    color: #64748b;
+    border: 2px solid #e2e8f0;
 }
 
-.btn-primary {
-    background: #3b82f6;
+.modal-footer button.secondary:hover {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+    transform: translateY(-1px);
+}
+
+.modal-footer button.primary {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
     color: white;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.modal-footer button.primary:hover {
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
 }
 
 .coupon-section {
@@ -1213,20 +1353,38 @@ function calculateBalance() {
 function openPaymentConfirmation() {
     const modal = document.getElementById('paymentConfirmationModal');
     const method = document.querySelector('input[name="payment_method"]:checked').value;
-    const amount = document.getElementById('amountReceived').value;
-    const reference = document.getElementById('referenceNumber').value;
+    let amountReceived = parseFloat(document.getElementById('amountReceived').value) || 0;
+    const totalDue = parseFloat(document.getElementById('displayTotal').textContent.replace('Rs. ', '')) || 0;
 
-    document.getElementById('confirmPaymentMethod').textContent = method.charAt(0).toUpperCase() + method.slice(1);
-    document.getElementById('confirmAmount').textContent = 'Rs. ' + parseFloat(amount).toFixed(2);
-
-    if (reference) {
-        document.getElementById('confirmReferenceRow').style.display = 'flex';
-        document.getElementById('confirmReference').textContent = reference;
-    } else {
-        document.getElementById('confirmReferenceRow').style.display = 'none';
+    // If amount received is 0 or empty, default to total due
+    if (amountReceived === 0) {
+        amountReceived = totalDue;
     }
 
+    document.getElementById('confirmTotalDue').textContent = 'Rs. ' + totalDue.toFixed(2);
+    document.getElementById('confirmPaymentMethod').textContent = method.charAt(0).toUpperCase() + method.slice(1);
+    document.getElementById('editAmountReceived').value = amountReceived.toFixed(2);
+    document.getElementById('confirmButtonAmount').textContent = amountReceived.toFixed(2);
+
+    updateConfirmBalance();
     modal.style.display = 'flex';
+}
+
+function updateConfirmBalance() {
+    const totalDue = parseFloat(document.getElementById('confirmTotalDue').textContent.replace('Rs. ', '')) || 0;
+    const received = parseFloat(document.getElementById('editAmountReceived').value) || 0;
+    const balance = totalDue - received;
+
+    const balanceElement = document.getElementById('confirmBalance');
+    balanceElement.textContent = 'Rs. ' + Math.abs(balance).toFixed(2);
+
+    if (balance >= 0) {
+        balanceElement.style.color = '#dc2626';
+    } else {
+        balanceElement.style.color = '#10b981';
+    }
+
+    document.getElementById('confirmButtonAmount').textContent = received.toFixed(2);
 }
 
 function closePaymentConfirmation() {

@@ -94,18 +94,23 @@
                         <div class="pos-cart-item-info">
                             <div class="pos-cart-item-name" x-text="item.name"></div>
                             <div class="pos-cart-item-details">
-                                <span>Rs. <span x-text="item.unit_price.toFixed(2)"></span> × <span x-text="item.quantity"></span></span>
+                                <span>Rs. <span x-text="item.unit_price.toFixed(2)"></span></span>
                             </div>
+                        </div>
+                        <div class="pos-cart-item-controls">
+                            <button @click="decreaseQuantity(index)" class="pos-qty-btn pos-qty-minus">-</button>
+                            <span class="pos-qty-display" x-text="item.quantity"></span>
+                            <button @click="increaseQuantity(index)" class="pos-qty-btn pos-qty-plus">+</button>
                         </div>
                         <div class="pos-cart-item-price">
                             Rs. <span x-text="(item.unit_price * item.quantity).toFixed(2)"></span>
                         </div>
+                        <button @click="removeFromCart(index)" class="pos-cart-item-remove">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
                     </div>
-                    <button @click="removeFromCart(index)" class="pos-cart-item-remove">
-                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                        </svg>
-                    </button>
                 </div>
             </template>
         </div>
@@ -157,6 +162,11 @@
         <div class="pos-cart-total">
             <div class="pos-cart-total-label">Total</div>
             <div class="pos-cart-total-amount">Rs. <span x-text="cartTotal.toFixed(2)"></span></div>
+        </div>
+
+        <!-- Success Message -->
+        <div x-show="checkoutSuccess" x-transition style="background: #d1fae5; color: #065f46; padding: 12px; border-radius: 8px; margin-bottom: 12px; border: 1px solid #10b981; font-size: 14px; font-weight: 500;">
+            POS invoice created successfully. Cashier will handle payment processing.
         </div>
 
         <!-- Checkout Button -->
@@ -446,10 +456,9 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
-    padding: 12px 40px 12px 12px;
+    padding: 12px;
     background: #f9fafb;
     border-radius: 8px;
-    position: relative;
 }
 
 .pos-cart-item-main {
@@ -482,10 +491,54 @@
     padding-right: 8px;
 }
 
+.pos-cart-item-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-right: 12px;
+}
+
+.pos-qty-btn {
+    width: 28px;
+    height: 28px;
+    border: 1px solid #e5e7eb;
+    background: white;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    color: #374151;
+}
+
+.pos-qty-btn:hover {
+    background: #f3f4f6;
+    border-color: #d1d5db;
+}
+
+.pos-qty-btn.pos-qty-plus {
+    background: #3b82f6;
+    color: white;
+    border-color: #3b82f6;
+}
+
+.pos-qty-btn.pos-qty-plus:hover {
+    background: #2563eb;
+    border-color: #2563eb;
+}
+
+.pos-qty-display {
+    font-weight: 600;
+    color: #111827;
+    font-size: 14px;
+    min-width: 24px;
+    text-align: center;
+}
+
 .pos-cart-item-remove {
-    position: absolute;
-    top: 12px;
-    right: 12px;
     padding: 4px;
     background: #fee2e2;
     color: #dc2626;
@@ -493,6 +546,7 @@
     border-radius: 4px;
     cursor: pointer;
     transition: background 0.2s ease;
+    position: static;
 }
 
 .pos-cart-item-remove:hover {
@@ -636,6 +690,7 @@ function posApp() {
         discountType: 'none',
         discountValue: 0,
         discountApplyTo: 'total',
+        checkoutSuccess: false,
 
         initApp() {
         },
@@ -734,6 +789,25 @@ function posApp() {
             this.cart.splice(index, 1);
         },
 
+        increaseQuantity(index) {
+            const item = this.cart[index];
+            const product = this.products.find(p => p.id === item.product_id);
+            if (product && item.quantity < product.stock) {
+                item.quantity++;
+            } else {
+                alert('Cannot exceed available stock');
+            }
+        },
+
+        decreaseQuantity(index) {
+            const item = this.cart[index];
+            if (item.quantity > 1) {
+                item.quantity--;
+            } else {
+                this.removeFromCart(index);
+            }
+        },
+
         get cartTotal() {
             const subtotal = this.cart.reduce((sum, item) => sum + (item.unit_price * item.quantity), 0);
             return subtotal - this.totalDiscount;
@@ -766,10 +840,25 @@ function posApp() {
             .then(response => response.json())
             .then(data => {
                 if (data.ok) {
-                    window.location.href = '{{ route("cashier.index") }}';
+                    this.checkoutSuccess = true;
+                    this.cart = [];
+                    this.selectedCustomerId = '';
+                    this.discountType = 'none';
+                    this.discountValue = 0;
+                    this.discountApplyTo = 'total';
+
+                    // Hide message after 3 seconds
+                    setTimeout(() => {
+                        this.checkoutSuccess = false;
+                    }, 3000);
                 } else {
                     console.error('Error:', data.error);
+                    alert('Error: ' + (data.error || 'Failed to create invoice'));
                 }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error: Failed to create invoice');
             });
         }
     };
