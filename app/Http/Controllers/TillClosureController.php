@@ -104,9 +104,15 @@ class TillClosureController extends Controller
 
         if ($isOpen) {
             // Closing the till
+            \Log::info('Till closure request', [
+                'user_id' => auth()->id(),
+                'request_data' => $request->all(),
+            ]);
+
             $data = $request->validate([
                 'balance_option' => ['required', 'in:expected,manual'],
                 'manual_balance' => ['nullable', 'numeric', 'min:0', 'required_if:balance_option,manual'],
+                'variance_reason' => ['nullable', 'string', 'max:500'],
                 'notes' => ['nullable', 'string', 'max:2000'],
                 'denomination_breakdown' => ['nullable', 'array'],
             ]);
@@ -115,13 +121,32 @@ class TillClosureController extends Controller
                 ? $request->input('expected_balance')
                 : (float) $data['manual_balance'];
 
+            \Log::info('Closing till with balance', ['counted_balance' => $countedBalance]);
+
+            // Calculate variance
+            $expectedBalance = $request->input('expected_balance');
+            $variance = $countedBalance - $expectedBalance;
+
+            // Require variance reason if there's a variance
+            if (abs($variance) > 0.01 && empty($data['variance_reason'])) {
+                \Log::info('Variance reason required', ['variance' => $variance]);
+                return back()
+                    ->withInput()
+                    ->withErrors(['variance_reason' => 'Please provide a reason for the variance.']);
+            }
+
+            $notes = $data['notes'] ?? null;
+
             try {
+                \Log::info('Calling closeShift');
                 $closure = $this->cashMovements->closeShift(
                     countedBalance: $countedBalance,
                     denominationBreakdown: $data['denomination_breakdown'] ?? null,
-                    notes: $data['notes'] ?? null,
+                    notes: $notes,
+                    varianceReason: $data['variance_reason'] ?? null,
                     userId: auth()->id(),
                 );
+                \Log::info('Till closed successfully', ['closure_id' => $closure->id]);
 
                 $this->auditService->log('till.closed', "Till #{$till->id} closed", 'info', 'tenant_user', auth()->user()->email, [
                     'till_id' => $till->id,
@@ -131,7 +156,7 @@ class TillClosureController extends Controller
                     'counted_balance' => $closure->counted_balance,
                     'expected_balance' => $closure->expected_balance,
                     'discrepancy' => $closure->discrepancy,
-                    'notes' => $data['notes'] ?? null,
+                    'notes' => $notes,
                 ]);
             } catch (\RuntimeException $e) {
                 return back()->with('error', $e->getMessage());
@@ -146,8 +171,10 @@ class TillClosureController extends Controller
                     ? 'Overage: Rs. ' . number_format($closure->discrepancy, 2)
                     : 'Shortage: Rs. ' . number_format(abs($closure->discrepancy), 2));
 
+            \Log::info('Redirecting to day report', ['closure_id' => $closure->id, 'route' => 'cashier.day-report']);
+
             return redirect()
-                ->route('cashier.index')
+                ->route('cashier.day-report', $closure)
                 ->with('success', "Till closed successfully. {$discrepancyText}");
         } else {
             // Opening the till
@@ -161,6 +188,7 @@ class TillClosureController extends Controller
                 'till_id' => ['required', 'exists:tills,id'],
                 'balance_option' => ['required', 'in:previous,manual'],
                 'manual_balance' => ['nullable', 'numeric', 'min:0', 'required_if:balance_option,manual'],
+                'variance_reason' => ['nullable', 'string', 'max:500'],
                 'notes' => ['nullable', 'string', 'max:2000'],
             ], [
                 'manual_balance.required_if' => 'Please enter an opening balance when selecting manual amount.',
@@ -168,7 +196,7 @@ class TillClosureController extends Controller
             ]);
 
             $user = auth()->user();
-            
+
             // Get user's last closure for balance reference
             $userLastClosure = \App\Models\TillClosure::where('user_id', $user->id)
                 ->where('tenant_id', $user->tenant_id)
@@ -179,11 +207,26 @@ class TillClosureController extends Controller
             // Calculate opening balance based on selection
             if ($data['balance_option'] === 'previous' && $userLastClosure) {
                 $openingBalance = $userLastClosure->counted_balance;
+                $expectedBalance = $userLastClosure->counted_balance;
             } elseif ($data['balance_option'] === 'manual') {
                 $openingBalance = (float) $data['manual_balance'];
+                $expectedBalance = $userLastClosure ? $userLastClosure->counted_balance : 0;
             } else {
                 $openingBalance = 0;
+                $expectedBalance = 0;
             }
+
+            // Calculate variance
+            $variance = $openingBalance - $expectedBalance;
+
+            // Require variance reason if there's a variance
+            if (abs($variance) > 0.01 && empty($data['variance_reason'])) {
+                return back()
+                    ->withInput()
+                    ->withErrors(['variance_reason' => 'Please provide a reason for the variance.']);
+            }
+
+            $notes = $data['notes'] ?? null;
 
             // Handle till selection
             $selectedTill = \App\Models\Till::findOrFail($data['till_id']);
@@ -270,7 +313,8 @@ class TillClosureController extends Controller
                 \Log::info('Attempting to open shift', ['till_id' => $selectedTill->id, 'balance' => $openingBalance]);
                 $closure = $this->cashMovements->openShift(
                     openingBalance: $openingBalance,
-                    notes: $data['notes'] ?? null,
+                    notes: $notes,
+                    varianceReason: $data['variance_reason'] ?? null,
                     userId: $user->id,
                     till: $selectedTill,
                 );
@@ -281,7 +325,7 @@ class TillClosureController extends Controller
                     'till_name' => $selectedTill->name,
                     'closure_id' => $closure->id,
                     'opening_balance' => $closure->opening_balance,
-                    'notes' => $data['notes'] ?? null,
+                    'notes' => $notes,
                 ]);
             } catch (\RuntimeException $e) {
                 \Log::error('Failed to open shift', ['error' => $e->getMessage()]);
@@ -317,5 +361,70 @@ class TillClosureController extends Controller
         $closure->load('user');
 
         return view('cashier.shift-show', compact('till', 'closure'));
+    }
+
+    public function printDayReport(Request $request, TillClosure $closure)
+    {
+        $till = $this->cashMovements->getSelectedTill();
+
+        if ($closure->till_id !== $till->id) {
+            abort(404, 'Closure not found for this till.');
+        }
+
+        if (!$closure->closed_at) {
+            return back()->with('error', 'Shift must be closed to generate report.');
+        }
+
+        \Log::info('Day report data', [
+            'closure_id' => $closure->id,
+            'variance_reason' => $closure->variance_reason,
+            'discrepancy' => $closure->discrepancy,
+        ]);
+
+        // Get all cash movements for this closure
+        $cashMovements = \App\Models\CashMovement::where('till_closure_id', $closure->id)
+            ->with('user')
+            ->orderBy('created_at')
+            ->get();
+
+        // Get all payments for this closure period
+        if ($closure->opened_at && $closure->closed_at) {
+            $payments = \App\Models\Payment::where('created_at', '>=', $closure->opened_at)
+                ->where('created_at', '<=', $closure->closed_at)
+                ->where('tenant_id', auth()->user()->tenant_id)
+                ->with(['invoice', 'invoice.customer'])
+                ->get();
+
+            \Log::info('Payments for day report', [
+                'closure_id' => $closure->id,
+                'opened_at' => $closure->opened_at,
+                'closed_at' => $closure->closed_at,
+                'payment_count' => $payments->count(),
+                'payment_total' => $payments->sum('amount'),
+            ]);
+        } else {
+            $payments = collect(); // Return empty collection if dates are missing
+        }
+
+        // Group cash movements by type
+        $cashInMovements = $cashMovements->where('type', 'in')->where('source', 'manual');
+        $cashOutMovements = $cashMovements->where('type', 'out')->where('source', 'manual');
+
+        // Count transactions
+        $transactionCount = $payments->count();
+        $cashInCount = $cashInMovements->count();
+        $cashOutCount = $cashOutMovements->count();
+
+        return view('cashier.day-report', compact(
+            'till',
+            'closure',
+            'cashMovements',
+            'cashInMovements',
+            'cashOutMovements',
+            'payments',
+            'transactionCount',
+            'cashInCount',
+            'cashOutCount'
+        ));
     }
 }

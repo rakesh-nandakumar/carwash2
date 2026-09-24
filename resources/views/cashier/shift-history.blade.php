@@ -71,11 +71,27 @@
                                 <span>Cash Sales:</span>
                                 <strong>Rs. {{ number_format($closure->cash_sales, 2) }}</strong>
                             </div>
+                            @if($closure->closed_at)
+                            <div class="shift-actions">
+                                <a href="{{ route('cashier.day-report', $closure) }}" class="btn-print" title="Print Day Report">
+                                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+                                    </svg>
+                                    Print Report
+                                </a>
+                                <div class="action-arrow">
+                                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                            @else
                             <div class="action-arrow">
                                 <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
                                 </svg>
                             </div>
+                            @endif
                         </div>
                     </div>
                 @endforeach
@@ -252,6 +268,38 @@
     align-items: center;
     padding-top: 12px;
     border-top: 1px solid #e5e7eb;
+}
+
+.shift-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.btn-print {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+}
+
+.btn-print:hover {
+    background: #2563eb;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
+}
+
+.btn-print svg {
+    flex-shrink: 0;
 }
 
 .cash-sales {

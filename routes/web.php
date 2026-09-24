@@ -565,6 +565,10 @@ Route::prefix('{tenant}')
             Route::get('/cashier/shift/{closure}', [TillClosureController::class, 'show'])
                 ->name('cashier.shift-show')
                 ->middleware('permission:cashier.access');
+
+            Route::get('/cashier/day-report/{closure}', [TillClosureController::class, 'printDayReport'])
+                ->name('cashier.day-report')
+                ->middleware('permission:cashier.access');
             // ==================== END CASHIER ====================
 
             // ==================== CHEQUE PAYMENTS ====================
