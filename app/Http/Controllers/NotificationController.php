@@ -13,16 +13,19 @@ class NotificationController extends Controller
     public function index()
     {
         // Get partial payments (invoices with balance > 0.01 OR status 'partially_paid')
-        // This includes jobs that are ready for payment but have partial payments
-        $partialPayments = Invoice::with(['job.customer', 'job.vehicle'])
+        // This includes both job invoices and POS invoices
+        $partialPayments = Invoice::with(['job.customer', 'job.vehicle', 'customer'])
             ->where('total', '>', 0)
             ->where('paid', '>', 0) // Must have some payments already
             ->where(function($query) {
                 $query->where('balance', '>', 0.01) // Use small threshold for floating point errors
                       ->orWhere('status', 'partially_paid'); // Also check status to catch data inconsistencies
             })
-            ->whereHas('job', function($query) {
-                $query->where('status', '!=', 'paid'); // Exclude jobs that are already paid
+            ->where(function($query) {
+                // Include both job invoices and POS invoices
+                $query->whereHas('job', function($q) {
+                    $q->where('status', '!=', 'paid'); // Exclude jobs that are already paid
+                })->orWhereNull('job_id'); // Include POS invoices (job_id is null)
             })
             ->orderBy('created_at', 'desc')
             ->get()
@@ -31,21 +34,21 @@ class NotificationController extends Controller
                     'id' => $invoice->id,
                     'type' => 'partial_payment',
                     'invoice_number' => $invoice->id,
-                    'customer_name' => $invoice->job->customer->full_name,
-                    'vehicle_registration' => $invoice->job->vehicle->registration_number,
+                    'customer_name' => $invoice->job ? $invoice->job->customer->full_name : ($invoice->customer->full_name ?? 'Walk-in'),
+                    'vehicle_registration' => $invoice->job ? $invoice->job->vehicle->registration_number : 'N/A',
                     'total_amount' => $invoice->total,
                     'paid_amount' => $invoice->paid,
                     'balance' => $invoice->balance,
-                    'job_id' => $invoice->job->id,
+                    'job_id' => $invoice->job_id,
                     'created_at' => $invoice->created_at,
                 ];
             });
 
         // Get job IDs that have partial payments (to exclude from ready for payment)
-        $partialPaymentJobIds = $partialPayments->pluck('job_id')->toArray();
+        $partialPaymentJobIds = $partialPayments->pluck('job_id')->filter()->toArray();
 
         // Get pending cheques (cheques not yet received)
-        $pendingCheques = Payment::with(['invoice.job.customer', 'invoice.job.vehicle'])
+        $pendingCheques = Payment::with(['invoice.job.customer', 'invoice.job.vehicle', 'invoice.customer'])
             ->where('method', 'cheque')
             ->where('payment_received', false)
             ->where('is_bounced', false)
@@ -59,8 +62,8 @@ class NotificationController extends Controller
                     'bank_name' => $payment->bank_name,
                     'amount' => $payment->amount,
                     'cheque_due_date' => $payment->cheque_due_date,
-                    'customer_name' => $payment->invoice->job->customer->full_name,
-                    'vehicle_registration' => $payment->invoice->job->vehicle->registration_number,
+                    'customer_name' => $payment->invoice->job ? $payment->invoice->job->customer->full_name : ($payment->invoice->customer->full_name ?? 'Walk-in'),
+                    'vehicle_registration' => $payment->invoice->job ? $payment->invoice->job->vehicle->registration_number : 'N/A',
                     'payment_id' => $payment->id,
                     'is_overdue' => $payment->cheque_due_date && $payment->cheque_due_date->isPast(),
                     'created_at' => $payment->created_at,
@@ -68,7 +71,7 @@ class NotificationController extends Controller
             });
 
         // Get bounced cheques needing follow-up
-        $bouncedCheques = Payment::with(['invoice.job.customer', 'invoice.job.vehicle'])
+        $bouncedCheques = Payment::with(['invoice.job.customer', 'invoice.job.vehicle', 'invoice.customer'])
             ->where('method', 'cheque')
             ->where('is_bounced', true)
             ->where('follow_up_required', true)
@@ -84,8 +87,8 @@ class NotificationController extends Controller
                     'amount' => $payment->amount,
                     'bounce_reason' => $payment->bounce_reason,
                     'follow_up_date' => $payment->follow_up_date,
-                    'customer_name' => $payment->invoice->job->customer->full_name,
-                    'vehicle_registration' => $payment->invoice->job->vehicle->registration_number,
+                    'customer_name' => $payment->invoice->job ? $payment->invoice->job->customer->full_name : ($payment->invoice->customer->full_name ?? 'Walk-in'),
+                    'vehicle_registration' => $payment->invoice->job ? $payment->invoice->job->vehicle->registration_number : 'N/A',
                     'payment_id' => $payment->id,
                     'is_overdue' => $payment->follow_up_date && $payment->follow_up_date->isPast(),
                     'replacement_payment_received' => $payment->replacement_payment_received,

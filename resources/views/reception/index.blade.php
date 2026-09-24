@@ -44,6 +44,7 @@
         <button class="nav-toggle" onclick="toggleNav()">☰</button>
         <div class="nav-menu" id="navMenu">
             <a href="{{ route('dashboard') }}" @if(!auth()->user()->hasPermissionTo('dashboard.access')) style="display:none" @endif>Dashboard</a>
+            <a href="{{ route('pos.index') }}" @if(!auth()->user()->hasPermissionTo('pos.access') || !app(\App\Services\TenantModules::class)->isEnabled('pos')) style="display:none" @endif>POS</a>
             <a href="{{ route('jobs.board') }}" @if(!auth()->user()->hasPermissionTo('job_cards.access')) style="display:none" @endif>Live Job Board</a>
             <a href="{{ route('jobs.index') }}" @if(!auth()->user()->hasPermissionTo('job_cards.access')) style="display:none" @endif>Job Cards</a>
             <a href="{{ route('customers.index') }}" @if(!auth()->user()->hasPermissionTo('customers.access')) style="display:none" @endif>Customers</a>
@@ -252,6 +253,16 @@
 
                 <div class="products-section">
                     <h3>Products / Parts</h3>
+
+                    <!-- Category Filters -->
+                    <div class="product-category-filters">
+                        <button onclick="selectProductCategory(null)" id="categoryAllBtn" class="category-filter-btn active">All</button>
+                    </div>
+
+                    <!-- Subcategory Filters -->
+                    <div id="productSubcategoryFilters" class="product-subcategory-filters" style="display:none;">
+                        <button onclick="selectProductSubcategory(null)" id="subcategoryAllBtn" class="subcategory-filter-btn active">All</button>
+                    </div>
 
                     <div class="product-search-wrapper">
                         <input
@@ -1264,6 +1275,7 @@ function showJobForm() {
 
     loadServices(category);
     loadProducts();
+    loadCategories();
     calculateReceptionTotals();
 }
 
@@ -1307,6 +1319,9 @@ function renderReceptionServices(services) {
 }
 
 let receptionProducts = [];
+let receptionCategories = [];
+let selectedProductCategory = null;
+let selectedProductSubcategory = null;
 
 async function loadProducts() {
     try {
@@ -1328,6 +1343,100 @@ async function loadProducts() {
             </div>
         `;
     }
+}
+
+async function loadCategories() {
+    try {
+        const response = await fetch('{{ route('reception.categories') }}');
+
+        if (!response.ok) {
+            throw new Error('Failed to load categories');
+        }
+
+        receptionCategories = await response.json();
+        console.log('Loaded categories:', receptionCategories);
+        renderCategoryButtons();
+
+    } catch (error) {
+        console.error('Error loading categories:', error);
+    }
+}
+
+function renderCategoryButtons() {
+    const container = document.querySelector('.product-category-filters');
+    if (!container) return;
+
+    // Clear existing buttons except the "All" button
+    const allBtn = document.getElementById('categoryAllBtn');
+    container.innerHTML = '';
+    if (allBtn) container.appendChild(allBtn);
+
+    const buttons = receptionCategories.map(category =>
+        `<button onclick="selectProductCategory(${category.id})" id="categoryBtn${category.id}" class="category-filter-btn">${category.name}</button>`
+    ).join('');
+
+    container.insertAdjacentHTML('beforeend', buttons);
+}
+
+function selectProductCategory(categoryId) {
+    selectedProductCategory = categoryId;
+    selectedProductSubcategory = null;
+
+    // Update button states
+    document.querySelectorAll('.category-filter-btn').forEach(btn => btn.classList.remove('active'));
+    if (categoryId === null) {
+        document.getElementById('categoryAllBtn').classList.add('active');
+    } else {
+        document.getElementById(`categoryBtn${categoryId}`).classList.add('active');
+    }
+
+    // Show/hide subcategory filters
+    const subcategoryFilters = document.getElementById('productSubcategoryFilters');
+    if (categoryId !== null) {
+        const category = receptionCategories.find(c => c.id === categoryId);
+        if (category && category.children && category.children.length > 0) {
+            subcategoryFilters.style.display = 'flex';
+            renderSubcategoryButtons(category.children);
+        } else {
+            subcategoryFilters.style.display = 'none';
+        }
+    } else {
+        subcategoryFilters.style.display = 'none';
+    }
+
+    // Filter products
+    filterReceptionProducts();
+}
+
+function renderSubcategoryButtons(subcategories) {
+    const container = document.querySelector('.product-subcategory-filters');
+    if (!container) return;
+
+    // Clear existing buttons except the "All" button
+    const allBtn = document.getElementById('subcategoryAllBtn');
+    container.innerHTML = '';
+    if (allBtn) container.appendChild(allBtn);
+
+    const buttons = subcategories.map(subcategory =>
+        `<button onclick="selectProductSubcategory(${subcategory.id})" id="subcategoryBtn${subcategory.id}" class="subcategory-filter-btn">${subcategory.name}</button>`
+    ).join('');
+
+    container.insertAdjacentHTML('beforeend', buttons);
+}
+
+function selectProductSubcategory(subcategoryId) {
+    selectedProductSubcategory = subcategoryId;
+
+    // Update button states
+    document.querySelectorAll('.subcategory-filter-btn').forEach(btn => btn.classList.remove('active'));
+    if (subcategoryId === null) {
+        document.getElementById('subcategoryAllBtn').classList.add('active');
+    } else {
+        document.getElementById(`subcategoryBtn${subcategoryId}`).classList.add('active');
+    }
+
+    // Filter products
+    filterReceptionProducts();
 }
 
 function renderReceptionProducts(products) {
@@ -1486,18 +1595,27 @@ function filterReceptionServices() {
 function filterReceptionProducts() {
     const query = (document.getElementById('productSearch')?.value || '').toLowerCase().trim();
 
-    if (!query) {
+    if (!query && selectedProductCategory === null) {
         renderReceptionProducts(receptionProducts);
         return;
     }
 
     const filtered = receptionProducts.filter(product => {
-        return (
+        // Filter by search query
+        const matchesSearch = !query || (
             (product.name || '').toLowerCase().includes(query) ||
             (product.sku || '').toLowerCase().includes(query) ||
             (product.part_number || '').toLowerCase().includes(query) ||
             (product.barcode || '').toLowerCase().includes(query)
         );
+
+        // Filter by category
+        const matchesCategory = selectedProductCategory === null || product.category_id === selectedProductCategory;
+
+        // Filter by subcategory (if a main category has subcategories)
+        const matchesSubcategory = selectedProductSubcategory === null || product.category_id === selectedProductSubcategory;
+
+        return matchesSearch && matchesCategory && matchesSubcategory;
     });
 
     renderReceptionProducts(filtered);
@@ -2368,6 +2486,36 @@ document.addEventListener('click', (e) => {
     padding-bottom: 8px;
     font-size: 16px;
     font-weight: 700;
+}
+
+/* Product category filters */
+.product-category-filters, .product-subcategory-filters {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+}
+
+.category-filter-btn, .subcategory-filter-btn {
+    padding: 6px 12px;
+    border: 1px solid rgba(186, 230, 253, 0.2);
+    background: rgba(30, 41, 59, 0.5);
+    color: #94a3b8;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s;
+}
+
+.category-filter-btn:hover, .subcategory-filter-btn:hover {
+    background: rgba(59, 130, 246, 0.2);
+    color: #e0f2fe;
+}
+
+.category-filter-btn.active, .subcategory-filter-btn.active {
+    background: rgba(59, 130, 246, 0.3);
+    color: #e0f2fe;
+    border-color: rgba(59, 130, 246, 0.5);
 }
 
 .customer-info p, .vehicle-info p {

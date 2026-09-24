@@ -309,7 +309,7 @@ class ReceptionController extends Controller
 
         $products = Product::query()
             ->where('active', true)
-            ->with(['inventory' => $inventoryQuery])
+            ->with(['inventory' => $inventoryQuery, 'category'])
             ->orderBy('name')
             ->get()
             ->map(function ($product) {
@@ -318,6 +318,13 @@ class ReceptionController extends Controller
                 $quantity  = $inventory?->quantity ?? 0;
                 $reserved  = $inventory?->reserved_quantity ?? 0;
                 $available = max(0, $quantity - $reserved);
+
+                $categoryName = null;
+                if ($product->category && is_object($product->category)) {
+                    $categoryName = $product->category->name;
+                } elseif (is_string($product->category)) {
+                    $categoryName = $product->category;
+                }
 
                 return [
                     'id'                 => $product->id,
@@ -329,9 +336,21 @@ class ReceptionController extends Controller
                     'unit'               => $product->unit,
                     'selling_price'      => (float) $product->selling_price,
                     'available_quantity' => (float) $available,
+                    'category_id'        => $product->category_id,
+                    'category_name'      => $categoryName,
                 ];
             });
 
         return response()->json($products);
+    }
+
+    public function getCategories()
+    {
+        $categories = \App\Models\Category::whereNull('parent_id')
+            ->with('children')
+            ->orderBy('name')
+            ->get(['id', 'name', 'tenant_id']);
+
+        return response()->json($categories);
     }
 }

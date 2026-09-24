@@ -12,7 +12,7 @@ class Product extends Model
     protected $guarded = [];
 
     protected $casts = [
-        'unit_price' => 'decimal:2',
+        'selling_price' => 'decimal:2',
     ];
 
     public function inventory()

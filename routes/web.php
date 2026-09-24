@@ -16,6 +16,7 @@ use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\JobController;
 use App\Http\Controllers\LandingController;
+use App\Http\Controllers\POSController;
 use App\Http\Controllers\ReceptionController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\RoleController;
@@ -109,10 +110,48 @@ Route::prefix('{tenant}')
                 ->name('reception.products')
                 ->middleware('permission:reception.access');
 
+            Route::get('/reception/categories', [ReceptionController::class, 'getCategories'])
+                ->name('reception.categories')
+                ->middleware('permission:reception.access');
+
             Route::get('/reception/vehicle/{vehicle}/image', [ReceptionController::class, 'vehicleImage'])
                 ->name('reception.vehicle-image')
                 ->middleware('permission:reception.access');
             // ==================== END RECEPTION ====================
+
+            // ==================== POS ====================
+            Route::get('/pos', [POSController::class, 'index'])
+                ->name('pos.index')
+                ->middleware('permission:pos.access');
+
+            Route::get('/pos/search-customer', [POSController::class, 'searchCustomer'])
+                ->name('pos.search-customer')
+                ->middleware('permission:pos.access');
+
+            Route::get('/pos/lookup-product', [POSController::class, 'lookupProduct'])
+                ->name('pos.lookup-product')
+                ->middleware('permission:pos.access');
+
+            Route::post('/pos/create-invoice', [POSController::class, 'createInvoice'])
+                ->name('pos.create-invoice')
+                ->middleware('permission:pos.checkout');
+
+            Route::post('/pos/hold-sale', [POSController::class, 'holdSale'])
+                ->name('pos.hold-sale')
+                ->middleware('permission:pos.checkout');
+
+            Route::get('/pos/held-sales', [POSController::class, 'getHeldSales'])
+                ->name('pos.held-sales')
+                ->middleware('permission:pos.access');
+
+            Route::get('/pos/resume-sale/{heldSale}', [POSController::class, 'resumeSale'])
+                ->name('pos.resume-sale')
+                ->middleware('permission:pos.access');
+
+            Route::delete('/pos/held-sales/{heldSale}', [POSController::class, 'deleteHeldSale'])
+                ->name('pos.delete-held-sale')
+                ->middleware('permission:pos.access');
+            // ==================== END POS ====================
 
             // ==================== CUSTOMERS ====================
             Route::get('/customers/list', [CustomerController::class, 'list'])
@@ -485,6 +524,19 @@ Route::prefix('{tenant}')
             Route::post('/cashier/payment/{job}', [CashierController::class, 'processPayment'])
                 ->name('cashier.process-payment')
                 ->middleware('permission:cashier.payment');
+
+            // POS invoice payment routes
+            Route::get('/cashier/payment/invoice/{invoice}', [CashierController::class, 'paymentForInvoice'])
+                ->name('cashier.payment-invoice')
+                ->middleware('permission:cashier.payment');
+
+            Route::post('/cashier/payment/invoice/{invoice}', [CashierController::class, 'processPaymentForInvoice'])
+                ->name('cashier.process-payment-invoice')
+                ->middleware('permission:cashier.payment');
+
+            Route::get('/cashier/print-pos-invoice/{invoice}', [CashierController::class, 'printPosInvoice'])
+                ->name('cashier.print-pos-invoice')
+                ->middleware('permission:cashier.print_options');
 
             Route::get('/cashier/print-options/{job}', [CashierController::class, 'printOptions'])
                 ->name('cashier.print-options')

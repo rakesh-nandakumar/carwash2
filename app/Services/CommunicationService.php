@@ -441,4 +441,45 @@ class CommunicationService
         // Create WhatsApp Web URL (like the job feature does)
         return "https://wa.me/{$phoneNumber}?text=" . urlencode($message);
     }
+
+    public function generateWhatsAppWebUrlForPos(string $phoneNumber, Invoice $invoice, float $amount, string $paymentMethod): string
+    {
+        $customer = $invoice->customer;
+
+        // Create a beautiful, professional payment notification for the boss
+        $message = "💰 *POS PAYMENT RECEIVED NOTIFICATION*\n\n";
+        
+        $message .= "━━━━━━━━━━━━━━━━━━━━\n";
+        $message .= "📋 *INVOICE DETAILS*\n";
+        $message .= "━━━━━━━━━━━━━━━━━━━━\n";
+        $message .= "🔹 *Invoice Number:* {$invoice->invoice_number}\n";
+        $message .= "👤 *Customer:* " . ($customer ? $customer->full_name : 'Walk-in Customer') . "\n";
+        if ($customer) {
+            $message .= "📞 *Phone:* {$customer->phone}\n";
+        }
+        $message .= "\n";
+        
+        $message .= "━━━━━━━━━━━━━━━━━━━━\n";
+        $message .= "💳 *PAYMENT INFORMATION*\n";
+        $message .= "━━━━━━━━━━━━━━━━━━━━\n";
+        $message .= "💵 *Amount Received:* Rs. " . number_format($amount, 2) . "\n";
+        $message .= "🏦 *Payment Method:* " . strtoupper($paymentMethod) . "\n";
+        $message .= "📊 *Invoice Total:* Rs. " . number_format($invoice->total, 2) . "\n";
+        $message .= "⚖️ *Balance Due:* Rs. " . number_format($invoice->balance, 2) . "\n";
+        
+        if ($invoice->balance <= 0) {
+            $message .= "✅ *Status:* FULLY PAID\n";
+        } else {
+            $message .= "⏳ *Status:* PARTIAL PAYMENT\n";
+        }
+        
+        $message .= "\n━━━━━━━━━━━━━━━━━━━━\n";
+        $message .= "📅 *Processed on:* " . now()->format('d M Y, H:i') . "\n";
+        $message .= "━━━━━━━━━━━━━━━━━━━━\n";
+        
+        $message .= "\n🎉 *POS Payment successfully processed!*";
+
+        // Create WhatsApp Web URL
+        return "https://wa.me/{$phoneNumber}?text=" . urlencode($message);
+    }
 }
