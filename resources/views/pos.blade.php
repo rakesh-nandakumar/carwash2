@@ -12,6 +12,9 @@
                 </svg>
                 <input type="text" x-model="searchQuery" placeholder="Search products or scan barcode..." class="pos-search-input">
             </div>
+            <button @click="loadHeldSales(); showHeldSalesModal = true" class="pos-held-sales-btn">
+                📋 Held Sales <span x-show="heldSalesCount > 0" x-text="'(' + heldSalesCount + ')'" style="background: #ef4444; padding: 2px 6px; border-radius: 10px; font-size: 12px; margin-left: 4px;"></span>
+            </button>
         </div>
 
         <!-- Category Filters -->
@@ -35,7 +38,7 @@
         </div>
 
         <!-- Products Grid -->
-        <div class="pos-products-grid">
+        <div class="pos-products-grid" style="min-height: 300px;">
             <template x-if="filteredProducts.length === 0">
                 <div class="pos-empty-state">
                     <svg width="64" height="64" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -77,6 +80,11 @@
                 </template>
             </select>
         </div>
+
+        <!-- Clear Cart Button -->
+        <button @click="clearCart()" :disabled="cart.length === 0" class="pos-clear-cart-btn" :style="cart.length > 0 ? '' : 'opacity: 0.5; cursor: not-allowed;'">
+            🗑️ Clear Cart
+        </button>
 
         <!-- Cart Items -->
         <div class="pos-cart-items">
@@ -169,10 +177,51 @@
             POS invoice created successfully. Cashier will handle payment processing.
         </div>
 
+        <!-- Hold Success Message -->
+        <div x-show="holdSuccess" x-transition style="background: #fef3c7; color: #92400e; padding: 12px; border-radius: 8px; margin-bottom: 12px; border: 1px solid #f59e0b; font-size: 14px; font-weight: 500;">
+            Sale held successfully. Click "Held Sales" to resume later.
+        </div>
+
+        <!-- Hold Button -->
+        <button @click="holdSale()" :disabled="cart.length === 0" class="pos-hold-btn" :style="cart.length > 0 ? '' : 'opacity: 0.5; cursor: not-allowed;'">
+            Hold Sale
+        </button>
+
         <!-- Checkout Button -->
         <button @click="checkout()" :disabled="cart.length === 0" class="pos-checkout-btn" :style="cart.length > 0 ? '' : 'opacity: 0.5; cursor: not-allowed;'">
             Checkout
         </button>
+
+        <!-- Held Sales Modal -->
+        <div x-show="showHeldSalesModal" x-cloak style="display: none;" class="pos-modal">
+            <div class="pos-modal-content">
+                <div class="pos-modal-header">
+                    <h3>Held Sales</h3>
+                    <button @click="showHeldSalesModal = false" class="pos-modal-close">&times;</button>
+                </div>
+                <div class="pos-modal-body">
+                    <template x-if="heldSales.length === 0">
+                        <div class="pos-empty-state">No held sales</div>
+                    </template>
+                    <template x-for="heldSale in heldSales" :key="heldSale.id">
+                        <div class="pos-held-sale-item">
+                            <div class="pos-held-sale-info">
+                                <div class="pos-held-sale-customer" x-text="heldSale.customer_name"></div>
+                                <div class="pos-held-sale-details">
+                                    <span x-text="heldSale.items_count + ' items'"></span>
+                                    <span>•</span>
+                                    <span x-text="heldSale.created_at"></span>
+                                </div>
+                            </div>
+                            <div class="pos-held-sale-actions">
+                                <button @click="resumeSale(heldSale)" class="pos-resume-btn">Resume</button>
+                                <button @click="deleteHeldSale(heldSale.id)" class="pos-delete-btn">Delete</button>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -190,6 +239,7 @@
     flex-direction: column;
     gap: 20px;
     overflow: hidden;
+    min-height: 500px;
 }
 
 .pos-cart-panel {
@@ -204,11 +254,37 @@
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
+.pos-clear-cart-btn {
+    width: 100%;
+    padding: 10px;
+    background: #6b7280;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.pos-clear-cart-btn:hover {
+    background: #4b5563;
+}
+
+.pos-clear-cart-btn:disabled {
+    background: #9ca3af;
+    cursor: not-allowed;
+}
+
 .pos-search-section {
+    display: flex;
+    gap: 12px;
+    align-items: center;
     flex-shrink: 0;
 }
 
 .pos-search-wrapper {
+    flex: 1;
     position: relative;
 }
 
@@ -674,6 +750,232 @@
     transform: none;
     box-shadow: none;
 }
+
+.pos-hold-btn {
+    width: 100%;
+    padding: 12px;
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 6px -1px rgba(245, 158, 11, 0.3);
+    margin-bottom: 12px;
+}
+
+.pos-hold-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px -2px rgba(245, 158, 11, 0.4);
+}
+
+.pos-hold-btn:disabled {
+    background: #9ca3af;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.pos-held-sales-btn {
+    padding: 8px 16px;
+    background: #6366f1;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.pos-held-sales-btn:hover {
+    background: #4f46e5;
+}
+
+/* Modal Styles */
+[x-cloak] {
+    display: none !important;
+}
+
+.pos-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+.pos-modal-content {
+    background: white;
+    border-radius: 16px;
+    width: 90%;
+    max-width: 500px;
+    max-height: 80vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    z-index: 10000;
+}
+
+.pos-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.pos-modal-header h3 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+    color: #111827;
+}
+
+.pos-modal-close {
+    background: none;
+    border: none;
+    font-size: 28px;
+    cursor: pointer;
+    color: #6b7280;
+    line-height: 1;
+}
+
+.pos-modal-close:hover {
+    color: #111827;
+}
+
+.pos-modal-body {
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.pos-held-sale-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px;
+    background: #f9fafb;
+    border-radius: 12px;
+    margin-bottom: 12px;
+    border: 1px solid #e5e7eb;
+}
+
+.pos-held-sale-info {
+    flex: 1;
+}
+
+.pos-held-sale-customer {
+    font-size: 16px;
+    font-weight: 600;
+    color: #111827;
+    margin-bottom: 4px;
+}
+
+.pos-held-sale-details {
+    font-size: 14px;
+    color: #6b7280;
+}
+
+.pos-held-sale-details span {
+    margin: 0 4px;
+}
+
+.pos-held-sale-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.pos-resume-btn {
+    padding: 8px 16px;
+    background: #10b981;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.pos-resume-btn:hover {
+    background: #059669;
+}
+
+.pos-delete-btn {
+    padding: 8px 16px;
+    background: #ef4444;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.pos-delete-btn:hover {
+    background: #dc2626;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .pos-container {
+        flex-direction: column;
+        padding: 16px;
+    }
+
+    .pos-products-panel {
+        min-height: 500px;
+        flex: 1;
+    }
+
+    .pos-cart-panel {
+        width: 100%;
+        max-width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .pos-container {
+        padding: 12px;
+        gap: 16px;
+    }
+
+    .pos-search-section {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .pos-held-sales-btn {
+        width: 100%;
+        margin-top: 8px;
+    }
+
+    .pos-cart-panel {
+        width: 100%;
+    }
+
+    .pos-categories-section {
+        flex-wrap: wrap;
+    }
+
+    .pos-products-grid {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    }
+
+    .pos-products-panel {
+        min-height: 400px;
+    }
+}
 </style>
 
 <script>
@@ -691,8 +993,13 @@ function posApp() {
         discountValue: 0,
         discountApplyTo: 'total',
         checkoutSuccess: false,
+        holdSuccess: false,
+        heldSales: [],
+        heldSalesCount: 0,
+        showHeldSalesModal: false,
 
         initApp() {
+            this.loadHeldSalesInternal();
         },
 
         resetDiscountValues() {
@@ -808,6 +1115,17 @@ function posApp() {
             }
         },
 
+        clearCart() {
+            if (this.cart.length === 0) return;
+            if (!confirm('Are you sure you want to clear the cart?')) return;
+            
+            this.cart = [];
+            this.selectedCustomerId = '';
+            this.discountType = 'none';
+            this.discountValue = 0;
+            this.discountApplyTo = 'total';
+        },
+
         get cartTotal() {
             const subtotal = this.cart.reduce((sum, item) => sum + (item.unit_price * item.quantity), 0);
             return subtotal - this.totalDiscount;
@@ -816,7 +1134,7 @@ function posApp() {
         checkout() {
             if (this.cart.length === 0) return;
 
-            const url = '{{ route("pos.create-invoice") }}';
+            const url = window.location.pathname + '/create-invoice';
 
             fetch(url, {
                 method: 'POST',
@@ -859,6 +1177,189 @@ function posApp() {
             .catch(error => {
                 console.error('Error:', error);
                 alert('Error: Failed to create invoice');
+            });
+        },
+
+        holdSale() {
+            if (this.cart.length === 0) return;
+
+            const url = window.location.pathname + '/hold-sale';
+
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                },
+                body: JSON.stringify({
+                    customer_id: this.selectedCustomerId || null,
+                    discount_type: this.discountType,
+                    discount_value: this.discountValue,
+                    discount_apply_to: this.discountApplyTo,
+                    individual_discounts: this.cart.map(item => ({
+                        product_id: item.product_id,
+                        individual_discount: item.individualDiscount || 0
+                    })),
+                    items: this.cart.map(item => ({
+                        product_id: item.product_id,
+                        quantity: item.quantity,
+                        unit_price: item.unit_price,
+                        individual_discount: item.individualDiscount || 0
+                    }))
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.ok) {
+                    this.cart = [];
+                    this.selectedCustomerId = '';
+                    this.discountType = 'none';
+                    this.discountValue = 0;
+                    this.discountApplyTo = 'total';
+                    this.holdSuccess = true;
+                    this.heldSalesCount++;
+                    setTimeout(() => {
+                        this.holdSuccess = false;
+                    }, 3000);
+                } else {
+                    console.error('Error:', data.error);
+                    alert('Error: ' + (data.error || 'Failed to hold sale'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error: Failed to hold sale');
+            });
+        },
+
+        loadHeldSales() {
+            console.log('Loading held sales...');
+            const url = window.location.pathname + '/held-sales';
+
+            fetch(url, {
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Held sales loaded:', data);
+                this.heldSales = data;
+                this.heldSalesCount = data.length;
+                this.showHeldSalesModal = true;
+                console.log('Modal should show now, showHeldSalesModal:', this.showHeldSalesModal);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        },
+
+        async resumeSale(heldSale) {
+            // If there's already a cart with items, hold it first
+            if (this.cart.length > 0) {
+                await this.holdSaleInternal();
+            }
+
+            this.cart = heldSale.items;
+            this.selectedCustomerId = heldSale.customer_id || '';
+            this.discountType = heldSale.discount_type;
+            this.discountValue = heldSale.discount_value;
+            this.discountApplyTo = heldSale.discount_apply_to;
+
+            if (heldSale.individual_discounts) {
+                heldSale.individual_discounts.forEach(discount => {
+                    const item = this.cart.find(i => i.product_id === discount.product_id);
+                    if (item) {
+                        item.individualDiscount = discount.individual_discount;
+                    }
+                });
+            }
+
+            // Delete the held sale after resuming (without confirmation)
+            this.deleteHeldSale(heldSale.id, false);
+            this.showHeldSalesModal = false;
+            
+            // Reload held sales to get accurate count
+            await this.loadHeldSalesInternal();
+        },
+
+        async holdSaleInternal() {
+            const url = window.location.pathname + '/hold-sale';
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    },
+                    body: JSON.stringify({
+                        customer_id: this.selectedCustomerId || null,
+                        discount_type: this.discountType,
+                        discount_value: this.discountValue,
+                        discount_apply_to: this.discountApplyTo,
+                        individual_discounts: this.cart.map(item => ({
+                            product_id: item.product_id,
+                            individual_discount: item.individualDiscount || 0
+                        })),
+                        items: this.cart.map(item => ({
+                            product_id: item.product_id,
+                            quantity: item.quantity,
+                            unit_price: item.unit_price,
+                            individual_discount: item.individualDiscount || 0
+                        }))
+                    })
+                });
+                const data = await response.json();
+                if (data.ok) {
+                    // Don't increment here - will be reloaded from server
+                }
+            } catch (error) {
+                console.error('Error holding current cart:', error);
+            }
+        },
+
+        async loadHeldSalesInternal() {
+            const url = window.location.pathname + '/held-sales';
+
+            try {
+                const response = await fetch(url, {
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    }
+                });
+                const data = await response.json();
+                this.heldSales = data;
+                this.heldSalesCount = data.length;
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        },
+
+        deleteHeldSale(id, confirmDelete = true) {
+            if (confirmDelete && !confirm('Are you sure you want to delete this held sale?')) return;
+
+            const url = window.location.pathname + '/held-sales/' + id;
+
+            fetch(url, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.ok) {
+                    this.heldSales = this.heldSales.filter(hs => hs.id !== id);
+                    this.heldSalesCount = this.heldSales.length;
+                } else {
+                    console.error('Error:', data.error);
+                    alert('Error: ' + (data.error || 'Failed to delete held sale'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error: Failed to delete held sale');
             });
         }
     };

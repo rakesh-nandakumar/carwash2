@@ -8,6 +8,7 @@ use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\Inventory;
+use App\Models\HeldSale;
 use App\Services\InventoryService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -275,5 +276,115 @@ class POSController extends Controller
         }
 
         return $prefix . $date . '-' . $newNumber;
+    }
+
+    /**
+     * Hold the current sale
+     */
+    public function holdSale(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'customer_id' => 'nullable|exists:customers,id',
+                'discount_type' => 'nullable|in:none,amount,percentage',
+                'discount_value' => 'nullable|numeric|min:0',
+                'discount_apply_to' => 'nullable|in:total,individual',
+                'individual_discounts' => 'nullable|array',
+                'items' => 'required|array|min:1',
+                'items.*.product_id' => 'required|exists:products,id',
+                'items.*.quantity' => 'required|numeric|min:0.01',
+                'items.*.unit_price' => 'required|numeric|min:0',
+                'items.*.individual_discount' => 'nullable|numeric|min:0',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json(['error' => $validator->errors()], 422);
+            }
+
+            $heldSale = HeldSale::create([
+                'tenant_id' => auth()->user()->tenant_id,
+                'user_id' => auth()->id(),
+                'customer_id' => $request->customer_id,
+                'items' => $request->items,
+                'discount_type' => $request->discount_type ?? 'none',
+                'discount_value' => $request->discount_value ?? 0,
+                'discount_apply_to' => $request->discount_apply_to ?? 'total',
+                'individual_discounts' => $request->individual_discounts,
+            ]);
+
+            return response()->json([
+                'ok' => true,
+                'held_sale_id' => $heldSale->id,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Get all held sales for the current user
+     */
+    public function getHeldSales()
+    {
+        $heldSales = HeldSale::where('tenant_id', auth()->user()->tenant_id)
+            ->where('user_id', auth()->id())
+            ->with('customer')
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($heldSale) {
+                return [
+                    'id' => $heldSale->id,
+                    'customer_name' => $heldSale->customer?->full_name ?? 'Walk-in',
+                    'customer_id' => $heldSale->customer_id,
+                    'items_count' => count($heldSale->items),
+                    'created_at' => $heldSale->created_at->format('H:i'),
+                    'items' => $heldSale->items,
+                    'discount_type' => $heldSale->discount_type,
+                    'discount_value' => $heldSale->discount_value,
+                    'discount_apply_to' => $heldSale->discount_apply_to,
+                    'individual_discounts' => $heldSale->individual_discounts,
+                ];
+            });
+
+        return response()->json($heldSales);
+    }
+
+    /**
+     * Resume a held sale
+     */
+    public function resumeSale(Request $request, HeldSale $heldSale)
+    {
+        // Verify the held sale belongs to the current user's tenant
+        if ($heldSale->tenant_id !== auth()->user()->tenant_id) {
+            return response()->json(['error' => 'Held sale not found'], 404);
+        }
+
+        return response()->json([
+            'ok' => true,
+            'held_sale' => [
+                'id' => $heldSale->id,
+                'customer_id' => $heldSale->customer_id,
+                'items' => $heldSale->items,
+                'discount_type' => $heldSale->discount_type,
+                'discount_value' => $heldSale->discount_value,
+                'discount_apply_to' => $heldSale->discount_apply_to,
+                'individual_discounts' => $heldSale->individual_discounts,
+            ],
+        ]);
+    }
+
+    /**
+     * Delete a held sale
+     */
+    public function deleteHeldSale(HeldSale $heldSale)
+    {
+        // Verify the held sale belongs to the current user's tenant
+        if ($heldSale->tenant_id !== auth()->user()->tenant_id) {
+            return response()->json(['error' => 'Held sale not found'], 404);
+        }
+
+        $heldSale->delete();
+
+        return response()->json(['ok' => true]);
     }
 }

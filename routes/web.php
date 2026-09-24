@@ -135,6 +135,22 @@ Route::prefix('{tenant}')
             Route::post('/pos/create-invoice', [POSController::class, 'createInvoice'])
                 ->name('pos.create-invoice')
                 ->middleware('permission:pos.checkout');
+
+            Route::post('/pos/hold-sale', [POSController::class, 'holdSale'])
+                ->name('pos.hold-sale')
+                ->middleware('permission:pos.checkout');
+
+            Route::get('/pos/held-sales', [POSController::class, 'getHeldSales'])
+                ->name('pos.held-sales')
+                ->middleware('permission:pos.access');
+
+            Route::get('/pos/resume-sale/{heldSale}', [POSController::class, 'resumeSale'])
+                ->name('pos.resume-sale')
+                ->middleware('permission:pos.access');
+
+            Route::delete('/pos/held-sales/{heldSale}', [POSController::class, 'deleteHeldSale'])
+                ->name('pos.delete-held-sale')
+                ->middleware('permission:pos.access');
             // ==================== END POS ====================
 
             // ==================== CUSTOMERS ====================
