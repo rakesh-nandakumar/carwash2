@@ -22,7 +22,9 @@
                 <th>Bank</th>
                 <th>Due Date</th>
                 <th>Customer</th>
+                @if(collect($pendingCheques)->contains(fn($p) => $p->invoice->job !== null))
                 <th>Vehicle</th>
+                @endif
                 <th>Amount</th>
                 <th>Job</th>
                 <th></th>
@@ -39,10 +41,12 @@
                         <span class="status-badge overdue">Overdue</span>
                     @endif
                 </td>
-                <td>{{ $payment->invoice->job->customer->full_name }}</td>
+                <td>{{ $payment->invoice->job ? $payment->invoice->job->customer->full_name : ($payment->invoice->customer->full_name ?? 'Walk-in') }}</td>
+                @if($payment->invoice->job)
                 <td>{{ $payment->invoice->job->vehicle->registration_number }}</td>
+                @endif
                 <td>Rs. {{ number_format($payment->amount, 2) }}</td>
-                <td>{{ $payment->invoice->job->job_number }}</td>
+                <td>{{ $payment->invoice->job ? $payment->invoice->job->job_number : $payment->invoice->invoice_number }}</td>
                 <td>
                     <a href="{{ route('cheque-payments.confirm', $payment) }}" class="action-link process">Process</a>
                     <a href="{{ route('cheque-payments.show', $payment) }}" class="action-link">View</a>
@@ -50,7 +54,7 @@
             </tr>
             @empty
             <tr>
-                <td colspan="8" class="empty">No pending cheques.</td>
+                <td colspan="{{ collect($pendingCheques)->contains(fn($p) => $p->invoice->job !== null) ? 8 : 7 }}" class="empty">No pending cheques.</td>
             </tr>
             @endforelse
         </tbody>
@@ -72,12 +76,14 @@
             <div class="card-details">
                 <div class="detail">
                     <span class="label">Customer</span>
-                    <span class="value">{{ $payment->invoice->job->customer->full_name }}</span>
+                    <span class="value">{{ $payment->invoice->job ? $payment->invoice->job->customer->full_name : ($payment->invoice->customer->full_name ?? 'Walk-in') }}</span>
                 </div>
+                @if($payment->invoice->job)
                 <div class="detail">
                     <span class="label">Vehicle</span>
                     <span class="value">{{ $payment->invoice->job->vehicle->registration_number }}</span>
                 </div>
+                @endif
                 <div class="detail">
                     <span class="label">Amount</span>
                     <span class="value">Rs. {{ number_format($payment->amount, 2) }}</span>
@@ -110,6 +116,9 @@
                 <th>Bank</th>
                 <th>Due Date</th>
                 <th>Customer</th>
+                @if(collect($clearedCheques)->contains(fn($p) => $p->invoice->job !== null))
+                <th>Vehicle</th>
+                @endif
                 <th>Amount</th>
                 <th>Received Date</th>
                 <th></th>
@@ -121,7 +130,10 @@
                 <td><strong>{{ $payment->cheque_number }}</strong></td>
                 <td>{{ $payment->bank_name }}</td>
                 <td>{{ $payment->cheque_due_date ? $payment->cheque_due_date->format('Y-m-d') : 'N/A' }}</td>
-                <td>{{ $payment->invoice->job->customer->full_name }}</td>
+                <td>{{ $payment->invoice->job ? $payment->invoice->job->customer->full_name : ($payment->invoice->customer->full_name ?? 'Walk-in') }}</td>
+                @if($payment->invoice->job)
+                <td>{{ $payment->invoice->job->vehicle->registration_number }}</td>
+                @endif
                 <td>Rs. {{ number_format($payment->amount, 2) }}</td>
                 <td>{{ $payment->payment_received_at ? $payment->payment_received_at->format('Y-m-d') : 'N/A' }}</td>
                 <td>
@@ -130,7 +142,7 @@
             </tr>
             @empty
             <tr>
-                <td colspan="7" class="empty">No cleared cheques.</td>
+                <td colspan="{{ collect($clearedCheques)->contains(fn($p) => $p->invoice->job !== null) ? 8 : 7 }}" class="empty">No cleared cheques.</td>
             </tr>
             @endforelse
         </tbody>
@@ -150,8 +162,14 @@
             <div class="card-details">
                 <div class="detail">
                     <span class="label">Customer</span>
-                    <span class="value">{{ $payment->invoice->job->customer->full_name }}</span>
+                    <span class="value">{{ $payment->invoice->job ? $payment->invoice->job->customer->full_name : ($payment->invoice->customer->full_name ?? 'Walk-in') }}</span>
                 </div>
+                @if($payment->invoice->job)
+                <div class="detail">
+                    <span class="label">Vehicle</span>
+                    <span class="value">{{ $payment->invoice->job->vehicle->registration_number }}</span>
+                </div>
+                @endif
                 <div class="detail">
                     <span class="label">Amount</span>
                     <span class="value">Rs. {{ number_format($payment->amount, 2) }}</span>
@@ -182,6 +200,9 @@
                 <th>Cheque Number</th>
                 <th>Bank</th>
                 <th>Customer</th>
+                @if(collect($bouncedCheques)->contains(fn($p) => $p->invoice->job !== null))
+                <th>Vehicle</th>
+                @endif
                 <th>Amount</th>
                 <th>Bounce Date</th>
                 <th>Reason</th>
@@ -194,7 +215,10 @@
             <tr class="{{ $payment->needsFollowUp() ? 'row-urgent' : '' }}">
                 <td><strong>{{ $payment->cheque_number }}</strong></td>
                 <td>{{ $payment->bank_name }}</td>
-                <td>{{ $payment->invoice->job->customer->full_name }}</td>
+                <td>{{ $payment->invoice->job ? $payment->invoice->job->customer->full_name : ($payment->invoice->customer->full_name ?? 'Walk-in') }}</td>
+                @if($payment->invoice->job)
+                <td>{{ $payment->invoice->job->vehicle->registration_number }}</td>
+                @endif
                 <td>Rs. {{ number_format($payment->amount, 2) }}</td>
                 <td>{{ $payment->bounced_at ? $payment->bounced_at->format('Y-m-d') : 'N/A' }}</td>
                 <td>{{ $payment->bounce_reason ?? 'N/A' }}</td>
@@ -223,7 +247,7 @@
             </tr>
             @empty
             <tr>
-                <td colspan="8" class="empty">No bounced cheques.</td>
+                <td colspan="{{ collect($bouncedCheques)->contains(fn($p) => $p->invoice->job !== null) ? 9 : 8 }}" class="empty">No bounced cheques.</td>
             </tr>
             @endforelse
         </tbody>
@@ -253,8 +277,14 @@
             <div class="card-details">
                 <div class="detail">
                     <span class="label">Customer</span>
-                    <span class="value">{{ $payment->invoice->job->customer->full_name }}</span>
+                    <span class="value">{{ $payment->invoice->job ? $payment->invoice->job->customer->full_name : ($payment->invoice->customer->full_name ?? 'Walk-in') }}</span>
                 </div>
+                @if($payment->invoice->job)
+                <div class="detail">
+                    <span class="label">Vehicle</span>
+                    <span class="value">{{ $payment->invoice->job->vehicle->registration_number }}</span>
+                </div>
+                @endif
                 <div class="detail">
                     <span class="label">Amount</span>
                     <span class="value">Rs. {{ number_format($payment->amount, 2) }}</span>

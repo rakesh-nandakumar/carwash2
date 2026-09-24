@@ -219,7 +219,6 @@
                             onchange="toggleDiscountSection()"
                         >
                             <option value="total">Total Amount</option>
-                            <option value="items">Items Only</option>
                             <option value="individual_items">Individual Items</option>
                         </select>
                     </div>
@@ -1184,7 +1183,10 @@ function calculateSplitTotal() {
 
 function calculateBalance() {
     const received = parseFloat(document.getElementById('amountReceived').value) || 0;
-    const balance = received - totalDue;
+    // Get the current total due from the display (which includes discounts)
+    const currentTotalText = document.getElementById('displayTotal').textContent;
+    const currentTotal = parseFloat(currentTotalText.replace('Rs. ', '')) || 0;
+    const balance = received - currentTotal;
     const balanceDisplay = document.getElementById('balanceDisplay');
     const balanceLabel = document.getElementById('balanceLabel');
     const balanceAmount = document.getElementById('balanceAmount');

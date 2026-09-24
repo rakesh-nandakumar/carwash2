@@ -57,10 +57,12 @@ class CashierController extends Controller
             ->get();
 
         // Also load POS invoices (invoices with no job)
+        // Only show POS invoices that haven't received any payment yet
         $posInvoices = Invoice::with(['customer', 'items'])
             ->where('tenant_id', auth()->user()->tenant_id)
             ->whereNull('job_id')
             ->where('balance', '>', 0)
+            ->where('paid', '=', 0) // Only show if no payments have been made
             ->orderBy('created_at', 'desc')
             ->get();
 
@@ -968,9 +970,23 @@ class CashierController extends Controller
         $request->validate([
             'payment_method' => 'required|string|in:cash,card,upi,bank_transfer,cheque',
             'amount_received' => 'required|numeric|min:0',
+
+            'discount_type' => 'nullable|in:none,amount,percentage',
+
+            'discount_value' => 'nullable|numeric|min:0',
+
+            'discount_apply_to' => 'nullable|in:total,individual_items',
+
+            'individual_item_discounts' => 'nullable|array',
+            'individual_item_discounts.*' => 'nullable|numeric|min:0',
+
+            'coupon_code' => 'nullable|string',
+
+            // Cheque-specific fields
             'cheque_number' => 'nullable|string|required_if:payment_method,cheque',
             'bank_name' => 'nullable|string|required_if:payment_method,cheque',
             'cheque_due_date' => 'nullable|date|required_if:payment_method,cheque',
+            'payment_received' => 'nullable|in:yes,no',
         ]);
 
         return DB::transaction(function () use ($request, $invoice) {
@@ -979,58 +995,277 @@ class CashierController extends Controller
             $amountReceived = (float) $request->amount_received;
             $paymentMethod = $request->payment_method;
 
-            // Simple payment processing for POS (no complex discounts like job payments)
-            $invoiceBalance = $invoice->balance;
-            $finalTotal = $invoice->total;
+            $subtotal = (float) $invoice->subtotal;
+            $tax = (float) $invoice->tax;
 
-            // Create payment
-            $payment = Payment::create([
-                'tenant_id' => auth()->user()->tenant_id,
-                'invoice_id' => $invoice->id,
-                'job_id' => null, // POS sale has no job
-                'payment_method' => $paymentMethod,
-                'amount' => $amountReceived,
-                'payment_date' => now(),
-                'reference' => $request->reference ?? null,
-                'cheque_number' => $request->cheque_number ?? null,
-                'bank_name' => $request->bank_name ?? null,
-                'cheque_due_date' => $request->cheque_due_date ?? null,
-                'status' => 'completed',
+            $discountType = $request->input('discount_type', 'none');
+            $discountApplyTo = $request->input('discount_apply_to', 'total');
+            $discountValue = (float) $request->input('discount_value', 0);
+
+            $discountAmount = 0;
+
+            /*
+            |--------------------------------------------------------------------------
+            | Invoice items
+            |--------------------------------------------------------------------------
+            */
+
+            $invoiceItems = $invoice->items;
+
+            /*
+            |--------------------------------------------------------------------------
+            | Restore the original invoice-item discounts first
+            |--------------------------------------------------------------------------
+            */
+
+            foreach ($invoiceItems as $item) {
+                $itemBase = (float) $item->unit_price * (float) $item->quantity;
+                $item->update([
+                    'discount' => 0,
+                    'line_total' => $itemBase + (float) $item->tax,
+                ]);
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | NO DISCOUNT
+            |--------------------------------------------------------------------------
+            */
+
+            if ($discountType === 'none') {
+                $discountAmount = 0;
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | TOTAL AMOUNT
+            |--------------------------------------------------------------------------
+            */
+
+            elseif ($discountApplyTo === 'total') {
+                $eligibleItems = $invoiceItems;
+                $eligibleBase = $eligibleItems->sum(function ($item) {
+                    return (float) $item->unit_price * (float) $item->quantity;
+                });
+
+                if ($discountType === 'amount') {
+                    $discountAmount = min($discountValue, $eligibleBase);
+                } elseif ($discountType === 'percentage') {
+                    $percentage = min($discountValue, 100);
+                    $discountAmount = ($eligibleBase * $percentage) / 100;
+                }
+
+                /*
+                |--------------------------------------------------------------------------
+                | Distribute discount across every invoice item
+                |--------------------------------------------------------------------------
+                */
+
+                if ($eligibleBase > 0 && $discountAmount > 0) {
+                    foreach ($eligibleItems as $item) {
+                        $itemBase = (float) $item->unit_price * (float) $item->quantity;
+
+                        if ($discountType === 'percentage') {
+                            $itemDiscount = ($itemBase * min($discountValue, 100)) / 100;
+                        } else {
+                            $itemDiscount = $discountAmount * ($itemBase / $eligibleBase);
+                        }
+
+                        $itemDiscount = min($itemDiscount, $itemBase);
+
+                        $item->update([
+                            'discount' => $itemDiscount,
+                            'line_total' => $itemBase - $itemDiscount + (float) $item->tax,
+                        ]);
+                    }
+                }
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | INDIVIDUAL ITEMS
+            |--------------------------------------------------------------------------
+            */
+
+            elseif ($discountApplyTo === 'individual_items') {
+                $individualDiscounts = $request->input('individual_item_discounts', []);
+
+                foreach ($invoiceItems as $item) {
+                    $itemBase = (float) $item->unit_price * (float) $item->quantity;
+                    $value = (float) ($individualDiscounts[$item->id] ?? 0);
+
+                    if ($discountType === 'percentage') {
+                        $cashierDiscount = ($itemBase * min($value, 100)) / 100;
+                    } else {
+                        $cashierDiscount = min($value, $itemBase);
+                    }
+
+                    $discountAmount += $cashierDiscount;
+
+                    $item->update([
+                        'discount' => $cashierDiscount,
+                        'line_total' => $itemBase - $cashierDiscount + (float) $item->tax,
+                    ]);
+                }
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | Final safety limit
+            |--------------------------------------------------------------------------
+            */
+
+            $discountAmount = min(max(0, $discountAmount), $subtotal);
+
+            /*
+            |--------------------------------------------------------------------------
+            | Final invoice total
+            |--------------------------------------------------------------------------
+            */
+
+            $finalTotal = max(0, ($subtotal - $discountAmount) + $tax);
+
+            /*
+            |--------------------------------------------------------------------------
+            | Payment / balance
+            |--------------------------------------------------------------------------
+            */
+
+            $previousPaid = (float) $invoice->getOriginal('paid');
+            $totalPaid = (float) $invoice->paid + $amountReceived;
+            $invoiceBalance = $finalTotal - $totalPaid;
+
+            /*
+            |--------------------------------------------------------------------------
+            | Update invoice
+            |--------------------------------------------------------------------------
+            */
+
+            $invoice->update([
+                'discount' => $discountAmount,
+                'total' => $finalTotal,
+                'paid' => $totalPaid,
+                'balance' => $invoiceBalance,
+                'status' => $invoiceBalance <= 0 ? 'paid' : ($totalPaid > 0 ? 'partially_paid' : 'issued'),
             ]);
 
-            // Update invoice
-            $invoice->paid += $amountReceived;
-            $invoice->balance = max(0, $invoice->total - $invoice->paid);
+            $invoice->refresh();
 
-            if ($invoice->balance <= 0) {
-                $invoice->status = 'paid';
+            /*
+            |--------------------------------------------------------------------------
+            | Create Payment record
+            |--------------------------------------------------------------------------
+            */
+
+            $paymentData = [
+                'tenant_id' => auth()->user()->tenant_id,
+                'invoice_id' => $invoice->id,
+                'job_id' => null,
+                'method' => $paymentMethod,
+                'amount' => $amountReceived,
+                'reference' => $request->input('reference_number'),
+                'received_by' => auth()->id(),
+            ];
+
+            // Add cheque-specific fields if payment method is cheque
+            if ($paymentMethod === 'cheque') {
+                $paymentData['cheque_number'] = $request->cheque_number;
+                $paymentData['bank_name'] = $request->bank_name;
+                $paymentData['cheque_due_date'] = $request->cheque_due_date;
+                $paymentData['payment_received'] = $request->payment_received === 'yes';
+                if ($request->payment_received === 'yes') {
+                    $paymentData['payment_received_at'] = now();
+                }
             }
 
-            $invoice->save();
+            $payment = Payment::create($paymentData);
 
-            // Record cash movement for cash payments
-            if ($paymentMethod === 'cash' && $amountReceived > 0) {
-                $this->cashMovements->recordSale(
-                    amount: $amountReceived,
-                    reference: $payment,
-                    userId: auth()->id(),
-                );
-            }
-
-            // Log audit
+            // Log payment completion in audit logs
             $this->audit->logPayment($payment->id, [
                 'invoice_id' => $invoice->id,
                 'invoice_number' => $invoice->invoice_number,
                 'customer_name' => $invoice->customer?->full_name ?? 'Walk-in',
                 'payment_method' => $paymentMethod,
                 'amount' => $amountReceived,
+                'discount_amount' => $discountAmount,
+                'discount_type' => $discountType,
                 'final_total' => $finalTotal,
-                'balance_due' => $invoice->balance,
+                'balance_due' => $invoiceBalance,
             ]);
+
+            /*
+            |--------------------------------------------------------------------------
+            | Create CashMovement only for cash payments and received cheques
+            |--------------------------------------------------------------------------
+            */
+
+            if ($paymentMethod === 'cash' && $amountReceived > 0) {
+                if ($finalTotal <= 0) {
+                    $netCashAmount = $amountReceived;
+                } else {
+                    $netCashAmount = $invoiceBalance < 0 ? $finalTotal : $amountReceived;
+                }
+
+                $this->cashMovements->recordSale(
+                    amount: $netCashAmount,
+                    reference: $payment,
+                    userId: auth()->id(),
+                );
+            } elseif ($paymentMethod === 'cheque' && $request->payment_received === 'yes' && $amountReceived > 0) {
+                if ($finalTotal <= 0) {
+                    $netChequeAmount = $amountReceived;
+                } else {
+                    $netChequeAmount = $invoiceBalance < 0 ? $finalTotal : $amountReceived;
+                }
+
+                $this->cashMovements->recordSale(
+                    amount: $netChequeAmount,
+                    reference: $payment,
+                    userId: auth()->id(),
+                );
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | Balance message
+            |--------------------------------------------------------------------------
+            */
+
+            if ($invoiceBalance > 0) {
+                $balanceMessage = 'Balance due: Rs. ' . number_format($invoiceBalance, 2);
+            } elseif ($invoiceBalance < 0) {
+                $balanceMessage = 'Change to return: Rs. ' . number_format(abs($invoiceBalance), 2);
+            } else {
+                $balanceMessage = 'Fully paid';
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | Generate WhatsApp Web URL for invoice notification
+            |--------------------------------------------------------------------------
+            */
+
+            $whatsappUrl = null;
+            try {
+                $bossNumber = '94753643227';
+                $whatsappUrl = $this->communication->generateWhatsAppWebUrlForPos(
+                    phoneNumber: $bossNumber,
+                    invoice: $invoice,
+                    amount: $amountReceived,
+                    paymentMethod: $paymentMethod
+                );
+            } catch (\Throwable $e) {
+                \Log::error('Failed to generate WhatsApp URL for POS', [
+                    'error' => $e->getMessage(),
+                    'invoice_id' => $invoice->id,
+                    'amount' => $amountReceived
+                ]);
+            }
 
             return redirect()
                 ->route('cashier.print-pos-invoice', $invoice)
-                ->with('success', 'Payment processed successfully.');
+                ->with('success', 'Payment processed successfully. ' . $balanceMessage)
+                ->with('whatsapp_url', $whatsappUrl);
         });
     }
 

@@ -764,6 +764,14 @@
                                       ->where('balance', '>', 0.01);
                             })
                             ->count();
+
+                        // Add POS invoices with balance > 0 but no payments yet
+                        $posInvoiceCount = \App\Models\Invoice::whereNull('job_id')
+                            ->where('balance', '>', 0.01)
+                            ->where('paid', '=', 0) // Only count if no payments have been made
+                            ->count();
+
+                        $readyForPaymentCount += $posInvoiceCount;
                     @endphp
                     @if($readyForPaymentCount > 0)
                         <span class="notification-badge">{{ $readyForPaymentCount }}</span>
