@@ -614,6 +614,12 @@
                     <span>Dashboard</span>
                 </a>
             @endif
+            @if(auth()->user()->hasPermissionTo('pos.access'))
+                <a href="{{ route('pos.index') }}" class="pos-link {{ request()->routeIs('pos.*') ? 'active' : '' }}">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+                    <span>POS</span>
+                </a>
+            @endif
             @if(auth()->user()->hasPermissionTo('live_job_board.access'))
                 <a href="{{ route('jobs.board') }}" class="{{ request()->routeIs('jobs.board') ? 'active' : '' }}">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
@@ -762,12 +768,6 @@
                     @if($readyForPaymentCount > 0)
                         <span class="notification-badge">{{ $readyForPaymentCount }}</span>
                     @endif
-                </a>
-            @endif
-            @if(auth()->user()->hasPermissionTo('pos.access'))
-                <a href="{{ route('pos.index') }}" class="pos-link {{ request()->routeIs('pos.*') ? 'active' : '' }}">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
-                    <span>POS</span>
                 </a>
             @endif
             @if(auth()->user()->hasPermissionTo('cashier.access'))
