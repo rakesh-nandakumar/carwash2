@@ -10,48 +10,66 @@
             @page {
                 margin: 0;
                 size: 80mm auto;
-                margin-left: auto;
-                margin-right: auto;
+            }
+
+            html, body {
+                margin: 0 !important;
+                padding: 0 !important;
+                width: 80mm !important;
+                height: auto !important;
+                overflow: visible !important;
             }
 
             body {
-                margin: 0 auto !important;
-                width: 76mm !important;
-                margin-left: auto !important;
-                margin-right: auto !important;
+                padding: 3mm !important;
+            }
+
+            .receipt-container {
+                width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
             }
 
             .no-print {
                 display: none !important;
             }
+
+            table, tr, td, div, p {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
         }
 
         body {
             font-family: 'Courier New', monospace;
-            font-size: 16px;
+            font-size: 20px;
             color: #000;
-            width: 76mm;
+            width: 80mm;
             margin: 0 auto;
             background: white;
-            padding: 2mm;
+            padding: 3mm;
             box-sizing: border-box;
             font-weight: bold;
+            height: auto;
+            min-height: auto;
         }
 
         .receipt-container {
             text-align: center;
             margin: 0 auto;
             width: 100%;
+            height: auto;
+            min-height: auto;
         }
 
         .company-name {
-            font-size: 22px;
+            font-size: 28px;
             font-weight: 900;
             margin-bottom: 8px;
         }
 
         .company-details {
-            font-size: 14px;
+            font-size: 18px;
             margin-bottom: 12px;
             color: #000;
             font-weight: bold;
@@ -68,19 +86,19 @@
         }
 
         .report-title {
-            font-size: 20px;
+            font-size: 24px;
             font-weight: 900;
         }
 
         .report-date {
-            font-size: 14px;
+            font-size: 18px;
             font-weight: bold;
         }
 
         .report-info {
             text-align: left;
             margin-bottom: 12px;
-            font-size: 14px;
+            font-size: 18px;
             font-weight: bold;
         }
 
@@ -88,7 +106,7 @@
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 12px;
-            font-size: 14px;
+            font-size: 18px;
         }
 
         .items-table td {
@@ -98,31 +116,31 @@
         .item-name {
             text-align: left;
             font-weight: bold;
-            font-size: 13px;
+            font-size: 16px;
         }
 
         .item-qty {
             text-align: center;
             font-weight: bold;
-            font-size: 13px;
+            font-size: 16px;
         }
 
         .item-price {
             text-align: right;
             font-weight: bold;
-            font-size: 13px;
+            font-size: 16px;
         }
 
         .item-total {
             text-align: right;
             font-weight: 900;
-            font-size: 13px;
+            font-size: 16px;
         }
 
         .totals {
             text-align: right;
             margin-bottom: 12px;
-            font-size: 14px;
+            font-size: 18px;
         }
 
         .total-row {
@@ -132,44 +150,17 @@
         }
 
         .grand-total {
-            font-size: 16px;
+            font-size: 20px;
             font-weight: 900;
             border-top: 2px solid #000;
             margin-top: 8px;
             padding-top: 8px;
         }
 
-        .discrepancy-row {
-            font-size: 16px;
-            font-weight: 900;
-            margin-top: 8px;
-            padding-top: 8px;
-        }
-
-        .discrepancy-positive {
-            color: #000;
-        }
-
-        .discrepancy-negative {
-            color: #000;
-        }
-
-        .cash-movement-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 3px 0;
-            border-bottom: 1px dotted #000;
-            font-size: 13px;
-        }
-
-        .cash-movement-item:last-child {
-            border-bottom: none;
-        }
-
         .footer {
             text-align: center;
             margin-top: 18px;
-            font-size: 12px;
+            font-size: 14px;
             color: #000;
             font-weight: bold;
         }
@@ -258,7 +249,7 @@
         {{-- Report Header --}}
         <div class="report-header">
             <div class="report-title">
-                END OF DAY REPORT
+                DAY REPORT #{{ $closure->id }}
             </div>
 
             <div class="report-date">
@@ -276,10 +267,6 @@
         <div class="divider"></div>
 
         {{-- Sales Breakdown --}}
-        <div class="report-header" style="margin-bottom: 8px;">
-            <div style="font-size: 16px; font-weight: 900;">SALES BREAKDOWN</div>
-        </div>
-
         <table class="items-table">
             <tr style="border-bottom: 1px solid #000;">
                 <td class="item-name" style="font-size: 11px;">METHOD</td>
@@ -328,45 +315,35 @@
         <div class="divider"></div>
 
         {{-- Cash Movements --}}
-        <div class="report-header" style="margin-bottom: 8px;">
-            <div style="font-size: 16px; font-weight: 900;">CASH MOVEMENTS</div>
-        </div>
-
         <div style="margin-bottom: 8px;">
-            <div style="font-size: 14px; font-weight: bold; margin-bottom: 4px;">CASH IN ({{ $cashInCount }})</div>
-            @if($cashInMovements->count() > 0)
-                @foreach($cashInMovements as $movement)
-                    <div class="cash-movement-item">
-                        <span>{{ $movement->reason }} @if($movement->description) - {{ $movement->description }} @endif</span>
-                        <span>Rs. {{ number_format($movement->amount, 0) }}</span>
-                    </div>
-                @endforeach
-            @else
-                <div style="font-size: 12px; color: #666;">No cash in</div>
-            @endif
+            <div style="font-size: 14px; font-weight: bold;">CASH IN ({{ $cashInCount }})</div>
         </div>
+        @if($cashInMovements->count() > 0)
+            @foreach($cashInMovements as $movement)
+                <div style="font-size: 13px; padding: 2px 0;">
+                    {{ $movement->reason }} @if($movement->description) - {{ $movement->description }} @endif
+                </div>
+            @endforeach
+        @else
+            <div style="font-size: 12px; color: #666;">No cash in</div>
+        @endif
 
-        <div style="margin-bottom: 8px;">
-            <div style="font-size: 14px; font-weight: bold; margin-bottom: 4px;">WITHDRAWALS ({{ $cashOutCount }})</div>
-            @if($cashOutMovements->count() > 0)
-                @foreach($cashOutMovements as $movement)
-                    <div class="cash-movement-item">
-                        <span>{{ $movement->reason }} @if($movement->description) - {{ $movement->description }} @endif</span>
-                        <span>Rs. {{ number_format($movement->amount, 0) }}</span>
-                    </div>
-                @endforeach
-            @else
-                <div style="font-size: 12px; color: #666;">No withdrawals</div>
-            @endif
+        <div style="margin-bottom: 8px; margin-top: 12px;">
+            <div style="font-size: 14px; font-weight: bold;">WITHDRAWALS ({{ $cashOutCount }})</div>
         </div>
+        @if($cashOutMovements->count() > 0)
+            @foreach($cashOutMovements as $movement)
+                <div style="font-size: 13px; padding: 2px 0;">
+                    {{ $movement->reason }} @if($movement->description) - {{ $movement->description }} @endif
+                </div>
+            @endforeach
+        @else
+            <div style="font-size: 12px; color: #666;">No withdrawals</div>
+        @endif
 
         <div class="divider"></div>
 
         {{-- Balance Summary --}}
-        <div class="report-header" style="margin-bottom: 8px;">
-            <div style="font-size: 16px; font-weight: 900;">BALANCE SUMMARY</div>
-        </div>
-
         <div class="totals">
             <div class="total-row">
                 <span>Opening Balance:</span>
@@ -392,7 +369,7 @@
                 <span>COUNTED:</span>
                 <span>Rs. {{ number_format($closure->counted_balance, 0) }}</span>
             </div>
-            <div class="total-row discrepancy-row">
+            <div class="total-row">
                 <span>DISCREPANCY:</span>
                 <span>
                     @if($closure->discrepancy > 0)
@@ -406,59 +383,12 @@
             </div>
         </div>
 
-        {{-- Variance Information --}}
-        @if($closure->opening_variance != 0 || $closure->discrepancy != 0 || $closure->opening_variance_reason || $closure->variance_reason)
-        <div class="divider"></div>
-
-        <div class="report-header" style="margin-bottom: 8px;">
-            <div style="font-size: 16px; font-weight: 900;">VARIANCE DETAILS</div>
-        </div>
-
-        {{-- Opening Variance --}}
-        @if($closure->opening_variance != 0 || $closure->opening_variance_reason)
-        <div style="margin-bottom: 12px;">
-            <div style="font-size: 14px; font-weight: bold; margin-bottom: 4px;">Opening Variance:</div>
-            @if($closure->opening_variance != 0)
-            <div style="font-size: 16px; font-weight: 900; @if($closure->opening_variance > 0) color: #15803d; @elseif($closure->opening_variance < 0) color: #dc2626; @endif">
-                @if($closure->opening_variance > 0)
-                    +Rs. {{ number_format($closure->opening_variance, 0) }} (Overage)
-                @elseif($closure->opening_variance < 0)
-                    Rs. {{ number_format(abs($closure->opening_variance), 0) }} (Shortage)
-                @endif
-            </div>
-            @endif
-            @if($closure->opening_variance_reason)
-            <div style="font-size: 13px; white-space: pre-wrap; margin-top: 4px;">{{ $closure->opening_variance_reason }}</div>
-            @endif
-        </div>
-        @endif
-
-        {{-- Closing Variance --}}
-        @if($closure->discrepancy != 0 || $closure->variance_reason)
-        <div>
-            <div style="font-size: 14px; font-weight: bold; margin-bottom: 4px;">Closing Variance:</div>
-            @if($closure->discrepancy != 0)
-            <div style="font-size: 16px; font-weight: 900; @if($closure->discrepancy > 0) color: #15803d; @elseif($closure->discrepancy < 0) color: #dc2626; @endif">
-                @if($closure->discrepancy > 0)
-                    +Rs. {{ number_format($closure->discrepancy, 0) }} (Overage)
-                @elseif($closure->discrepancy < 0)
-                    Rs. {{ number_format(abs($closure->discrepancy), 0) }} (Shortage)
-                @endif
-            </div>
-            @endif
-            @if($closure->variance_reason)
-            <div style="font-size: 13px; white-space: pre-wrap; margin-top: 4px;">{{ $closure->variance_reason }}</div>
-            @endif
-        </div>
-        @endif
-        @endif
-
         {{-- Denomination Breakdown --}}
         @if($closure->denomination_breakdown)
         <div class="divider"></div>
 
-        <div class="report-header" style="margin-bottom: 8px;">
-            <div style="font-size: 16px; font-weight: 900;">DENOMINATIONS</div>
+        <div style="margin-bottom: 8px;">
+            <div style="font-size: 14px; font-weight: bold;">DENOMINATIONS</div>
         </div>
 
         <table class="items-table">
@@ -479,12 +409,57 @@
         </table>
         @endif
 
+        {{-- Variance Information --}}
+        @if($closure->opening_variance != 0 || $closure->discrepancy != 0 || $closure->opening_variance_reason || $closure->variance_reason)
+        <div class="divider"></div>
+
+        <div style="margin-bottom: 8px;">
+            <div style="font-size: 14px; font-weight: bold;">VARIANCE DETAILS</div>
+        </div>
+
+        @if($closure->opening_variance != 0 || $closure->opening_variance_reason)
+        <div style="margin-bottom: 8px;">
+            <div style="font-size: 13px;">Opening:</div>
+            @if($closure->opening_variance != 0)
+            <div style="font-size: 14px; font-weight: 900;">
+                @if($closure->opening_variance > 0)
+                    +Rs. {{ number_format($closure->opening_variance, 0) }}
+                @elseif($closure->opening_variance < 0)
+                    Rs. {{ number_format(abs($closure->opening_variance), 0) }}
+                @endif
+            </div>
+            @endif
+            @if($closure->opening_variance_reason)
+            <div style="font-size: 12px; white-space: pre-wrap;">{{ $closure->opening_variance_reason }}</div>
+            @endif
+        </div>
+        @endif
+
+        @if($closure->discrepancy != 0 || $closure->variance_reason)
+        <div>
+            <div style="font-size: 13px;">Closing:</div>
+            @if($closure->discrepancy != 0)
+            <div style="font-size: 14px; font-weight: 900;">
+                @if($closure->discrepancy > 0)
+                    +Rs. {{ number_format($closure->discrepancy, 0) }}
+                @elseif($closure->discrepancy < 0)
+                    Rs. {{ number_format(abs($closure->discrepancy), 0) }}
+                @endif
+            </div>
+            @endif
+            @if($closure->variance_reason)
+            <div style="font-size: 12px; white-space: pre-wrap;">{{ $closure->variance_reason }}</div>
+            @endif
+        </div>
+        @endif
+        @endif
+
         {{-- Notes --}}
         @if($closure->notes)
         <div class="divider"></div>
 
-        <div class="report-header" style="margin-bottom: 8px;">
-            <div style="font-size: 16px; font-weight: 900;">NOTES</div>
+        <div style="margin-bottom: 8px;">
+            <div style="font-size: 14px; font-weight: bold;">NOTES</div>
         </div>
 
         <div style="font-size: 13px; white-space: pre-wrap;">{{ $closure->notes }}</div>
