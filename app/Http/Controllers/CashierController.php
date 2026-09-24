@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Job;
 use App\Models\Payment;
+use App\Models\Invoice;
 use App\Enums\JobStatus;
 use App\Services\PricingService;
 use App\Services\CashMovementService;
@@ -53,6 +54,14 @@ class CashierController extends Controller
             })
             ->where('status', '!=', JobStatus::DELIVERED->value)
             ->orderBy('updated_at', 'desc')
+            ->get();
+
+        // Also load POS invoices (invoices with no job)
+        $posInvoices = Invoice::with(['customer', 'items'])
+            ->where('tenant_id', auth()->user()->tenant_id)
+            ->whereNull('job_id')
+            ->where('balance', '>', 0)
+            ->orderBy('created_at', 'desc')
             ->get();
 
         $till = $this->cashMovements->getSelectedTill();
@@ -109,6 +118,7 @@ class CashierController extends Controller
 
         return view('cashier.index', compact(
             'readyForPayment',
+            'posInvoices',
             'till',
             'currentClosure',
             'isShiftOpen',

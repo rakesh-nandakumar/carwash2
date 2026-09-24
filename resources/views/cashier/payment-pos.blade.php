@@ -24,7 +24,7 @@
                         <div class="col-md-6 text-end">
                             <h5>Invoice Details</h5>
                             <p class="mb-1">Invoice #: {{ $invoice->invoice_number }}</p>
-                            <p class="mb-0">Date: {{ $invoice->date->format('Y-m-d H:i') }}</p>
+                            <p class="mb-0">Date: {{ $invoice->created_at->format('Y-m-d H:i') }}</p>
                         </div>
                     </div>
 

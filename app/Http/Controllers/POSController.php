@@ -11,6 +11,7 @@ use App\Models\Inventory;
 use App\Services\InventoryService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 
 class POSController extends Controller
 {
@@ -43,8 +44,10 @@ class POSController extends Controller
                 ];
             });
 
-        // Load categories for filtering
+        // Load main categories (no parent) with their subcategories
         $categories = Category::where('tenant_id', auth()->user()->tenant_id)
+            ->whereNull('parent_id')
+            ->with('children')
             ->orderBy('name')
             ->get(['id', 'name']);
 
@@ -116,73 +119,128 @@ class POSController extends Controller
      */
     public function createInvoice(Request $request)
     {
-        $request->validate([
-            'customer_id' => 'nullable|exists:customers,id',
-            'items' => 'required|array|min:1',
-            'items.*.product_id' => 'required|exists:products,id',
-            'items.*.quantity' => 'required|numeric|min:0.01',
-            'items.*.unit_price' => 'required|numeric|min:0',
-        ]);
-
-        return DB::transaction(function () use ($request) {
-            // Calculate totals
-            $subtotal = 0;
-            foreach ($request->items as $item) {
-                $subtotal += $item['quantity'] * $item['unit_price'];
-            }
-
-            // Create invoice (direct POS sale, no job, no vehicle)
-            $invoice = Invoice::create([
-                'tenant_id' => auth()->user()->tenant_id,
-                'invoice_number' => $this->generateInvoiceNumber(),
-                'customer_id' => $request->customer_id,
-                'vehicle_id' => null,
-                'date' => now(),
-                'subtotal' => $subtotal,
-                'tax' => 0, // TODO: Add tax calculation if needed
-                'discount' => 0,
-                'total' => $subtotal,
-                'paid' => 0,
-                'balance' => $subtotal,
-                'status' => 'pending',
-                'type' => 'pos_sale', // Mark as POS sale
-                'notes' => 'Direct POS sale',
+        try {
+            $validator = Validator::make($request->all(), [
+                'customer_id' => 'nullable|exists:customers,id',
+                'discount_type' => 'nullable|in:none,amount,percentage',
+                'discount_value' => 'nullable|numeric|min:0',
+                'discount_apply_to' => 'nullable|in:total,individual',
+                'items' => 'required|array|min:1',
+                'items.*.product_id' => 'required|exists:products,id',
+                'items.*.quantity' => 'required|numeric|min:0.01',
+                'items.*.unit_price' => 'required|numeric|min:0',
+                'items.*.individual_discount' => 'nullable|numeric|min:0',
             ]);
 
-            // Create invoice items
-            foreach ($request->items as $item) {
-                $product = Product::find($item['product_id']);
-                $lineTotal = $item['quantity'] * $item['unit_price'];
+            if ($validator->fails()) {
+                return response()->json(['error' => $validator->errors()], 422);
+            }
 
-                InvoiceItem::create([
+            return DB::transaction(function () use ($request) {
+                // Calculate totals
+                $subtotal = 0;
+                foreach ($request->items as $item) {
+                    $subtotal += $item['quantity'] * $item['unit_price'];
+                }
+
+                // Calculate discount based on type
+                $totalDiscount = 0;
+                $discountType = $request->discount_type ?? 'none';
+                $discountValue = $request->discount_value ?? 0;
+                $discountApplyTo = $request->discount_apply_to ?? 'total';
+
+                if ($discountType === 'amount' && $discountApplyTo === 'total') {
+                    $totalDiscount = min($discountValue, $subtotal);
+                } elseif ($discountType === 'percentage' && $discountApplyTo === 'total') {
+                    $totalDiscount = $subtotal * ($discountValue / 100);
+                } elseif ($discountApplyTo === 'individual') {
+                    foreach ($request->items as $item) {
+                        $itemSubtotal = $item['quantity'] * $item['unit_price'];
+                        $itemDiscount = $item['individual_discount'] ?? 0;
+                        if ($discountType === 'percentage') {
+                            $totalDiscount += $itemSubtotal * ($itemDiscount / 100);
+                        } else {
+                            $totalDiscount += $itemDiscount;
+                        }
+                    }
+                }
+
+                $total = $subtotal - $totalDiscount;
+
+                // Handle walk-in customer
+                $customerId = $request->customer_id;
+                if (!$customerId) {
+                    // Find or create walk-in customer
+                    $walkinCustomer = Customer::where('tenant_id', auth()->user()->tenant_id)
+                        ->where('full_name', 'Walk-in Customer')
+                        ->first();
+
+                    if (!$walkinCustomer) {
+                        $walkinCustomer = Customer::create([
+                            'tenant_id' => auth()->user()->tenant_id,
+                            'business_id' => auth()->user()->business_id,
+                            'full_name' => 'Walk-in Customer',
+                            'phone' => '0000000000',
+                            'customer_code' => 'WALKIN',
+                        ]);
+                    }
+                    $customerId = $walkinCustomer->id;
+                }
+
+                // Create invoice (direct POS sale, no job)
+                $invoice = Invoice::create([
                     'tenant_id' => auth()->user()->tenant_id,
-                    'invoice_id' => $invoice->id,
-                    'item_type' => 'product',
-                    'item_id' => $product->id,
-                    'description' => $product->name,
-                    'quantity' => $item['quantity'],
-                    'unit_price' => $item['unit_price'],
+                    'business_id' => auth()->user()->business_id,
+                    'invoice_number' => $this->generateInvoiceNumber(),
+                    'customer_id' => $customerId,
+                    'job_id' => null, // POS sale has no job
+                    'subtotal' => $subtotal,
                     'tax' => 0,
-                    'discount' => 0,
-                    'line_total' => $lineTotal,
+                    'discount' => $totalDiscount,
+                    'total' => $total,
+                    'paid' => 0,
+                    'balance' => $total,
+                    'status' => 'issued',
                 ]);
 
-                // Deduct stock
-                $this->inventory->deductStock(
-                    $product->id,
-                    $item['quantity'],
-                    'POS Sale',
-                    $invoice->id
-                );
-            }
+                // Create invoice items
+                foreach ($request->items as $item) {
+                    $product = Product::find($item['product_id']);
+                    $lineTotal = $item['quantity'] * $item['unit_price'];
 
-            return response()->json([
-                'ok' => true,
-                'invoice_id' => $invoice->id,
-                'invoice_number' => $invoice->invoice_number,
-                'total' => $invoice->total,
-            ]);
-        });
+                    InvoiceItem::create([
+                        'tenant_id' => auth()->user()->tenant_id,
+                        'invoice_id' => $invoice->id,
+                        'item_type' => 'product',
+                        'item_id' => $product->id,
+                        'description' => $product->name,
+                        'quantity' => $item['quantity'],
+                        'unit_price' => $item['unit_price'],
+                        'tax' => 0,
+                        'discount' => 0,
+                        'line_total' => $lineTotal,
+                    ]);
+
+                    // Deduct stock using consume method
+                    $this->inventory->consume(
+                        $product,
+                        null, // branch_id
+                        $item['quantity'],
+                        $invoice->id,
+                        'POS Sale'
+                    );
+                }
+
+                return response()->json([
+                    'ok' => true,
+                    'invoice_id' => $invoice->id,
+                    'invoice_number' => $invoice->invoice_number,
+                    'total' => $invoice->total,
+                ]);
+            });
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     }
 
     /**

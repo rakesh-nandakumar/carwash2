@@ -118,7 +118,7 @@ Route::prefix('{tenant}')
             // ==================== POS ====================
             Route::get('/pos', [POSController::class, 'index'])
                 ->name('pos.index')
-                ->middleware('auth');
+                ->middleware('permission:pos.access');
 
             Route::get('/pos/search-customer', [POSController::class, 'searchCustomer'])
                 ->name('pos.search-customer')
