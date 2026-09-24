@@ -110,6 +110,10 @@ Route::prefix('{tenant}')
                 ->name('reception.products')
                 ->middleware('permission:reception.access');
 
+            Route::get('/reception/categories', [ReceptionController::class, 'getCategories'])
+                ->name('reception.categories')
+                ->middleware('permission:reception.access');
+
             Route::get('/reception/vehicle/{vehicle}/image', [ReceptionController::class, 'vehicleImage'])
                 ->name('reception.vehicle-image')
                 ->middleware('permission:reception.access');

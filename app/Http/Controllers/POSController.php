@@ -31,6 +31,12 @@ class POSController extends Controller
             ->get()
             ->map(function ($product) {
                 $stock = $product->inventory->sum('quantity') ?? 0;
+                $categoryName = null;
+                if ($product->category && is_object($product->category)) {
+                    $categoryName = $product->category->name;
+                } elseif (is_string($product->category)) {
+                    $categoryName = $product->category;
+                }
                 return [
                     'id' => $product->id,
                     'name' => $product->name,
@@ -38,7 +44,7 @@ class POSController extends Controller
                     'barcode' => $product->barcode,
                     'unit_price' => (float) $product->selling_price,
                     'category_id' => $product->category_id,
-                    'category_name' => $product->category?->name,
+                    'category_name' => $categoryName,
                     'stock' => $stock,
                     'image_url' => $product->image_url,
                 ];
@@ -99,6 +105,13 @@ class POSController extends Controller
 
         $stock = $product->inventory->sum('quantity') ?? 0;
 
+        $categoryName = null;
+        if ($product->category && is_object($product->category)) {
+            $categoryName = $product->category->name;
+        } elseif (is_string($product->category)) {
+            $categoryName = $product->category;
+        }
+
         return response()->json([
             'product' => [
                 'id' => $product->id,
@@ -107,7 +120,7 @@ class POSController extends Controller
                 'barcode' => $product->barcode,
                 'unit_price' => (float) $product->selling_price,
                 'category_id' => $product->category_id,
-                'category_name' => $product->category?->name,
+                'category_name' => $categoryName,
                 'stock' => $stock,
                 'image_url' => $product->image_url,
             ]
