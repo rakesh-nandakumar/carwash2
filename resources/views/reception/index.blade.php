@@ -44,6 +44,7 @@
         <button class="nav-toggle" onclick="toggleNav()">☰</button>
         <div class="nav-menu" id="navMenu">
             <a href="{{ route('dashboard') }}" @if(!auth()->user()->hasPermissionTo('dashboard.access')) style="display:none" @endif>Dashboard</a>
+            <a href="{{ route('pos.index') }}" @if(!auth()->user()->hasPermissionTo('pos.access') || !app(\App\Services\TenantModules::class)->isEnabled('pos')) style="display:none" @endif>POS</a>
             <a href="{{ route('jobs.board') }}" @if(!auth()->user()->hasPermissionTo('job_cards.access')) style="display:none" @endif>Live Job Board</a>
             <a href="{{ route('jobs.index') }}" @if(!auth()->user()->hasPermissionTo('job_cards.access')) style="display:none" @endif>Job Cards</a>
             <a href="{{ route('customers.index') }}" @if(!auth()->user()->hasPermissionTo('customers.access')) style="display:none" @endif>Customers</a>
