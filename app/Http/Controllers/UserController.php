@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Models\UserPermissionOverride;
 use App\Services\PermissionEscalationService;
 use App\Services\AuditService;
+use App\Services\TenantModules;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -45,18 +46,31 @@ class UserController extends Controller
         $this->authorize('create', User::class);
 
         $businessId = auth()->user()->business_id;
+        $tenantId = auth()->user()->tenant_id;
 
-        $roles = Role::where('tenant_id', auth()->user()->tenant_id)
+        $roles = Role::where('tenant_id', $tenantId)
             ->where('business_id', $businessId)
             ->where('is_active', true)
             ->with('permissions')
             ->orderBy('name')
             ->get();
 
-        $permissions = Permission::orderBy('module')
+        $allPermissions = Permission::orderBy('module')
             ->orderBy('name')
             ->get()
             ->groupBy('module');
+
+        // Filter permissions based on enabled tenant modules
+        $permissions = [];
+
+        foreach ($allPermissions as $module => $modulePermissions) {
+            // Check if this module is enabled for the tenant
+            // TenantModules::isEnabled() returns true for core modules and checks catalog for licensed modules
+            // audit_logs always shows regardless of master control
+            if ($module === 'audit_logs' || TenantModules::isEnabled($module)) {
+                $permissions[$module] = $modulePermissions;
+            }
+        }
 
         return view(
             'users.create',
@@ -141,6 +155,14 @@ class UserController extends Controller
                 'active' => $validated['active'] ?? true,
             ]);
 
+            // Log user creation
+            $this->auditService->log('user.created', "User {$user->name} created", 'info', 'tenant_user', $actor->email, [
+                'user_id' => $user->id,
+                'user_name' => $user->name,
+                'user_email' => $user->email,
+                'active' => $user->active,
+            ]);
+
             $user->roles()->sync(
                 $roles->pluck('id')
             );
@@ -161,9 +183,33 @@ class UserController extends Controller
 
             // Log permission changes if overrides were provided
             if (!empty($validated['permission_overrides'])) {
-                $this->auditService->log('user.permissions_assigned', "Permission overrides assigned to user {$user->name}", 'warning', 'tenant_user', $actor->email, [
+                $allowedPermissions = [];
+                $deniedPermissions = [];
+
+                foreach ($validated['permission_overrides'] as $permissionId => $type) {
+                    $permission = Permission::find($permissionId);
+                    if ($permission) {
+                        if ($type === 'allow') {
+                            $allowedPermissions[] = $permission->name;
+                        } elseif ($type === 'deny') {
+                            $deniedPermissions[] = $permission->name;
+                        }
+                    }
+                }
+
+                $message = "Permission overrides assigned to user {$user->name}";
+                if (!empty($allowedPermissions)) {
+                    $message .= " (Allowed: " . implode(', ', $allowedPermissions) . ")";
+                }
+                if (!empty($deniedPermissions)) {
+                    $message .= " (Denied: " . implode(', ', $deniedPermissions) . ")";
+                }
+
+                $this->auditService->log('user.permissions_assigned', $message, 'warning', 'tenant_user', $actor->email, [
                     'user_id' => $user->id,
                     'user_name' => $user->name,
+                    'allowed_permissions' => $allowedPermissions,
+                    'denied_permissions' => $deniedPermissions,
                     'permission_overrides' => $validated['permission_overrides'],
                 ]);
             }
@@ -195,10 +241,22 @@ class UserController extends Controller
             ->orderBy('name')
             ->get();
 
-        $permissions = Permission::orderBy('module')
+        $allPermissions = Permission::orderBy('module')
             ->orderBy('name')
             ->get()
             ->groupBy('module');
+
+        // Filter permissions based on enabled tenant modules
+        $permissions = [];
+
+        foreach ($allPermissions as $module => $modulePermissions) {
+            // Check if this module is enabled for the tenant
+            // TenantModules::isEnabled() returns true for core modules and checks catalog for licensed modules
+            // audit_logs always shows regardless of master control
+            if ($module === 'audit_logs' || TenantModules::isEnabled($module)) {
+                $permissions[$module] = $modulePermissions;
+            }
+        }
 
         $userRoles = $user->roles
             ->pluck('id')
@@ -237,7 +295,7 @@ class UserController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,' . $user->id,
-            'password' => 'nullable|string|min:8|confirmed',
+            'password' => $request->filled('password') ? 'required|string|min:8|confirmed' : 'nullable',
             'roles' => 'nullable|array',
             'roles.*' => [
                 'integer',
