@@ -175,11 +175,15 @@
                                 placeholder="Qty"
                                 required
                             >
-                            <input 
-                                name="reason" 
-                                type="text" 
-                                placeholder="Reason"
-                            >
+                            <select name="reason" required style="padding:6px 10px;border:1px solid #e5e7eb;border-radius:6px;font-size:12px;">
+                                <option value="">Select Reason</option>
+                                <option value="count_error">Count Error</option>
+                                <option value="found">Found</option>
+                                <option value="supplier_correction">Supplier Correction</option>
+                                <option value="emergency_stock_received">Emergency Stock Received</option>
+                                <option value="transfer_in">Transfer In</option>
+                                <option value="customer_return">Customer Return</option>
+                            </select>
                             <button type="submit" class="btn-add">+ Add</button>
                         </form>
 
@@ -235,7 +239,15 @@
             <form method="post" action="{{ route('inventory.adjust',$i->product) }}" class="mobile-add-stock">
                 @csrf
                 <input name="quantity" type="number" step="0.001" min="0" placeholder="Qty to add" required>
-                <input name="reason" type="text" placeholder="Reason (optional)">
+                <select name="reason" required style="padding:8px 12px;border:1px solid #e5e7eb;border-radius:6px;font-size:13px;margin-top:8px;">
+                    <option value="">Select Reason</option>
+                    <option value="count_error">Count Error</option>
+                    <option value="found">Found</option>
+                    <option value="supplier_correction">Supplier Correction</option>
+                    <option value="emergency_stock_received">Emergency Stock Received</option>
+                    <option value="transfer_in">Transfer In</option>
+                    <option value="customer_return">Customer Return</option>
+                </select>
                 <button type="submit">+ Add Stock</button>
             </form>
 

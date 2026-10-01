@@ -44,11 +44,12 @@
                 <label>Reason</label>
                 <select id="reasonFilter" onchange="applyFilters()">
                     <option value="">All Reasons</option>
-                    <option value="stock_count">Stock Count</option>
-                    <option value="damage">Damage</option>
-                    <option value="expiry">Expiry</option>
-                    <option value="theft">Theft</option>
-                    <option value="other">Other</option>
+                    <option value="count_error">Count Error</option>
+                    <option value="found">Found</option>
+                    <option value="supplier_correction">Supplier Correction</option>
+                    <option value="emergency_stock_received">Emergency Stock Received</option>
+                    <option value="transfer_in">Transfer In</option>
+                    <option value="customer_return">Customer Return</option>
                 </select>
             </div>
         </div>
