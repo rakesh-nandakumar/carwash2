@@ -428,11 +428,11 @@ class InventoryController extends Controller
         // Validate the request
         $validated = $request->validate([
             'quantity' => 'required|numeric|min:0',
-            'reason' => 'nullable|string|max:255',
+            'reason' => 'required|string|in:count_error,found,supplier_correction,emergency_stock_received,transfer_in,customer_return',
         ]);
 
         $quantityToAdd = (float) $validated['quantity'];
-        $reason = $validated['reason'] ?? 'Manual stock adjustment';
+        $reason = $validated['reason'];
 
         DB::transaction(function () use ($user, $product, $quantityToAdd, $reason) {
             // Find or create inventory record for this product and branch

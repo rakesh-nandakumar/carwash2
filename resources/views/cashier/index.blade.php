@@ -292,12 +292,13 @@
 
             <div class="form-group">
                 <label>Reason</label>
-                <input
-                    type="text"
+                <select
                     name="reason"
-                    maxlength="255"
+                    id="reasonSelect"
                     required
                 >
+                    <option value="">Select Reason</option>
+                </select>
             </div>
 
             <div class="form-group">
@@ -1203,15 +1204,33 @@ function openCashModal(type) {
     const modal = document.getElementById('cashMovementModal');
     const form = document.getElementById('cashMovementForm');
     const title = document.getElementById('cashModalTitle');
+    const reasonSelect = document.getElementById('reasonSelect');
 
     if (type === 'cash-in') {
         title.textContent = 'Cash In';
         form.action = '{{ route('cashier.cash-in') }}';
+        reasonSelect.innerHTML = `
+            <option value="">Select Reason</option>
+            <option value="owner_deposit">Owner Deposit / Float Top-Up</option>
+            <option value="cash_overage">Cash Overage / Extra Cash</option>
+            <option value="banking">Banking / Deposited Difference</option>
+            <option value="petty_cash_return">Return from Petty Cash</option>
+            <option value="other">Other (specify)</option>
+        `;
     }
 
     if (type === 'cash-out') {
         title.textContent = 'Withdrawals';
         form.action = '{{ route('cashier.cash-out') }}';
+        reasonSelect.innerHTML = `
+            <option value="">Select Reason</option>
+            <option value="owner_withdrawal">Owner / Cash Withdrawal</option>
+            <option value="petty_cash">Petty Cash Expense</option>
+            <option value="cash_shortage">Cash Missing / Shortage</option>
+            <option value="counting_difference">Counting Difference</option>
+            <option value="float_correction">Opening Float Correction</option>
+            <option value="other">Other (specify)</option>
+        `;
     }
 
     modal.classList.remove('hidden');

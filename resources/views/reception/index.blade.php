@@ -520,6 +520,9 @@ document.getElementById('createJobBtn').addEventListener('click', createJob);
 document.getElementById('vehicleImageInput')?.addEventListener('change', handleVehicleImageSelect);
 document.getElementById('jobVehicleImageInput')?.addEventListener('change', handleJobImageSelect);
 
+// Load services when page loads
+loadServices();
+
 // ---------- Live camera ----------
 let liveCameraStream = null;
 let liveCameraTarget = null;
@@ -1295,8 +1298,10 @@ function renderReceptionServices(services) {
             <input type="checkbox" value="${service.id}" data-price="${service.base_price}" ${selectedServices.includes(String(service.id)) ? 'checked' : ''}>
             <div class="service-info">
                 <span class="service-name">${service.name}</span>
-                <span class="service-category">${service.vehicle_category || 'General'}</span>
-                <span class="service-price">LKR ${service.base_price.toLocaleString()}</span>
+                <div class="service-details">
+                    <span class="service-category">${service.vehicle_category || 'General'}</span>
+                    <span class="service-price">LKR ${service.base_price.toLocaleString()}</span>
+                </div>
             </div>
         </label>
     `).join('');
@@ -2477,7 +2482,7 @@ document.addEventListener('click', (e) => {
 
 .services-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 12px;
 }
 
@@ -2508,15 +2513,26 @@ document.addEventListener('click', (e) => {
 .service-info {
     flex: 1;
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 8px;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+    min-width: 0;
 }
 
 .service-name {
     font-weight: 500;
     color: var(--text);
     font-size: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.service-details {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
 }
 
 .service-price {
