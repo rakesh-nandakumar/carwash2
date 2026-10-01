@@ -26,14 +26,34 @@ class CashierController extends Controller
     {
         $till = $this->cashMovements->getSelectedTill();
         $tillOpen = false;
-        
+
         if ($till) {
             $lastClosure = $this->cashMovements->lastClosure($till);
             $tillOpen = $lastClosure && !$lastClosure->closed_at;
         }
-        
+
         return response()->json([
             'till_open' => $tillOpen
+        ]);
+    }
+
+    public function jobsCount()
+    {
+        $jobCount = Job::where('tenant_id', auth()->user()->tenant_id)
+            ->where('status', JobStatus::READY_FOR_PAYMENT->value)
+            ->whereDoesntHave('invoice.payments') // Exclude jobs that have any payment records
+            ->where('status', '!=', JobStatus::DELIVERED->value)
+            ->count();
+
+        $posCount = Invoice::where('tenant_id', auth()->user()->tenant_id)
+            ->whereNull('job_id')
+            ->where('balance', '>', 0)
+            ->whereDoesntHave('payments') // Exclude POS invoices that have any payment records
+            ->count();
+
+        return response()->json([
+            'job_count' => $jobCount,
+            'pos_count' => $posCount
         ]);
     }
 
@@ -49,10 +69,7 @@ class CashierController extends Controller
                 'status',
                 JobStatus::READY_FOR_PAYMENT->value
             )
-            ->whereDoesntHave('invoice', function ($query) {
-                // Exclude jobs with fully paid invoices
-                $query->where('balance', '<=', 0);
-            })
+            ->whereDoesntHave('invoice.payments') // Exclude jobs that have any payment records
             ->where('status', '!=', JobStatus::DELIVERED->value)
             ->orderBy('updated_at', 'desc')
             ->get();
@@ -63,17 +80,17 @@ class CashierController extends Controller
             ->where('tenant_id', auth()->user()->tenant_id)
             ->whereNull('job_id')
             ->where('balance', '>', 0)
-            ->where('paid', '=', 0) // Only show if no payments have been made
+            ->whereDoesntHave('payments') // Only show if no payment records exist
             ->orderBy('created_at', 'desc')
             ->get();
 
         $till = $this->cashMovements->getSelectedTill();
-        
+
         // Update last activity timestamp for the selected till
         if ($till && $till->current_user_id == auth()->id()) {
             $till->update(['last_activity_at' => now()]);
         }
-        
+
         $currentClosure = $this->cashMovements->lastClosure($till);
         $isShiftOpen = $currentClosure && !$currentClosure->closed_at;
 
@@ -116,7 +133,7 @@ class CashierController extends Controller
         }
 
         $expectedBalance = $isShiftOpen
-            ? $this->cashMovements->expectedBalance($till, $currentClosure)
+            ? ((float) $currentClosure->opening_balance + $cashSales + $cashIn - $cashOut)
             : ($currentClosure ? $currentClosure->counted_balance : 0);
 
         return view('cashier.index', compact(
@@ -228,23 +245,25 @@ class CashierController extends Controller
 
         $request->validate([
             'payment_method' => 'required|string|in:cash,card,upi,bank_transfer,cheque',
-            'amount_received' => 'required|numeric|min:0',
+            'amount_received' => 'nullable|numeric|min:0',
 
             'discount_type' => 'nullable|in:none,amount,percentage',
+        ]);
 
+        // Get current invoice balance before validation
+        $job->load('invoice');
+        if (!$job->invoice) {
+            return back()->with('error', 'No invoice found for this job.');
+        }
+
+        $request->validate([
             'discount_value' => 'nullable|numeric|min:0',
-
             'discount_apply_to' => 'nullable|in:total,services,parts,individual_services,individual_parts',
-
             'individual_service_discounts' => 'nullable|array',
             'individual_service_discounts.*' => 'nullable|numeric|min:0',
-
             'individual_part_discounts' => 'nullable|array',
             'individual_part_discounts.*' => 'nullable|numeric|min:0',
-
             'coupon_code' => 'nullable|string',
-
-            // Cheque-specific fields
             'cheque_number' => 'nullable|string|required_if:payment_method,cheque',
             'bank_name' => 'nullable|string|required_if:payment_method,cheque',
             'cheque_due_date' => 'nullable|date|required_if:payment_method,cheque',
@@ -970,20 +989,17 @@ class CashierController extends Controller
 
         $request->validate([
             'payment_method' => 'required|string|in:cash,card,upi,bank_transfer,cheque',
-            'amount_received' => 'required|numeric|min:0',
+            'amount_received' => 'nullable|numeric|min:0',
 
             'discount_type' => 'nullable|in:none,amount,percentage',
+        ]);
 
+        $request->validate([
             'discount_value' => 'nullable|numeric|min:0',
-
             'discount_apply_to' => 'nullable|in:total,individual_items',
-
             'individual_item_discounts' => 'nullable|array',
             'individual_item_discounts.*' => 'nullable|numeric|min:0',
-
             'coupon_code' => 'nullable|string',
-
-            // Cheque-specific fields
             'cheque_number' => 'nullable|string|required_if:payment_method,cheque',
             'bank_name' => 'nullable|string|required_if:payment_method,cheque',
             'cheque_due_date' => 'nullable|date|required_if:payment_method,cheque',

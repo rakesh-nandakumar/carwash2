@@ -287,7 +287,7 @@
                     </div>
                     <div class="summary-row">
                         <span>Total Due</span>
-                        <strong id="displayTotal" class="highlighted-amount">Rs. {{ number_format($invoice->balance, 2) }}</strong>
+                        <strong id="displayTotal" class="highlighted-amount">Rs. {{ number_format($invoice->total, 2) }}</strong>
                     </div>
                     <div class="summary-row">
                         <span>Amount Received</span>
@@ -295,7 +295,7 @@
                     </div>
                     <div class="summary-row final-row">
                         <span>Balance</span>
-                        <strong id="displayBalance">Rs. {{ number_format($invoice->balance, 2) }}</strong>
+                        <strong id="displayBalance">Rs. 0.00</strong>
                     </div>
                 </div>
 
@@ -1263,16 +1263,16 @@ function calculateTotal() {
     // Calculate and update total based on discount
     const discountType = document.getElementById('discountType').value;
     const discountValue = parseFloat(document.getElementById('discountValue').value) || 0;
-    const subtotal = {{ $invoice->subtotal }};
+    const totalDue = {{ $invoice->total }}; // Use the actual invoice total
     let discount = 0;
 
     if (discountType === 'percentage') {
-        discount = subtotal * (discountValue / 100);
+        discount = totalDue * (discountValue / 100);
     } else {
         discount = discountValue;
     }
 
-    const total = subtotal - discount;
+    const total = totalDue - discount;
     document.getElementById('displayTotal').textContent = 'Rs. ' + total.toFixed(2);
     document.getElementById('displayDiscount').textContent = 'Rs. ' + discount.toFixed(2);
     calculateBalance();
@@ -1285,8 +1285,8 @@ function calculateIndividualDiscounts() {
         totalDiscount += parseFloat(input.value) || 0;
     });
 
-    const subtotal = {{ $invoice->subtotal }};
-    const total = subtotal - totalDiscount;
+    const totalDue = {{ $invoice->total }}; // Use the actual invoice total
+    const total = totalDue - totalDiscount;
     document.getElementById('displayTotal').textContent = 'Rs. ' + total.toFixed(2);
     document.getElementById('displayDiscount').textContent = 'Rs. ' + totalDiscount.toFixed(2);
     calculateBalance();
@@ -1327,6 +1327,7 @@ function calculateSplitTotal() {
     amounts.forEach(input => {
         total += parseFloat(input.value) || 0;
     });
+    const totalDue = {{ $invoice->total }};
     document.getElementById('splitTotal').textContent = 'Rs. ' + total.toFixed(2);
     document.getElementById('splitRemaining').textContent = 'Rs. ' + Math.max(0, totalDue - total).toFixed(2);
 }
@@ -1335,7 +1336,7 @@ function calculateBalance() {
     const received = parseFloat(document.getElementById('amountReceived').value) || 0;
     // Get the current total due from the display (which includes discounts)
     const currentTotalText = document.getElementById('displayTotal').textContent;
-    const currentTotal = parseFloat(currentTotalText.replace('Rs. ', '')) || 0;
+    const currentTotal = parseFloat(currentTotalText.replace('Rs. ', '').replace(/,/g, '')) || 0;
     const balance = received - currentTotal;
     const balanceDisplay = document.getElementById('balanceDisplay');
     const balanceLabel = document.getElementById('balanceLabel');
@@ -1364,12 +1365,10 @@ function openPaymentConfirmation() {
     const modal = document.getElementById('paymentConfirmationModal');
     const method = document.querySelector('input[name="payment_method"]:checked').value;
     let amountReceived = parseFloat(document.getElementById('amountReceived').value) || 0;
-    const totalDue = parseFloat(document.getElementById('displayTotal').textContent.replace('Rs. ', '')) || 0;
-
-    // If amount received is 0 or empty, default to total due
-    if (amountReceived === 0) {
-        amountReceived = totalDue;
-    }
+    
+    // Get the total from the displayed element (which includes any cashier discounts)
+    const totalDueText = document.getElementById('displayTotal').textContent;
+    const totalDue = parseFloat(totalDueText.replace(/Rs\.|,/g, '').trim()) || 0;
 
     document.getElementById('confirmTotalDue').textContent = 'Rs. ' + totalDue.toFixed(2);
     document.getElementById('confirmPaymentMethod').textContent = method.charAt(0).toUpperCase() + method.slice(1);
@@ -1381,7 +1380,8 @@ function openPaymentConfirmation() {
 }
 
 function updateConfirmBalance() {
-    const totalDue = parseFloat(document.getElementById('confirmTotalDue').textContent.replace('Rs. ', '')) || 0;
+    const totalDueText = document.getElementById('confirmTotalDue').textContent;
+    const totalDue = parseFloat(totalDueText.replace(/Rs\.|,/g, '').trim()) || 0;
     const received = parseFloat(document.getElementById('editAmountReceived').value) || 0;
     const balance = totalDue - received;
 

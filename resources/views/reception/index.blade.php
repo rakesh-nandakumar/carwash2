@@ -259,11 +259,6 @@
                         <button onclick="selectProductCategory(null)" id="categoryAllBtn" class="category-filter-btn active">All</button>
                     </div>
 
-                    <!-- Subcategory Filters -->
-                    <div id="productSubcategoryFilters" class="product-subcategory-filters" style="display:none;">
-                        <button onclick="selectProductSubcategory(null)" id="subcategoryAllBtn" class="subcategory-filter-btn active">All</button>
-                    </div>
-
                     <div class="product-search-wrapper">
                         <input
                             type="text"
@@ -1321,7 +1316,6 @@ function renderReceptionServices(services) {
 let receptionProducts = [];
 let receptionCategories = [];
 let selectedProductCategory = null;
-let selectedProductSubcategory = null;
 
 async function loadProducts() {
     try {
@@ -1380,7 +1374,6 @@ function renderCategoryButtons() {
 
 function selectProductCategory(categoryId) {
     selectedProductCategory = categoryId;
-    selectedProductSubcategory = null;
 
     // Update button states
     document.querySelectorAll('.category-filter-btn').forEach(btn => btn.classList.remove('active'));
@@ -1388,51 +1381,6 @@ function selectProductCategory(categoryId) {
         document.getElementById('categoryAllBtn').classList.add('active');
     } else {
         document.getElementById(`categoryBtn${categoryId}`).classList.add('active');
-    }
-
-    // Show/hide subcategory filters
-    const subcategoryFilters = document.getElementById('productSubcategoryFilters');
-    if (categoryId !== null) {
-        const category = receptionCategories.find(c => c.id === categoryId);
-        if (category && category.children && category.children.length > 0) {
-            subcategoryFilters.style.display = 'flex';
-            renderSubcategoryButtons(category.children);
-        } else {
-            subcategoryFilters.style.display = 'none';
-        }
-    } else {
-        subcategoryFilters.style.display = 'none';
-    }
-
-    // Filter products
-    filterReceptionProducts();
-}
-
-function renderSubcategoryButtons(subcategories) {
-    const container = document.querySelector('.product-subcategory-filters');
-    if (!container) return;
-
-    // Clear existing buttons except the "All" button
-    const allBtn = document.getElementById('subcategoryAllBtn');
-    container.innerHTML = '';
-    if (allBtn) container.appendChild(allBtn);
-
-    const buttons = subcategories.map(subcategory =>
-        `<button onclick="selectProductSubcategory(${subcategory.id})" id="subcategoryBtn${subcategory.id}" class="subcategory-filter-btn">${subcategory.name}</button>`
-    ).join('');
-
-    container.insertAdjacentHTML('beforeend', buttons);
-}
-
-function selectProductSubcategory(subcategoryId) {
-    selectedProductSubcategory = subcategoryId;
-
-    // Update button states
-    document.querySelectorAll('.subcategory-filter-btn').forEach(btn => btn.classList.remove('active'));
-    if (subcategoryId === null) {
-        document.getElementById('subcategoryAllBtn').classList.add('active');
-    } else {
-        document.getElementById(`subcategoryBtn${subcategoryId}`).classList.add('active');
     }
 
     // Filter products
@@ -1612,10 +1560,7 @@ function filterReceptionProducts() {
         // Filter by category
         const matchesCategory = selectedProductCategory === null || product.category_id === selectedProductCategory;
 
-        // Filter by subcategory (if a main category has subcategories)
-        const matchesSubcategory = selectedProductSubcategory === null || product.category_id === selectedProductSubcategory;
-
-        return matchesSearch && matchesCategory && matchesSubcategory;
+        return matchesSearch && matchesCategory;
     });
 
     renderReceptionProducts(filtered);
@@ -2489,14 +2434,14 @@ document.addEventListener('click', (e) => {
 }
 
 /* Product category filters */
-.product-category-filters, .product-subcategory-filters {
+.product-category-filters {
     display: flex;
     gap: 8px;
     flex-wrap: wrap;
     margin-bottom: 12px;
 }
 
-.category-filter-btn, .subcategory-filter-btn {
+.category-filter-btn {
     padding: 6px 12px;
     border: 1px solid rgba(186, 230, 253, 0.2);
     background: rgba(30, 41, 59, 0.5);
@@ -2507,12 +2452,12 @@ document.addEventListener('click', (e) => {
     transition: all 0.2s;
 }
 
-.category-filter-btn:hover, .subcategory-filter-btn:hover {
+.category-filter-btn:hover {
     background: rgba(59, 130, 246, 0.2);
     color: #e0f2fe;
 }
 
-.category-filter-btn.active, .subcategory-filter-btn.active {
+.category-filter-btn.active {
     background: rgba(59, 130, 246, 0.3);
     color: #e0f2fe;
     border-color: rgba(59, 130, 246, 0.5);

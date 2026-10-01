@@ -521,6 +521,9 @@ Route::prefix('{tenant}')
             Route::get('/api/check-till-status', [CashierController::class, 'checkTillStatus'])
                 ->name('api.check-till-status');
 
+            Route::get('/api/cashier/jobs-count', [CashierController::class, 'jobsCount'])
+                ->name('api.cashier.jobs-count');
+
             Route::post('/cashier/payment/{job}', [CashierController::class, 'processPayment'])
                 ->name('cashier.process-payment')
                 ->middleware('permission:cashier.payment');
@@ -716,7 +719,7 @@ Route::prefix('{tenant}')
                 ->name('stock-adjustments.store')
                 ->middleware('permission:stock_adjustments.create');
 
-            Route::post('/stock-adjustments/{stockAdjustment}/reverse', [StockAdjustmentController::class, 'reverse'])
+            Route::post('/stock-adjustments/reverse', [StockAdjustmentController::class, 'reverse'])
                 ->name('stock-adjustments.reverse')
                 ->middleware('permission:stock_adjustments.reverse');
             // ==================== END STOCK ADJUSTMENTS ====================

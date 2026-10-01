@@ -10,43 +10,6 @@
 
 <div class="search">
     <input id="categorySearch" placeholder="Search categories..." oninput="filterCategories()">
-    <button class="filter-btn" onclick="openFilterModal()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
-        Filter
-    </button>
-</div>
-
-<!-- Filter Modal -->
-<div id="filterModal" class="modal-overlay" style="display:none;">
-    <div class="modal-box">
-        <div class="modal-header">
-            <h2>Filter Categories</h2>
-            <button class="modal-close" onclick="closeFilterModal()">×</button>
-        </div>
-        <div class="modal-body">
-            <div class="filter-section">
-                <label>Category Type</label>
-                <select id="typeFilter" onchange="applyFilters()">
-                    <option value="">All Types</option>
-                    <option value="main">Main Categories</option>
-                    <option value="sub">Subcategories</option>
-                </select>
-            </div>
-            <div class="filter-section">
-                <label>Subcategory Count</label>
-                <select id="countFilter" onchange="applyFilters()">
-                    <option value="">All Counts</option>
-                    <option value="none">No Subcategories</option>
-                    <option value="has">Has Subcategories</option>
-                    <option value="multiple">Multiple (2+)</option>
-                </select>
-            </div>
-        </div>
-        <div class="modal-footer">
-            <button class="secondary" onclick="clearFilters()">Clear Filters</button>
-            <button class="primary" onclick="closeFilterModal()">Apply</button>
-        </div>
-    </div>
 </div>
 
 <div class="panel">
@@ -56,26 +19,13 @@
             <div class="listrow">
                 <div style="flex: 1;">
                     <b>{{ $category->name }}</b>
-                    <span>{{ $category->children->count() }} subcategories</span>
                 </div>
                 <div style="display: flex; gap: 10px;">
-                    <a href="{{ route('categories.create') }}?parent_id={{ $category->id }}" class="secondary">+ Add Subcategory</a>
                     <a href="{{ route('categories.edit', $category) }}" class="secondary">Edit</a>
                 </div>
             </div>
-            @if($category->children->count() > 0)
-                @foreach($category->children as $child)
-                    <div class="listrow" style="padding-left: 40px;">
-                        <div style="flex: 1;">
-                            <b>↳ {{ $child->name }}</b>
-                            <span>Subcategory</span>
-                        </div>
-                        <a href="{{ route('categories.edit', $child) }}" class="secondary">Edit</a>
-                    </div>
-                @endforeach
-            @endif
         @empty
-            <p class="empty">No categories found. Create main categories first.</p>
+            <p class="empty">No categories found. Create categories first.</p>
         @endforelse
     </div>
 
@@ -86,28 +36,15 @@
                 <div class="card-top">
                     <div class="card-name">
                         <strong>{{ $category->name }}</strong>
-                        <small>{{ $category->children->count() }} subcategories</small>
                     </div>
                 </div>
 
                 <div class="card-actions">
-                    <a href="{{ route('categories.create') }}?parent_id={{ $category->id }}" class="btn-secondary">+ Add Sub</a>
                     <a href="{{ route('categories.edit', $category) }}" class="btn-secondary">Edit</a>
                 </div>
-
-                @if($category->children->count() > 0)
-                    <div class="subcategories">
-                        @foreach($category->children as $child)
-                            <div class="subcategory-row">
-                                <span class="sub-name">↳ {{ $child->name }}</span>
-                                <a href="{{ route('categories.edit', $child) }}" class="sub-edit">Edit</a>
-                            </div>
-                        @endforeach
-                    </div>
-                @endif
             </div>
         @empty
-            <div class="empty-state">No categories found. Create main categories first.</div>
+            <div class="empty-state">No categories found. Create categories first.</div>
         @endforelse
     </div>
 
@@ -618,97 +555,25 @@ nav[role="navigation"] svg {
 
 <script>
 function filterCategories() {
-    applyFilters();
-}
-
-function openFilterModal() {
-    document.getElementById('filterModal').style.display = 'flex';
-}
-
-function closeFilterModal() {
-    document.getElementById('filterModal').style.display = 'none';
-}
-
-function applyFilters() {
     const query = document.getElementById('categorySearch').value.toLowerCase().trim();
-    const typeFilter = document.getElementById('typeFilter').value;
-    const countFilter = document.getElementById('countFilter').value;
     const listRows = document.querySelectorAll('.categories-list .listrow');
     const mobileCards = document.querySelectorAll('.category-card');
 
     // Filter desktop list rows
     listRows.forEach(row => {
         const text = row.textContent.toLowerCase();
-        const paddingLeft = row.style.paddingLeft || '';
-        const isSubcategory = paddingLeft.includes('40px');
-        const spanElement = row.querySelector('span');
-        const subcategoryCount = spanElement ? parseInt(spanElement.textContent) || 0 : 0;
-        
-        let matchesSearch = text.includes(query);
-        let matchesType = true;
-        let matchesCount = true;
-
-        if (typeFilter === 'main') {
-            matchesType = !isSubcategory;
-        } else if (typeFilter === 'sub') {
-            matchesType = isSubcategory;
-        }
-
-        if (countFilter && !isSubcategory) {
-            if (countFilter === 'none') {
-                matchesCount = subcategoryCount === 0;
-            } else if (countFilter === 'has') {
-                matchesCount = subcategoryCount > 0;
-            } else if (countFilter === 'multiple') {
-                matchesCount = subcategoryCount >= 2;
-            }
-        } else if (countFilter && isSubcategory) {
-            matchesCount = false; // Subcategories don't have subcategory counts
-        }
-
-        row.style.display = (matchesSearch && matchesType && matchesCount) ? '' : 'none';
+        const matchesSearch = text.includes(query);
+        row.style.display = matchesSearch ? '' : 'none';
     });
 
     // Filter mobile cards
     mobileCards.forEach(card => {
         const text = card.textContent.toLowerCase();
-        const cardName = card.querySelector('.card-name small')?.textContent || '';
-        const subcategoryCount = parseInt(cardName) || 0;
-        const hasSubcategories = card.querySelector('.subcategories');
-        
-        let matchesSearch = text.includes(query);
-        let matchesType = true;
-        let matchesCount = true;
-
-        if (typeFilter === 'main') {
-            matchesType = !hasSubcategories;
-        } else if (typeFilter === 'sub') {
-            matchesType = false; // Mobile cards only show main categories
-        }
-
-        if (countFilter) {
-            if (countFilter === 'none') {
-                matchesCount = subcategoryCount === 0;
-            } else if (countFilter === 'has') {
-                matchesCount = subcategoryCount > 0;
-            } else if (countFilter === 'multiple') {
-                matchesCount = subcategoryCount >= 2;
-            }
-        }
-
-        card.style.display = (matchesSearch && matchesType && matchesCount) ? '' : 'none';
+        const matchesSearch = text.includes(query);
+        card.style.display = matchesSearch ? '' : 'none';
     });
 }
 
-function clearFilters() {
-    document.getElementById('typeFilter').value = '';
-    document.getElementById('countFilter').value = '';
-    applyFilters();
-}
-
-// Close modal when clicking outside
-document.getElementById('filterModal').addEventListener('click', function(event) {
-    if (event.target === this) {
         closeFilterModal();
     }
 });

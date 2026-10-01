@@ -122,7 +122,7 @@ class StockAdjustmentController extends Controller
             $validated['notes'] ?? null
         );
 
-        $this->auditService->log('stock_adjustment_created', 'StockAdjustment', $adjustment->id, null, [
+        $this->auditService->log('stock_adjustment_created', 'StockAdjustment', 'info', 'tenant_user', auth()->user()->email ?? null, [
             'product_id' => $product->id,
             'product_name' => $product->name,
             'branch_id' => $user->branch_id,
@@ -140,11 +140,11 @@ class StockAdjustmentController extends Controller
             );
     }
 
-    public function reverse(
-        StockAdjustment $stockAdjustment,
-        Request $request
-    ) {
+    public function reverse(Request $request)
+    {
         $user = auth()->user();
+
+        $stockAdjustment = StockAdjustment::findOrFail($request->input('stock_adjustment_id'));
 
         if ($stockAdjustment->business_id !== $user->business_id) {
             abort(403, 'Unauthorized.');
@@ -172,7 +172,8 @@ class StockAdjustmentController extends Controller
             $validated['reversal_reason']
         );
 
-        $this->auditService->log('stock_adjustment_reversed', 'StockAdjustment', $stockAdjustment->id, $originalAdjustmentData, [
+        $this->auditService->log('stock_adjustment_reversed', 'StockAdjustment', 'info', 'tenant_user', auth()->user()->email ?? null, [
+            'original_adjustment' => $originalAdjustmentData,
             'reversal_reason' => $validated['reversal_reason'],
             'reversed_by' => $user->id,
         ]);
