@@ -1263,7 +1263,7 @@ function calculateTotal() {
     // Calculate and update total based on discount
     const discountType = document.getElementById('discountType').value;
     const discountValue = parseFloat(document.getElementById('discountValue').value) || 0;
-    const totalDue = {{ $invoice->subtotal }}; // Use subtotal, not total (which already has discount)
+    const totalDue = {{ $invoice->total }}; // Use the actual invoice total
     let discount = 0;
 
     if (discountType === 'percentage') {
@@ -1285,7 +1285,7 @@ function calculateIndividualDiscounts() {
         totalDiscount += parseFloat(input.value) || 0;
     });
 
-    const totalDue = {{ $invoice->subtotal }}; // Use subtotal, not total (which already has discount)
+    const totalDue = {{ $invoice->total }}; // Use the actual invoice total
     const total = totalDue - totalDiscount;
     document.getElementById('displayTotal').textContent = 'Rs. ' + total.toFixed(2);
     document.getElementById('displayDiscount').textContent = 'Rs. ' + totalDiscount.toFixed(2);
@@ -1365,12 +1365,10 @@ function openPaymentConfirmation() {
     const modal = document.getElementById('paymentConfirmationModal');
     const method = document.querySelector('input[name="payment_method"]:checked').value;
     let amountReceived = parseFloat(document.getElementById('amountReceived').value) || 0;
-    const totalDue = parseFloat(document.getElementById('displayTotal').textContent.replace('Rs. ', '')) || 0;
-
-    // If amount received is 0 or empty, default to total due
-    if (amountReceived === 0) {
-        amountReceived = totalDue;
-    }
+    
+    // Get the total from the displayed element (which includes any cashier discounts)
+    const totalDueText = document.getElementById('displayTotal').textContent;
+    const totalDue = parseFloat(totalDueText.replace(/Rs\.|,/g, '').trim()) || 0;
 
     document.getElementById('confirmTotalDue').textContent = 'Rs. ' + totalDue.toFixed(2);
     document.getElementById('confirmPaymentMethod').textContent = method.charAt(0).toUpperCase() + method.slice(1);
@@ -1382,7 +1380,8 @@ function openPaymentConfirmation() {
 }
 
 function updateConfirmBalance() {
-    const totalDue = parseFloat(document.getElementById('confirmTotalDue').textContent.replace('Rs. ', '')) || 0;
+    const totalDueText = document.getElementById('confirmTotalDue').textContent;
+    const totalDue = parseFloat(totalDueText.replace(/Rs\.|,/g, '').trim()) || 0;
     const received = parseFloat(document.getElementById('editAmountReceived').value) || 0;
     const balance = totalDue - received;
 

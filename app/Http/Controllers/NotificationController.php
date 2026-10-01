@@ -12,15 +12,12 @@ class NotificationController extends Controller
 {
     public function index()
     {
-        // Get partial payments (invoices with balance > 0.01 OR status 'partially_paid')
+        // Get partial payments (invoices with balance > 0.01 AND have payment records)
         // This includes both job invoices and POS invoices
         $partialPayments = Invoice::with(['job.customer', 'job.vehicle', 'customer'])
             ->where('total', '>', 0)
-            ->where('paid', '>', 0) // Must have some payments already
-            ->where(function($query) {
-                $query->where('balance', '>', 0.01) // Use small threshold for floating point errors
-                      ->orWhere('status', 'partially_paid'); // Also check status to catch data inconsistencies
-            })
+            ->where('balance', '>', 0.01) // Use small threshold for floating point errors
+            ->whereHas('payments') // Must have at least one payment record
             ->where(function($query) {
                 // Include both job invoices and POS invoices
                 $query->whereHas('job', function($q) {
