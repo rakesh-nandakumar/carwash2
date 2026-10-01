@@ -232,13 +232,18 @@ class ReportingService
         ];
     }
 
-    public function getDashboardMetrics(?int $branchId = null): array
+    public function getDashboardMetrics(?int $branchId = null, ?int $tenantId = null): array
     {
         $today = now()->startOfDay();
         $thisMonth = now()->startOfMonth();
 
         $jobsQuery = Job::where('status', '!=', 'cancelled');
         $invoicesQuery = Invoice::where('status', '!=', 'cancelled');
+
+        if ($tenantId) {
+            $jobsQuery->where('tenant_id', $tenantId);
+            $invoicesQuery->where('tenant_id', $tenantId);
+        }
 
         if ($branchId) {
             $jobsQuery->where('branch_id', $branchId);
@@ -258,7 +263,11 @@ class ReportingService
             ],
             'active_jobs' => (clone $jobsQuery)->whereNotIn('status', ['delivered', 'cancelled'])->count(),
             'pending_payments' => (clone $invoicesQuery)->where('balance', '>', 0)->sum('balance'),
-            'low_stock' => Inventory::when($branchId, function ($q) use ($branchId) {
+            'low_stock' => Inventory::when($tenantId, function ($q) use ($tenantId) {
+                $q->whereHas('product', function ($pq) use ($tenantId) {
+                    $pq->where('tenant_id', $tenantId);
+                });
+            })->when($branchId, function ($q) use ($branchId) {
                 $q->where('branch_id', $branchId);
             })->with('product')->get()->filter(function ($item) {
                 return $item->quantity <= $item->product->minimum_stock;
