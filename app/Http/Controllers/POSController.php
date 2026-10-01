@@ -61,6 +61,13 @@ class POSController extends Controller
             ->orderBy('full_name')
             ->get(['id', 'full_name', 'phone']);
 
+        \Log::info('POS Data loaded', [
+            'products_count' => $products->count(),
+            'categories_count' => $categories->count(),
+            'customers_count' => $customers->count(),
+            'tenant_id' => auth()->user()->tenant_id
+        ]);
+
         return view('pos', compact('products', 'categories', 'customers'));
     }
 
@@ -357,8 +364,12 @@ class POSController extends Controller
             return response()->json(['error' => 'Held sale not found'], 404);
         }
 
+        // Delete the held sale after resuming
+        $heldSale->delete();
+
         return response()->json([
             'ok' => true,
+            'success' => true,
             'held_sale' => [
                 'id' => $heldSale->id,
                 'customer_id' => $heldSale->customer_id,
@@ -369,6 +380,32 @@ class POSController extends Controller
                 'individual_discounts' => $heldSale->individual_discounts,
             ],
         ]);
+    }
+
+    /**
+     * Get expected cash for the current till
+     */
+    public function getExpectedCash()
+    {
+        $user = auth()->user();
+        $cashMovementService = app(\App\Services\CashMovementService::class);
+        
+        try {
+            $till = $cashMovementService->mainTill($user->tenant_id);
+            $currentClosure = app(\App\Services\CashMovementService::class)->getCurrentClosure($till);
+            
+            $expectedBalance = $currentClosure 
+                ? $cashMovementService->expectedBalance($till, $currentClosure)
+                : 0;
+            
+            return response()->json([
+                'expected_cash' => $expectedBalance
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'expected_cash' => 0
+            ]);
+        }
     }
 
     /**
