@@ -10,7 +10,18 @@
 </div>
 
 <div class="search">
-    <input id="inventorySearch" placeholder="Search products..." oninput="filterInventory()">
+    <form id="searchForm" method="GET" action="{{ route('inventory.index') }}" style="display:flex;flex:1;gap:8px;">
+        <input id="inventorySearch" name="search" placeholder="Search products..." value="{{ request('search') }}" style="flex:1;" oninput="debouncedSearch()">
+        <button type="submit" class="filter-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+            Search
+        </button>
+        @if(request('search'))
+        <a href="{{ route('inventory.index') }}" class="filter-btn" style="text-decoration:none;">
+            Clear
+        </a>
+        @endif
+    </form>
     <button class="filter-btn" onclick="openFilterModal()">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
         Filter
@@ -445,9 +456,18 @@ document.addEventListener('visibilitychange', function() {
     }
 });
 
-// Filter inventory items by search
+// Filter inventory items by search (now handled server-side via form submission)
 function filterInventory() {
-    applyFilters();
+    // Search is now server-side via form, no-op for client-side
+}
+
+// Debounced search - submits form after user stops typing for 500ms
+let searchTimeout;
+function debouncedSearch() {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+        document.getElementById('searchForm').submit();
+    }, 500);
 }
 
 function closeFilterModal() {
@@ -460,7 +480,7 @@ function applyAndCloseFilterModal() {
 }
 
 function applyFilters() {
-    const query = document.getElementById('inventorySearch').value.toLowerCase().trim();
+    // Search is now server-side, only apply modal filters
     const productFilter = document.getElementById('productFilter').value.toLowerCase().trim();
     const brandFilter = document.getElementById('brandFilter').value;
     const stockFilter = document.getElementById('stockFilter').value;
@@ -469,12 +489,10 @@ function applyFilters() {
 
     // Filter desktop table rows
     tableRows.forEach(row => {
-        const text = row.textContent.toLowerCase();
         const cells = row.querySelectorAll('td');
         const stockCell = row.querySelector('td:nth-child(5)');
         const productId = row.getAttribute('data-product-id');
-        
-        let matchesSearch = text.includes(query);
+
         let matchesProduct = true;
         let matchesBrand = true;
         let matchesStock = true;
@@ -500,16 +518,15 @@ function applyFilters() {
             }
         }
 
-        row.style.display = (matchesSearch && matchesProduct && matchesBrand && matchesStock) ? '' : 'none';
+        row.style.display = (matchesProduct && matchesBrand && matchesStock) ? '' : 'none';
     });
 
     // Filter mobile cards
     mobileCards.forEach(card => {
-        const text = card.textContent.toLowerCase();
         const stockValue = card.querySelector('.card-details .detail:nth-child(1) .value');
         const brandText = card.querySelector('.card-name small')?.textContent || '';
         const productId = card.getAttribute('data-product-id');
-        
+
         // Extract brand from the small text (format: "SKU · Brand")
         let extractedBrand = '';
         if (brandText.includes('·')) {
@@ -520,8 +537,7 @@ function applyFilters() {
         } else {
             extractedBrand = brandText.toLowerCase();
         }
-        
-        let matchesSearch = text.includes(query);
+
         let matchesProduct = true;
         let matchesBrand = true;
         let matchesStock = true;
@@ -545,7 +561,7 @@ function applyFilters() {
             }
         }
 
-        card.style.display = (matchesSearch && matchesProduct && matchesBrand && matchesStock) ? '' : 'none';
+        card.style.display = (matchesProduct && matchesBrand && matchesStock) ? '' : 'none';
     });
 }
 
