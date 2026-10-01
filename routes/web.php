@@ -716,7 +716,7 @@ Route::prefix('{tenant}')
                 ->name('stock-adjustments.store')
                 ->middleware('permission:stock_adjustments.create');
 
-            Route::post('/stock-adjustments/{stockAdjustment}/reverse', [StockAdjustmentController::class, 'reverse'])
+            Route::post('/stock-adjustments/reverse', [StockAdjustmentController::class, 'reverse'])
                 ->name('stock-adjustments.reverse')
                 ->middleware('permission:stock_adjustments.reverse');
             // ==================== END STOCK ADJUSTMENTS ====================

@@ -10,8 +10,6 @@ class CategoryController extends Controller
     public function index(Request $request)
     {
         $categories = Category::where('business_id', auth()->user()->business_id)
-            ->whereNull('parent_id')
-            ->with('children')
             ->latest()
             ->paginate(20);
         return view('categories.index', compact('categories'));
@@ -21,34 +19,24 @@ class CategoryController extends Controller
     {
         $categories = Category::select('id', 'name')
             ->where('business_id', auth()->user()->business_id)
-            ->whereNull('parent_id')
             ->orderBy('name')
             ->get();
-        
+
         \Log::info('CategoryController::list - User business_id: ' . auth()->user()->business_id);
         \Log::info('CategoryController::list - Categories found: ' . $categories->count());
-        
+
         return response()->json($categories);
     }
 
     public function create()
     {
-        $selectedParent = request('parent_id');
-        $selectedParentCategory = null;
-        
-        if ($selectedParent) {
-            $selectedParentCategory = Category::where('business_id', auth()->user()->business_id)
-                ->find($selectedParent);
-        }
-        
-        return view('categories.create', compact('selectedParent', 'selectedParentCategory'));
+        return view('categories.create');
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name' => 'required',
-            'parent_id' => 'nullable|integer|exists:categories,id'
+            'name' => 'required'
         ]);
 
         $validated['business_id'] = auth()->user()->business_id;
@@ -59,17 +47,13 @@ class CategoryController extends Controller
 
     public function edit(Category $category)
     {
-        $categories = Category::whereNull('parent_id')
-            ->where('id', '!=', $category->id)
-            ->get();
-        return view('categories.edit', compact('category', 'categories'));
+        return view('categories.edit', compact('category'));
     }
 
     public function update(Request $request, Category $category)
     {
         $validated = $request->validate([
-            'name' => 'required',
-            'parent_id' => 'nullable|exists:categories,id'
+            'name' => 'required'
         ]);
 
         $category->update($validated);

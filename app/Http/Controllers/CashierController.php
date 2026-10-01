@@ -68,12 +68,12 @@ class CashierController extends Controller
             ->get();
 
         $till = $this->cashMovements->getSelectedTill();
-        
+
         // Update last activity timestamp for the selected till
         if ($till && $till->current_user_id == auth()->id()) {
             $till->update(['last_activity_at' => now()]);
         }
-        
+
         $currentClosure = $this->cashMovements->lastClosure($till);
         $isShiftOpen = $currentClosure && !$currentClosure->closed_at;
 

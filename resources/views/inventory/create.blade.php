@@ -63,46 +63,26 @@
             </label>
 
 
-            {{-- Main Category --}}
-            <label class="{{ $errors->has('main_category_id') ? 'field-error' : '' }}">
-                Main Category*
+            {{-- Category --}}
+            <label class="{{ $errors->has('category_id') ? 'field-error' : '' }}">
+                Category*
 
                 <select
-                    name="main_category_id"
-                    id="mainCategorySelect"
+                    name="category_id"
+                    id="categorySelect"
                     required
-                    onchange="filterSubcategories()"
-                    class="{{ $errors->has('main_category_id') ? 'input-error' : '' }}"
+                    class="{{ $errors->has('category_id') ? 'input-error' : '' }}"
                 >
-                    <option value="">Select Main Category</option>
+                    <option value="">Select Category</option>
 
-                    @foreach($mainCategories as $cat)
+                    @foreach($categories as $cat)
                         <option
                             value="{{ $cat->id }}"
-                            {{ old('main_category_id') == $cat->id ? 'selected' : '' }}
+                            {{ old('category_id') == $cat->id ? 'selected' : '' }}
                         >
                             {{ $cat->name }}
                         </option>
                     @endforeach
-                </select>
-
-                @error('main_category_id')
-                    <span class="error-message">{{ $message }}</span>
-                @enderror
-            </label>
-
-
-            {{-- Subcategory --}}
-            <label class="{{ $errors->has('category_id') ? 'field-error' : '' }}">
-                Subcategory*
-
-                <select
-                    name="category_id"
-                    id="subcategorySelect"
-                    required
-                    class="{{ $errors->has('category_id') ? 'input-error' : '' }}"
-                >
-                    <option value="">Select Main Category First</option>
                 </select>
 
                 @error('category_id')
@@ -275,8 +255,6 @@
 
 <script>
 
-const subcategoriesData = @json($subcategories);
-
 @php
     $generatedSku = 'PRD-' . date('Y') . '-' . str_pad(
         \App\Models\Product::where('tenant_id', auth()->user()->tenant_id)->max('id') + 1,
@@ -288,64 +266,6 @@ const subcategoriesData = @json($subcategories);
 
 document.getElementById('skuField').value = @json(old('sku', $generatedSku));
 
-
-function filterSubcategories() {
-
-    const mainCategoryId =
-        document.getElementById('mainCategorySelect').value;
-
-    const subcategorySelect =
-        document.getElementById('subcategorySelect');
-
-    const oldSubcategory =
-        @json(old('category_id'));
-
-    subcategorySelect.innerHTML =
-        '<option value="">Select Subcategory</option>';
-
-    if (mainCategoryId) {
-
-        const categorySubcategories =
-            subcategoriesData.filter(
-                c => c.parent_id == mainCategoryId
-            );
-
-        categorySubcategories.forEach(c => {
-
-            const option =
-                document.createElement('option');
-
-            option.value = c.id;
-            option.textContent = c.name;
-
-            if (
-                oldSubcategory &&
-                oldSubcategory == c.id
-            ) {
-                option.selected = true;
-            }
-
-            subcategorySelect.appendChild(option);
-        });
-    }
-}
-
-
-document.addEventListener(
-    'DOMContentLoaded',
-    function () {
-
-        const mainCategory =
-            document.getElementById(
-                'mainCategorySelect'
-            );
-
-        if (mainCategory.value) {
-            filterSubcategories();
-        }
-
-    }
-);
 
 </script>
 

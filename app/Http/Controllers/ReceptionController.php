@@ -346,9 +346,7 @@ class ReceptionController extends Controller
 
     public function getCategories()
     {
-        $categories = \App\Models\Category::whereNull('parent_id')
-            ->with('children')
-            ->orderBy('name')
+        $categories = \App\Models\Category::orderBy('name')
             ->get(['id', 'name', 'tenant_id']);
 
         return response()->json($categories);

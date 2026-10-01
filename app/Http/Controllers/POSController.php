@@ -51,10 +51,8 @@ class POSController extends Controller
                 ];
             });
 
-        // Load main categories (no parent) with their subcategories
+        // Load all categories
         $categories = Category::where('tenant_id', auth()->user()->tenant_id)
-            ->whereNull('parent_id')
-            ->with('children')
             ->orderBy('name')
             ->get(['id', 'name']);
 
