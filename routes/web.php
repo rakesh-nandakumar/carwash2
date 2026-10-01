@@ -135,6 +135,9 @@ Route::prefix('{tenant}')
             Route::post('/pos/create-invoice', [POSController::class, 'createInvoice'])
                 ->name('pos.create-invoice')
                 ->middleware('permission:pos.checkout');
+            Route::get('/pos/expected-cash', [POSController::class, 'getExpectedCash'])
+                ->name('pos.expected-cash')
+                ->middleware('permission:pos.access');
 
             Route::post('/pos/hold-sale', [POSController::class, 'holdSale'])
                 ->name('pos.hold-sale')
