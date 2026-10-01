@@ -521,6 +521,9 @@ Route::prefix('{tenant}')
             Route::get('/api/check-till-status', [CashierController::class, 'checkTillStatus'])
                 ->name('api.check-till-status');
 
+            Route::get('/api/cashier/jobs-count', [CashierController::class, 'jobsCount'])
+                ->name('api.cashier.jobs-count');
+
             Route::post('/cashier/payment/{job}', [CashierController::class, 'processPayment'])
                 ->name('cashier.process-payment')
                 ->middleware('permission:cashier.payment');

@@ -1308,5 +1308,27 @@ function filterCashierJobs() {
         card.style.display = text.includes(query) ? '' : 'none';
     });
 }
+
+// Poll for new jobs every 10 seconds
+let currentJobCount = {{ $readyForPayment->count() }};
+let currentPosCount = {{ $posInvoices->count() }};
+
+function pollForNewJobs() {
+    const tenant = window.location.pathname.split('/')[1];
+    fetch('/' + tenant + '/api/cashier/jobs-count')
+        .then(response => response.json())
+        .then(data => {
+            if (data.job_count !== currentJobCount || data.pos_count !== currentPosCount) {
+                // Reload the page if counts changed
+                location.reload();
+            }
+        })
+        .catch(error => {
+            console.error('Error polling for jobs:', error);
+        });
+}
+
+// Start polling
+setInterval(pollForNewJobs, 3000); // Poll every 3 seconds
 </script>
 @endsection

@@ -26,14 +26,36 @@ class CashierController extends Controller
     {
         $till = $this->cashMovements->getSelectedTill();
         $tillOpen = false;
-        
+
         if ($till) {
             $lastClosure = $this->cashMovements->lastClosure($till);
             $tillOpen = $lastClosure && !$lastClosure->closed_at;
         }
-        
+
         return response()->json([
             'till_open' => $tillOpen
+        ]);
+    }
+
+    public function jobsCount()
+    {
+        $jobCount = Job::where('tenant_id', auth()->user()->tenant_id)
+            ->where('status', JobStatus::READY_FOR_PAYMENT->value)
+            ->whereDoesntHave('invoice', function ($query) {
+                $query->where('balance', '<=', 0);
+            })
+            ->where('status', '!=', JobStatus::DELIVERED->value)
+            ->count();
+
+        $posCount = Invoice::where('tenant_id', auth()->user()->tenant_id)
+            ->whereNull('job_id')
+            ->where('balance', '>', 0)
+            ->where('paid', '=', 0)
+            ->count();
+
+        return response()->json([
+            'job_count' => $jobCount,
+            'pos_count' => $posCount
         ]);
     }
 
