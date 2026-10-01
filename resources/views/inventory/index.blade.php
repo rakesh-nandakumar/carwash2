@@ -69,25 +69,52 @@
     </div>
 </div>
 
+<!-- Low Stock Modal -->
+<div id="lowStockModal" class="modal-overlay" style="display:none;">
+    <div class="modal-box" style="max-width:700px;max-height:90vh;background:#ffffff;border:1px solid #e5e7eb;display:flex;flex-direction:column;">
+        <div class="modal-header" style="padding:20px;border-bottom:1px solid #e5e7eb;flex-shrink:0;">
+            <h2 style="margin:0;font-size:18px;font-weight:700;color:#1e293b;">Low Stock Products</h2>
+            <button class="modal-close" onclick="closeLowStockModal()">&times;</button>
+        </div>
+        <div class="modal-body" style="flex:1;overflow-y:auto;padding:20px;min-height:0;">
+            <table style="width:100%;border-collapse:collapse;">
+                <thead>
+                    <tr style="background:#f9fafb;position:sticky;top:0;">
+                        <th style="padding:12px 16px;text-align:left;border-bottom:2px solid #e5e7eb;font-size:12px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;">Product</th>
+                        <th style="padding:12px 16px;text-align:left;border-bottom:2px solid #e5e7eb;font-size:12px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;">SKU</th>
+                        <th style="padding:12px 16px;text-align:right;border-bottom:2px solid #e5e7eb;font-size:12px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;">Current</th>
+                        <th style="padding:12px 16px;text-align:right;border-bottom:2px solid #e5e7eb;font-size:12px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;">Minimum</th>
+                    </tr>
+                </thead>
+                <tbody id="lowStockModalBody">
+                </tbody>
+            </table>
+        </div>
+        <div class="modal-footer" style="padding:20px;border-top:1px solid #e5e7eb;flex-shrink:0;display:flex;justify-content:space-between;align-items:center;">
+            <div id="paginationInfo" style="color:#6b7280;font-size:13px;"></div>
+            <div style="display:flex;gap:8px;">
+                <button id="prevPageBtn" onclick="changeLowStockPage(-1)" style="background:#f3f4f6;color:#374151;border:1px solid #e5e7eb;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:500;transition:all 0.2s;" disabled>Previous</button>
+                <button id="nextPageBtn" onclick="changeLowStockPage(1)" style="background:#f3f4f6;color:#374151;border:1px solid #e5e7eb;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:500;transition:all 0.2s;" disabled>Next</button>
+                <button class="primary" onclick="closeLowStockModal()" style="background:linear-gradient(135deg,#3b82f6 0%,#1d4ed8 100%);color:white;border:1px solid #3b82f6;">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @if($lowStockItems->count() > 0)
 <div class="alert alert-danger" style="background:#fee2e2;border:1px solid #fecaca;border-radius:8px;padding:16px;margin-bottom:20px;">
-    <div style="display:flex;align-items:center;gap:12px;">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"></circle>
-            <line x1="12" y1="8" x2="12" y2="12"></line>
-            <line x1="12" y1="16" x2="12.01" y2="16"></line>
-        </svg>
-        <div>
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+        <div style="display:flex;align-items:center;gap:12px;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
             <strong style="color:#dc2626;">Low Stock Alert: {{ $lowStockItems->count() }} product(s) need attention</strong>
-            <p style="margin:4px 0 0 0;color:#991b1b;font-size:14px;">
-                @foreach($lowStockItems->take(3) as $item)
-                    {{ $item['product']->name }} ({{ number_format($item['current'], 3) }} / {{ number_format($item['minimum'], 3) }}){{ !$loop->last ? ', ' : '' }}
-                @endforeach
-                @if($lowStockItems->count() > 3)
-                    and {{ $lowStockItems->count() - 3 }} more...
-                @endif
-            </p>
         </div>
+        <button onclick="showLowStockModal()" style="background:#dc2626;color:white;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;white-space:nowrap;">
+            View Details
+        </button>
     </div>
 </div>
 @endif
@@ -253,6 +280,19 @@
 
 <script>
 let deleteProductId = null;
+let lowStockCurrentPage = 1;
+const lowStockItemsPerPage = 7;
+@php
+    $lowStockArray = [];
+    foreach($lowStockItems ?? [] as $item) {
+        $lowStockArray[] = [
+            'product' => ['name' => $item['product']->name, 'sku' => $item['product']->sku ?? null],
+            'current' => $item['current'],
+            'minimum' => $item['minimum']
+        ];
+    }
+@endphp
+let allLowStockItems = @json($lowStockArray);
 
 function showDeleteModal(id) {
     deleteProductId = id;
@@ -271,6 +311,49 @@ function confirmDelete() {
         form.submit();
     }
     closeDeleteModal();
+}
+
+function showLowStockModal() {
+    lowStockCurrentPage = 1;
+    renderLowStockPage();
+    document.getElementById('lowStockModal').style.display = 'flex';
+}
+
+function closeLowStockModal() {
+    document.getElementById('lowStockModal').style.display = 'none';
+}
+
+function changeLowStockPage(direction) {
+    const totalPages = Math.ceil(allLowStockItems.length / lowStockItemsPerPage);
+    lowStockCurrentPage += direction;
+    if (lowStockCurrentPage < 1) lowStockCurrentPage = 1;
+    if (lowStockCurrentPage > totalPages) lowStockCurrentPage = totalPages;
+    renderLowStockPage();
+}
+
+function renderLowStockPage() {
+    const startIndex = (lowStockCurrentPage - 1) * lowStockItemsPerPage;
+    const endIndex = startIndex + lowStockItemsPerPage;
+    const pageItems = allLowStockItems.slice(startIndex, endIndex);
+    const totalPages = Math.ceil(allLowStockItems.length / lowStockItemsPerPage);
+
+    const tbody = document.getElementById('lowStockModalBody');
+    tbody.innerHTML = pageItems.map(item => `
+        <tr style="border-bottom:1px solid #e5e7eb;transition:background 0.2s;" onmouseover="this.style.background='#f9fafb';" onmouseout="this.style.background='transparent';">
+            <td style="padding:16px;color:#1e293b;font-weight:500;font-size:14px;">${item.product.name}</td>
+            <td style="padding:16px;color:#6b7280;font-size:13px;">${item.product.sku || 'N/A'}</td>
+            <td style="padding:16px;text-align:right;color:#dc2626;font-weight:700;font-size:14px;">${number_format(item.current, 3)}</td>
+            <td style="padding:16px;text-align:right;color:#6b7280;font-size:14px;">${number_format(item.minimum, 3)}</td>
+        </tr>
+    `).join('');
+
+    // Update pagination info
+    const paginationInfo = document.getElementById('paginationInfo');
+    paginationInfo.textContent = `Page ${lowStockCurrentPage} of ${totalPages} (${allLowStockItems.length} items)`;
+
+    // Update button states
+    document.getElementById('prevPageBtn').disabled = lowStockCurrentPage === 1;
+    document.getElementById('nextPageBtn').disabled = lowStockCurrentPage === totalPages;
 }
 
 // Real-time inventory status updates
@@ -418,16 +501,22 @@ function updateInventoryDisplay(inventoryStatus, lowStockCount) {
             if (alertTitle) {
                 alertTitle.textContent = `Low Stock Alert: ${lowStockCount} product(s) need attention`;
             }
-            
-            const alertDetails = lowStockAlert.querySelector('p');
-            if (alertDetails) {
-                const lowStockItems = inventoryStatus.filter(item => item.is_low_stock).slice(0, 3);
-                alertDetails.innerHTML = lowStockItems.map(item => 
-                    `${item.name} (${number_format(item.available, 3)} / ${number_format(item.minimum_stock, 3)})`
-                ).join(', ') + (lowStockCount > 3 ? ` and ${lowStockCount - 3} more...` : '');
-            }
         } else {
             lowStockAlert.style.display = 'none';
+        }
+    }
+
+    // Update low stock modal data
+    if (lowStockCount > 0) {
+        const lowStockItems = inventoryStatus.filter(item => item.is_low_stock);
+        allLowStockItems = lowStockItems.map(item => ({
+            product: { name: item.name, sku: item.sku },
+            current: item.available,
+            minimum: item.minimum_stock
+        }));
+        // If modal is open, re-render the current page
+        if (document.getElementById('lowStockModal').style.display === 'flex') {
+            renderLowStockPage();
         }
     }
     
@@ -652,6 +741,12 @@ document.getElementById('filterModal').addEventListener('click', function(event)
         closeFilterModal();
     }
 });
+
+document.getElementById('lowStockModal').addEventListener('click', function(event) {
+    if (event.target === this) {
+        closeLowStockModal();
+    }
+});
 </script>
 
 <style>
@@ -742,6 +837,8 @@ document.getElementById('filterModal').addEventListener('click', function(event)
     padding: 24px;
     box-shadow: 0 25px 60px rgba(0,0,0,.3);
     border: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    flex-direction: column;
 }
 
 .modal-header {
@@ -749,6 +846,7 @@ document.getElementById('filterModal').addEventListener('click', function(event)
     justify-content: space-between;
     align-items: center;
     margin-bottom: 20px;
+    flex-shrink: 0;
 }
 
 .modal-header h2 {
@@ -781,12 +879,15 @@ document.getElementById('filterModal').addEventListener('click', function(event)
 
 .modal-body {
     margin-bottom: 20px;
+    overflow-y: auto;
+    min-height: 0;
 }
 
 .modal-footer {
     display: flex;
     justify-content: flex-end;
     gap: 10px;
+    flex-shrink: 0;
 }
 
 .modal-footer button {
