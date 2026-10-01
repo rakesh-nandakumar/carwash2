@@ -118,7 +118,7 @@ class AuditService
         ]);
     }
 
-    public function logStockAdjustment(int $productId, int $branchId, float $oldQty, float $newQty, string $reason): void
+    public function logStockAdjustment(int $productId, ?int $branchId, float $oldQty, float $newQty, string $reason): void
     {
         $this->log('inventory.adjusted', "Stock adjusted for product #{$productId}: {$reason}", 'warning', 'tenant_user', auth()->check() ? auth()->user()->email : null, [
             'product_id' => $productId,

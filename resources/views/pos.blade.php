@@ -1071,17 +1071,17 @@ function posApp() {
         get filteredProducts() {
             let products = this.products;
 
-            // Apply search filter
+            // If there's a search query, search across all products regardless of category
             if (this.searchQuery) {
                 const query = this.searchQuery.toLowerCase();
-                products = products.filter(p =>
+                return products.filter(p =>
                     p.name.toLowerCase().includes(query) ||
                     p.sku.toLowerCase().includes(query) ||
                     p.barcode?.toLowerCase().includes(query)
                 );
             }
 
-            // Apply category filter
+            // Apply category filter only when not searching
             if (this.selectedMainCategory !== null) {
                 return products.filter(p => p.category_id === this.selectedMainCategory);
             }
