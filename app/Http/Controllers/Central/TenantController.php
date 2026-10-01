@@ -284,17 +284,17 @@ class TenantController extends Controller
 
         // Tables to clear for this tenant - in dependency order (children first)
         $tables = [
+            // Invoice-related (must be deleted before jobs due to foreign key)
+            'invoice_items',
+            'payments', // includes cheque data
+            'invoices',
+
             // Job-related
             'job_status_history',
             'job_parts',
             'job_services',
             'additional_work_requests',
             'jobs',
-
-            // Invoice-related
-            'invoice_items',
-            'payments', // includes cheque data
-            'invoices',
 
             // Vehicle-related
             'vehicles',
@@ -308,10 +308,9 @@ class TenantController extends Controller
             // Notification-related
             'notifications',
 
-            // Till-related
+            // Till-related (clear amounts but keep the till record)
             'cash_movements',
             'till_closures',
-            'tills',
 
             // Audit logs
             'audit_logs',
@@ -322,6 +321,7 @@ class TenantController extends Controller
         try {
             $deletedCounts = [];
 
+            // Delete tables with tenant_id directly
             foreach ($tables as $table) {
                 if (Schema::hasTable($table)) {
                     $count = DB::table($table)
@@ -332,6 +332,70 @@ class TenantController extends Controller
                         $deletedCounts[$table] = $count;
                     }
                 }
+            }
+
+            // Delete GRN and related tables through models (to handle missing tenant_id)
+            $goodsReceiptIds = DB::table('goods_receipts')
+                ->whereIn('supplier_id', function ($query) use ($tenant) {
+                    $query->select('id')
+                        ->from('suppliers')
+                        ->where('tenant_id', $tenant->id);
+                })
+                ->pluck('id');
+
+            if ($goodsReceiptIds->isNotEmpty()) {
+                $deletedCounts['goods_receipt_items'] = DB::table('goods_receipt_items')
+                    ->whereIn('goods_receipt_id', $goodsReceiptIds)
+                    ->delete();
+                $deletedCounts['goods_receipts'] = DB::table('goods_receipts')
+                    ->whereIn('id', $goodsReceiptIds)
+                    ->delete();
+            }
+
+            // Delete Return GRN and related tables through models
+            $returnGrnIds = DB::table('return_grns')
+                ->whereIn('supplier_id', function ($query) use ($tenant) {
+                    $query->select('id')
+                        ->from('suppliers')
+                        ->where('tenant_id', $tenant->id);
+                })
+                ->pluck('id');
+
+            if ($returnGrnIds->isNotEmpty()) {
+                $deletedCounts['return_grn_items'] = DB::table('return_grn_items')
+                    ->whereIn('return_grn_id', $returnGrnIds)
+                    ->delete();
+                $deletedCounts['return_grns'] = DB::table('return_grns')
+                    ->whereIn('id', $returnGrnIds)
+                    ->delete();
+            }
+
+            // Delete suppliers
+            $supplierCount = DB::table('suppliers')
+                ->where('tenant_id', $tenant->id)
+                ->delete();
+            if ($supplierCount > 0) {
+                $deletedCounts['suppliers'] = $supplierCount;
+            }
+
+            // Delete stock_adjustments through products (which have tenant_id)
+            $stockAdjustmentCount = DB::table('stock_adjustments')
+                ->whereIn('product_id', function ($query) use ($tenant) {
+                    $query->select('id')
+                        ->from('products')
+                        ->where('tenant_id', $tenant->id);
+                })
+                ->delete();
+            if ($stockAdjustmentCount > 0) {
+                $deletedCounts['stock_adjustments'] = $stockAdjustmentCount;
+            }
+
+            // Reset till opening balances to 0 (keep the till record)
+            $tillResetCount = DB::table('tills')
+                ->where('tenant_id', $tenant->id)
+                ->update(['opening_balance' => 0]);
+            if ($tillResetCount > 0) {
+                $deletedCounts['tills_reset'] = $tillResetCount;
             }
 
             DB::commit();
