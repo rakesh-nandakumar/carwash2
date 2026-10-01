@@ -23,22 +23,10 @@
                 <input name="barcode" value="{{ $product->barcode }}">
             </label>
 
-            <label>Main Category*
-                <select name="main_category_id" id="mainCategorySelect" required onchange="filterSubcategories()">
-                    <option value="">Select Main Category</option>
-                    @foreach($mainCategories as $cat)
-                        <option value="{{ $cat->id }}"
-                            {{ optional($product->category()->first())->parent_id == $cat->id ? 'selected' : '' }}>
-                            {{ $cat->name }}
-                        </option>
-                    @endforeach
-                </select>
-            </label>
-
-            <label>Subcategory*
-                <select name="category_id" id="subcategorySelect" required>
-                    <option value="">Select Main Category First</option>
-                    @foreach($subcategories as $cat)
+            <label>Category*
+                <select name="category_id" id="categorySelect" required>
+                    <option value="">Select Category</option>
+                    @foreach($categories as $cat)
                         <option value="{{ $cat->id }}"
                             {{ $product->category_id == $cat->id ? 'selected' : '' }}>
                             {{ $cat->name }}
@@ -89,34 +77,6 @@
 </div>
 
 <script>
-const subcategoriesData = @json($subcategories);
-
-function filterSubcategories() {
-    const mainCategoryId = document.getElementById('mainCategorySelect').value;
-    const subcategorySelect = document.getElementById('subcategorySelect');
-    const currentSelected = subcategorySelect.value;
-
-    subcategorySelect.innerHTML = '<option value="">Select Subcategory</option>';
-
-    if (mainCategoryId) {
-        const categorySubcategories = subcategoriesData.filter(c => c.parent_id == mainCategoryId);
-
-        categorySubcategories.forEach(c => {
-            const option = document.createElement('option');
-            option.value = c.id;
-            option.textContent = c.name;
-            if (c.id == currentSelected) {
-                option.selected = true;
-            }
-            subcategorySelect.appendChild(option);
-        });
-    }
-}
-
-// Auto-filter on page load so the correct subcategories appear
-document.addEventListener('DOMContentLoaded', function() {
-    filterSubcategories();
-});
 </script>
 
 <style>

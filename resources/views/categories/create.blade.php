@@ -1,7 +1,7 @@
 @extends('layouts.app')
 @section('content')
 <div class="page-head">
-    <h1>{{ $selectedParent ? 'New Subcategory' : 'New Main Category' }}</h1>
+    <h1>New Category</h1>
 </div>
 
 <div class="panel form-panel">
@@ -11,21 +11,10 @@
             <label>Name*
                 <input name="name" required>
             </label>
-            @if($selectedParent)
-                <label>Parent Category
-                    <div class="searchable-dropdown" id="parentCategoryDropdown">
-                        <input type="hidden" name="parent_id" id="parent_id" value="{{ $selectedParent }}">
-                        <input type="text" class="searchable-dropdown-input" id="parentCategoryInput" placeholder="Search or select parent category...">
-                        <div class="searchable-dropdown-options"></div>
-                    </div>
-                </label>
-            @else
-                <input type="hidden" name="parent_id" value="">
-            @endif
         </div>
 
         <div class="form-actions">
-            <button type="submit" class="primary">Create {{ $selectedParent ? 'Subcategory' : 'Main Category' }}</button>
+            <button type="submit" class="primary">Create Category</button>
             <a href="{{ url()->previous() }}" class="btn-cancel">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                     <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -75,57 +64,4 @@
     }
 }
 </style>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('Category create page - loading parent categories via AJAX');
-    
-    // Load parent categories via AJAX like the reception page
-    async function loadParentCategories() {
-        try {
-            const response = await fetch('{{ route('categories.list') }}');
-            const categories = await response.json();
-
-            const dropdownContainer = document.getElementById('parentCategoryDropdown');
-            if (dropdownContainer) {
-                const categoryData = Array.isArray(categories) ? categories.map(category => ({
-                    id: category.id,
-                    label: category.name
-                })) : [];
-
-                console.log('Parent category data loaded:', categoryData);
-                console.log('Parent category data length:', categoryData.length);
-
-                const dropdown = new SearchableDropdown(dropdownContainer, {
-                    data: categoryData
-                });
-                console.log('SearchableDropdown initialized:', dropdown);
-                
-                // Set initial value if a parent is selected
-                @if($selectedParent && $selectedParentCategory)
-                    dropdown.setValue({{ $selectedParent }}, "{{ $selectedParentCategory->name }}");
-                @endif
-            }
-        } catch (error) {
-            console.error('Error loading parent categories:', error);
-        }
-    }
-    
-    loadParentCategories();
-});
-</script>
-    
-    const dropdownContainer = document.getElementById('parentCategoryDropdown');
-    if (dropdownContainer) {
-        const dropdown = new SearchableDropdown(dropdownContainer, {
-            data: categoryData
-        });
-        
-        // Set initial value if a parent is selected
-        @if($selectedParent && $selectedParentCategory)
-            dropdown.setValue({{ $selectedParent }}, "{{ $selectedParentCategory->name }}");
-        @endif
-    }
-});
-</script>
 @endsection

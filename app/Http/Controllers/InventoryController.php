@@ -197,12 +197,7 @@ class InventoryController extends Controller
     public function create()
     {
         return view('inventory.create', [
-            'mainCategories' => \App\Models\Category::where('tenant_id', auth()->user()->tenant_id)
-                ->whereNull('parent_id')
-                ->orderBy('name')
-                ->get(),
-            'subcategories' => \App\Models\Category::where('tenant_id', auth()->user()->tenant_id)
-                ->whereNotNull('parent_id')
+            'categories' => \App\Models\Category::where('tenant_id', auth()->user()->tenant_id)
                 ->orderBy('name')
                 ->get(),
         ]);
@@ -214,7 +209,6 @@ class InventoryController extends Controller
             'name' => 'required|string|max:255',
             'sku' => 'required|string|max:100|unique:products,sku,NULL,id,tenant_id,' . auth()->user()->tenant_id . ',business_id,' . auth()->user()->business_id,
             'barcode' => 'nullable|string|max:100',
-            'main_category_id' => 'nullable|exists:categories,id',
             'category_id' => 'nullable|exists:categories,id',
             'brand' => 'nullable|string|max:255',
             'part_number' => 'nullable|string|max:255',
@@ -292,12 +286,7 @@ class InventoryController extends Controller
 
         return view('inventory.edit', [
             'product' => $product,
-            'mainCategories' => \App\Models\Category::where('tenant_id', $user->tenant_id)
-                ->whereNull('parent_id')
-                ->orderBy('name')
-                ->get(),
-            'subcategories' => \App\Models\Category::where('tenant_id', $user->tenant_id)
-                ->whereNotNull('parent_id')
+            'categories' => \App\Models\Category::where('tenant_id', $user->tenant_id)
                 ->orderBy('name')
                 ->get(),
         ]);

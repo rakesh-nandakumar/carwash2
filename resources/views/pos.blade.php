@@ -27,16 +27,6 @@
             </template>
         </div>
 
-        <!-- Subcategory Filters -->
-        <div x-show="selectedMainCategory !== null" class="pos-subcategories-section">
-            <button @click="selectSubcategory(null)" :class="selectedSubcategory === null ? 'pos-subcategory-btn active' : 'pos-subcategory-btn'" class="pos-subcategory-btn">
-                All
-            </button>
-            <template x-for="subcategory in getSubcategories()" :key="subcategory.id">
-                <button @click="selectSubcategory(subcategory.id)" :class="selectedSubcategory === subcategory.id ? 'pos-subcategory-btn active' : 'pos-subcategory-btn'" x-text="subcategory.name"></button>
-            </template>
-        </div>
-
         <!-- Products Grid -->
         <div class="pos-products-grid" style="min-height: 300px;">
             <template x-if="filteredProducts.length === 0">
@@ -239,7 +229,6 @@
     flex-direction: column;
     gap: 20px;
     overflow: hidden;
-    min-height: 500px;
 }
 
 .pos-cart-panel {
@@ -252,6 +241,11 @@
     padding: 24px;
     padding-bottom: 16px;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    position: sticky;
+    top: 24px;
+    align-self: flex-start;
+    max-height: calc(100vh - 120px);
+    overflow: hidden;
 }
 
 .pos-clear-cart-btn {
@@ -350,29 +344,6 @@
     flex-shrink: 0;
 }
 
-.pos-subcategory-btn {
-    padding: 6px 12px;
-    border: 1px solid #e5e7eb;
-    border-radius: 6px;
-    background: white;
-    color: #6b7280;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.pos-subcategory-btn:hover {
-    border-color: #6b7280;
-    color: #1f2937;
-}
-
-.pos-subcategory-btn.active {
-    background: #6b7280;
-    border-color: #6b7280;
-    color: white;
-}
-
 .pos-products-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -394,7 +365,6 @@
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     position: relative;
     overflow: hidden;
-    justify-content: center;
 }
 
 .pos-product-card::before {
@@ -543,6 +513,10 @@
     flex-shrink: 0;
 }
 
+.pos-clear-cart-btn {
+    flex-shrink: 0;
+}
+
 .pos-label {
     display: block;
     margin-bottom: 8px;
@@ -569,8 +543,7 @@
 
 .pos-cart-items {
     flex: 1;
-    min-height: 200px;
-    max-height: 400px;
+    min-height: 0;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
@@ -698,7 +671,7 @@
     padding: 16px;
     background: #f9fafb;
     border-radius: 12px;
-    max-height: 400px;
+    max-height: 200px;
     overflow-y: auto;
 }
 
@@ -775,6 +748,7 @@
     background: #f3f4f6;
     border-radius: 12px;
     margin-bottom: 16px;
+    flex-shrink: 0;
 }
 
 .pos-cart-total-label {
@@ -801,6 +775,7 @@
     cursor: pointer;
     transition: all 0.2s ease;
     box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3);
+    flex-shrink: 0;
 }
 
 .pos-checkout-btn:hover {
@@ -828,6 +803,7 @@
     transition: all 0.2s ease;
     box-shadow: 0 4px 6px -1px rgba(245, 158, 11, 0.3);
     margin-bottom: 12px;
+    flex-shrink: 0;
 }
 
 .pos-hold-btn:hover {
@@ -1050,7 +1026,6 @@ function posApp() {
         customers: @json($customers),
         cart: [],
         selectedMainCategory: null,
-        selectedSubcategory: null,
         selectedCustomerId: '',
         searchQuery: '',
         discountType: 'none',
@@ -1091,17 +1066,6 @@ function posApp() {
 
         selectMainCategory(categoryId) {
             this.selectedMainCategory = categoryId;
-            this.selectedSubcategory = null;
-        },
-
-        selectSubcategory(subcategoryId) {
-            this.selectedSubcategory = subcategoryId;
-        },
-
-        getSubcategories() {
-            if (!this.selectedMainCategory) return [];
-            const category = this.categories.find(c => c.id === this.selectedMainCategory);
-            return category ? (category.children || []) : [];
         },
 
         get filteredProducts() {
@@ -1110,21 +1074,16 @@ function posApp() {
             // Apply search filter
             if (this.searchQuery) {
                 const query = this.searchQuery.toLowerCase();
-                products = products.filter(p => 
-                    p.name.toLowerCase().includes(query) || 
+                products = products.filter(p =>
+                    p.name.toLowerCase().includes(query) ||
                     p.sku.toLowerCase().includes(query) ||
                     p.barcode?.toLowerCase().includes(query)
                 );
             }
 
             // Apply category filter
-            if (this.selectedSubcategory !== null) {
-                return products.filter(p => p.category_id === this.selectedSubcategory);
-            } else if (this.selectedMainCategory !== null) {
-                const category = this.categories.find(c => c.id === this.selectedMainCategory);
-                const subcategoryIds = category ? (category.children || []).map(c => c.id) : [];
-                subcategoryIds.push(this.selectedMainCategory);
-                return products.filter(p => subcategoryIds.includes(p.category_id));
+            if (this.selectedMainCategory !== null) {
+                return products.filter(p => p.category_id === this.selectedMainCategory);
             }
 
             return products;

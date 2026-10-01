@@ -372,7 +372,7 @@
             <div class="payment-summary">
                 <div class="summary-row">
                     <span>Total Due</span>
-                    <span class="amount">Rs. {{ number_format($calculation['total'], 2) }}</span>
+                    <span class="amount" id="confirmTotalDue">Rs. {{ number_format($calculation['total'], 2) }}</span>
                 </div>
                 <div class="summary-row">
                     <span>Payment Method</span>
@@ -1933,8 +1933,9 @@ function openPaymentConfirmation() {
             // Populate modal
             document.getElementById('confirmPaymentMethod').textContent = paymentMethod.charAt(0).toUpperCase() + paymentMethod.slice(1);
             document.getElementById('editAmountReceived').value = parseFloat(amountReceived).toFixed(2);
-            document.getElementById('confirmBalance').textContent = balanceAmount;
-            document.getElementById('confirmButtonAmount').textContent = '{{ number_format($calculation['total'], 2) }}';
+            document.getElementById('confirmButtonAmount').textContent = currentTotal.toFixed(2);
+            document.getElementById('confirmTotalDue').textContent = 'Rs. ' + currentTotal.toFixed(2);
+            updateBalance();
             
             // Show modal
             document.getElementById('paymentConfirmationModal').classList.add('active');
@@ -1959,12 +1960,20 @@ function closePaymentConfirmationModal() {
 }
 
 function updateBalance() {
-    const totalDue = {{ $calculation['total'] }};
+    const totalDue = currentTotal;
     const amountReceived = parseFloat(document.getElementById('editAmountReceived').value) || 0;
     const balance = totalDue - amountReceived;
-    
-    document.getElementById('confirmBalance').textContent = 'Rs. ' + balance.toFixed(2);
-    document.getElementById('confirmButtonAmount').textContent = 'Rs. ' + amountReceived.toFixed(2);
+
+    const balanceElement = document.getElementById('confirmBalance');
+    balanceElement.textContent = 'Rs. ' + Math.abs(balance).toFixed(2);
+
+    if (balance >= 0) {
+        balanceElement.style.color = '#dc2626';
+    } else {
+        balanceElement.style.color = '#10b981';
+    }
+
+    document.getElementById('confirmButtonAmount').textContent = amountReceived.toFixed(2);
 }
 
 function confirmPayment() {

@@ -325,6 +325,7 @@
             method="POST"
         >
             @csrf
+            <input type="hidden" name="stock_adjustment_id" id="stockAdjustmentId">
             <label>
                 Reversal Reason
                 <textarea
@@ -1018,10 +1019,14 @@ function openReverseModal(
         Number(after).toFixed(3);
     document.getElementById('reverseDifference').textContent =
         Number(difference).toFixed(3);
-    document.getElementById('reverseForm').action =
-        '{{ url('/stock-adjustments') }}/' +
-        id +
-        '/reverse';
+    document.getElementById('stockAdjustmentId').value = id;
+    
+    // Get tenant prefix from current URL
+    const pathParts = window.location.pathname.split('/');
+    const tenantPrefix = pathParts[1];
+    
+    const form = document.getElementById('reverseForm');
+    form.action = '/' + tenantPrefix + '/stock-adjustments/reverse';
     document.getElementById('reverseModal').style.display = 'flex';
 }
 function closeReverseModal() {
