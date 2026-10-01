@@ -758,17 +758,13 @@
                     <span>Cashier</span>
                     @php
                         $readyForPaymentCount = \App\Models\Job::where('status', \App\Enums\JobStatus::READY_FOR_PAYMENT->value)
-                            ->whereDoesntHave('invoice', function ($query) {
-                                // Exclude jobs with partial payments (have some payments but still have balance)
-                                $query->where('paid', '>', 0)
-                                      ->where('balance', '>', 0.01);
-                            })
+                            ->whereDoesntHave('invoice.payments') // Exclude jobs that have any payment records
                             ->count();
 
-                        // Add POS invoices with balance > 0 but no payments yet
+                        // Add POS invoices with balance > 0 but no payment records
                         $posInvoiceCount = \App\Models\Invoice::whereNull('job_id')
                             ->where('balance', '>', 0.01)
-                            ->where('paid', '=', 0) // Only count if no payments have been made
+                            ->whereDoesntHave('payments') // Only count if no payment records exist
                             ->count();
 
                         $readyForPaymentCount += $posInvoiceCount;
@@ -789,18 +785,14 @@
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
                     <span>Notifications</span>
                     @php
-                        // Get partial payments (invoices with balance > 0 AND paid > 0)
-                        $partialPayments = \App\Models\Invoice::where('balance', '>', 0)->where('total', '>', 0)->where('paid', '>', 0)->get();
+                        // Get partial payments (invoices with balance > 0 AND have payment records)
+                        $partialPayments = \App\Models\Invoice::where('balance', '>', 0)->where('total', '>', 0)->whereHas('payments')->get();
                         $partialPaymentsCount = $partialPayments->count();
                         $partialPaymentJobIds = $partialPayments->pluck('job_id')->toArray();
                         
-                        // Get jobs ready for payment excluding those with partial payments
+                        // Get jobs ready for payment excluding those with any payment records
                         $readyForPaymentCount = \App\Models\Job::where('status', \App\Enums\JobStatus::READY_FOR_PAYMENT->value)
-                            ->whereDoesntHave('invoice', function ($query) {
-                                // Exclude jobs with partial payments (have some payments but still have balance)
-                                $query->where('paid', '>', 0)
-                                      ->where('balance', '>', 0.01);
-                            })
+                            ->whereDoesntHave('invoice.payments')
                             ->count();
                         
                         $pendingChequesCount = \App\Models\Payment::where('method', 'cheque')->where('payment_received', false)->where('is_bounced', false)->count();
