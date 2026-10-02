@@ -21,7 +21,7 @@
             }
 
             body {
-                padding: 3mm !important;
+                padding: 2mm !important;
             }
 
             .receipt-container {
@@ -42,14 +42,14 @@
 
         body {
             font-family: 'Courier New', monospace;
-            font-size: 16px;
+            font-size: 12px;
             color: #000;
-            width: 80mm;
+            width: 72mm;
             margin: 0 auto;
             background: white;
-            padding: 3mm;
+            padding: 2mm 0;
             box-sizing: border-box;
-            font-weight: bold;
+            font-weight: normal;
             height: auto;
             min-height: auto;
         }
@@ -63,101 +63,82 @@
         }
 
         .company-name {
-            font-size: 22px;
-            font-weight: 900;
-            margin-bottom: 6px;
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 4px;
         }
 
         .company-details {
-            font-size: 14px;
-            margin-bottom: 10px;
+            font-size: 11px;
+            margin-bottom: 8px;
             color: #000;
-            font-weight: normal;
         }
 
         .divider {
             border-top: 1px dashed #000;
-            margin: 8px 0;
-        }
-
-        .section-title {
-            font-size: 14px;
-            font-weight: 900;
-            text-align: center;
-            margin: 8px 0;
-            text-transform: uppercase;
+            margin: 6px 0;
         }
 
         .info-row {
             display: flex;
             justify-content: space-between;
-            margin: 4px 0;
-            font-size: 14px;
+            margin: 3px 0;
+            font-size: 12px;
         }
 
-        .info-label {
-            font-weight: normal;
+        .label {
+            text-align: left;
         }
 
-        .info-value {
-            font-weight: 900;
+        .value {
+            text-align: right;
+            white-space: nowrap;
         }
 
-        .calculation-box {
-            border: 1px solid #000;
-            padding: 8px;
+        .section-header {
+            font-size: 12px;
+            font-weight: bold;
+            text-align: center;
             margin: 8px 0;
+            text-transform: uppercase;
+        }
+
+        .movement-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 2px 0;
+            font-size: 11px;
         }
 
         .calc-row {
             display: flex;
             justify-content: space-between;
-            margin: 4px 0;
-            font-size: 14px;
-        }
-
-        .calc-row.result {
-            border-top: 1px solid #000;
-            margin-top: 6px;
-            padding-top: 6px;
-            font-size: 16px;
-        }
-
-        .movement-item {
-            display: flex;
-            justify-content: space-between;
-            margin: 3px 0;
-            font-size: 13px;
-        }
-
-        .movement-item small {
-            font-weight: normal;
-            color: #666;
-        }
-
-        .denom-row {
-            display: flex;
-            justify-content: space-between;
             margin: 2px 0;
-            font-size: 13px;
+            font-size: 12px;
+        }
+
+        .calc-row.total {
+            border-top: 1px solid #000;
+            margin-top: 4px;
+            padding-top: 4px;
+            font-weight: bold;
         }
 
         .footer {
             text-align: center;
-            margin-top: 12px;
-            font-size: 12px;
+            margin-top: 8px;
+            font-size: 10px;
             color: #000;
-            font-weight: normal;
         }
 
         .no-print {
-            margin: 18px 0;
+            margin: 16px 0;
             text-align: center;
         }
 
         .no-print button {
-            padding: 10px 18px;
-            margin: 0 5px;
+            padding: 8px 16px;
+            margin: 0 4px;
             cursor: pointer;
             border: none;
             border-radius: 3px;
@@ -196,13 +177,13 @@
 
         {{-- Company Logo --}}
         @if($settings['logo_path'])
-            <div style="text-align: center; margin-bottom: 8px;">
+            <div style="text-align: center; margin-bottom: 6px;">
                 <img
                     src="{{ \App\Support\Media::url($settings['logo_path']) }}"
                     alt="Logo"
                     style="
                         max-width: 50mm;
-                        max-height: {{ $settings['logo_size_thermal'] ?? 40 }}px;
+                        max-height: {{ $settings['logo_size_thermal'] ?? 35 }}px;
                         display: block;
                         margin: 0 auto;
                     "
@@ -227,138 +208,132 @@
 
         <div class="divider"></div>
 
-        {{-- Report Info --}}
-        <div class="section-title">TILL CLOSURE #{{ $closure->id }}</div>
+        {{-- Report Header --}}
+        <div class="section-header">TILL CLOSURE #{{ $closure->id }}</div>
 
         <div class="info-row">
-            <span class="info-label">Date:</span>
-            <span class="info-value">{{ $closure->closed_at ? $closure->closed_at->format('d/m/Y H:i') : now()->format('d/m/Y H:i') }}</span>
+            <span class="label">Date:</span>
+            <span class="value">{{ $closure->closed_at ? $closure->closed_at->format('d/m/Y H:i') : now()->format('d/m/Y H:i') }}</span>
         </div>
         <div class="info-row">
-            <span class="info-label">Cashier:</span>
-            <span class="info-value">{{ $closure->user->name }}</span>
+            <span class="label">Cashier:</span>
+            <span class="value">{{ $closure->user->name }}</span>
         </div>
         <div class="info-row">
-            <span class="info-label">Till:</span>
-            <span class="info-value">{{ $till->name }}</span>
+            <span class="label">Till:</span>
+            <span class="value">{{ $till->name }}</span>
         </div>
 
         <div class="divider"></div>
 
         {{-- Sales Summary --}}
-        <div class="section-title">SALES SUMMARY</div>
+        <div class="section-header">SALES SUMMARY</div>
 
         <div class="info-row">
-            <span class="info-label">Cash:</span>
-            <span class="info-value">Rs. {{ number_format($closure->cash_sales, 0) }}</span>
+            <span class="label">Cash:</span>
+            <span class="value">Rs. {{ number_format($closure->cash_sales, 0) }}</span>
         </div>
         <div class="info-row">
-            <span class="info-label">Card:</span>
-            <span class="info-value">Rs. {{ number_format($closure->card_sales, 0) }}</span>
+            <span class="label">Card:</span>
+            <span class="value">Rs. {{ number_format($closure->card_sales, 0) }}</span>
         </div>
         <div class="info-row">
-            <span class="info-label">UPI:</span>
-            <span class="info-value">Rs. {{ number_format($closure->mobile_money_sales, 0) }}</span>
+            <span class="label">UPI:</span>
+            <span class="value">Rs. {{ number_format($closure->mobile_money_sales, 0) }}</span>
         </div>
         <div class="info-row">
-            <span class="info-label">Bank:</span>
-            <span class="info-value">Rs. {{ number_format($closure->bank_transfer_sales, 0) }}</span>
+            <span class="label">Bank:</span>
+            <span class="value">Rs. {{ number_format($closure->bank_transfer_sales, 0) }}</span>
         </div>
         <div class="info-row">
-            <span class="info-label">Cheque:</span>
-            <span class="info-value">Rs. {{ number_format($closure->cheque_sales, 0) }}</span>
+            <span class="label">Cheque:</span>
+            <span class="value">Rs. {{ number_format($closure->cheque_sales, 0) }}</span>
         </div>
         <div class="info-row">
-            <span class="info-label">Other:</span>
-            <span class="info-value">Rs. {{ number_format($closure->other_payment_sales, 0) }}</span>
+            <span class="label">Other:</span>
+            <span class="value">Rs. {{ number_format($closure->other_payment_sales, 0) }}</span>
         </div>
 
         <div class="divider"></div>
 
         {{-- Cash Movements --}}
-        <div class="section-title">CASH MOVEMENTS</div>
+        <div class="section-header">CASH MOVEMENTS</div>
 
-        <div style="margin-bottom: 6px;">
-            <div style="font-size: 13px; font-weight: 900;">CASH IN ({{ $cashInCount }})</div>
-        </div>
+        <div style="font-size: 11px; font-weight: bold; margin-bottom: 4px;">CASH IN ({{ $cashInCount }})</div>
         @if($cashInMovements->count() > 0)
             @foreach($cashInMovements as $movement)
-                <div class="movement-item">
+                <div class="movement-row">
                     <span>{{ $movement->reason }}</span>
                     <span>Rs. {{ number_format($movement->amount, 0) }}</span>
                 </div>
             @endforeach
         @else
-            <div style="font-size: 12px; color: #666;">No cash in</div>
+            <div style="font-size: 10px; color: #666;">No cash in</div>
         @endif
 
-        <div style="margin-bottom: 6px; margin-top: 8px;">
-            <div style="font-size: 13px; font-weight: 900;">WITHDRAWALS ({{ $cashOutCount }})</div>
-        </div>
+        <div style="font-size: 11px; font-weight: bold; margin: 6px 0 4px 0;">WITHDRAWALS ({{ $cashOutCount }})</div>
         @if($cashOutMovements->count() > 0)
             @foreach($cashOutMovements as $movement)
-                <div class="movement-item">
+                <div class="movement-row">
                     <span>{{ $movement->reason }}</span>
                     <span>Rs. {{ number_format($movement->amount, 0) }}</span>
                 </div>
             @endforeach
         @else
-            <div style="font-size: 12px; color: #666;">No withdrawals</div>
+            <div style="font-size: 10px; color: #666;">No withdrawals</div>
         @endif
 
         <div class="divider"></div>
 
         {{-- Cash Calculation --}}
-        <div class="section-title">CASH CALCULATION</div>
+        <div class="section-header">CASH CALCULATION</div>
 
-        <div class="calculation-box">
-            <div class="calc-row">
-                <span>Opening Balance</span>
-                <span>Rs. {{ number_format($closure->opening_balance, 0) }}</span>
-            </div>
-            <div class="calc-row">
-                <span>+ Cash Sales</span>
-                <span>Rs. {{ number_format($closure->cash_sales, 0) }}</span>
-            </div>
-            <div class="calc-row">
-                <span>+ Cash In</span>
-                <span>Rs. {{ number_format($closure->cash_in, 0) }}</span>
-            </div>
-            <div class="calc-row">
-                <span>- Withdrawals</span>
-                <span>Rs. {{ number_format($closure->cash_out, 0) }}</span>
-            </div>
-            <div class="calc-row result">
-                <span>Expected in Till</span>
-                <span>Rs. {{ number_format($closure->expected_balance, 0) }}</span>
-            </div>
-            <div class="calc-row result">
-                <span>Actually Counted</span>
-                <span>Rs. {{ number_format($closure->counted_balance, 0) }}</span>
-            </div>
-            <div class="calc-row result">
-                <span>Difference</span>
-                <span>
-                    @if($closure->discrepancy > 0)
-                        +Rs. {{ number_format($closure->discrepancy, 0) }}
-                    @elseif($closure->discrepancy < 0)
-                        Rs. {{ number_format(abs($closure->discrepancy), 0) }}
-                    @else
-                        Rs. 0
-                    @endif
-                </span>
-            </div>
+        <div class="calc-row">
+            <span>Opening Balance</span>
+            <span>Rs. {{ number_format($closure->opening_balance, 0) }}</span>
+        </div>
+        <div class="calc-row">
+            <span>+ Cash Sales</span>
+            <span>Rs. {{ number_format($closure->cash_sales, 0) }}</span>
+        </div>
+        <div class="calc-row">
+            <span>+ Cash In</span>
+            <span>Rs. {{ number_format($closure->cash_in, 0) }}</span>
+        </div>
+        <div class="calc-row">
+            <span>- Withdrawals</span>
+            <span>Rs. {{ number_format($closure->cash_out, 0) }}</span>
+        </div>
+        <div class="calc-row total">
+            <span>Expected in Till</span>
+            <span>Rs. {{ number_format($closure->expected_balance, 0) }}</span>
+        </div>
+        <div class="calc-row total">
+            <span>Actually Counted</span>
+            <span>Rs. {{ number_format($closure->counted_balance, 0) }}</span>
+        </div>
+        <div class="calc-row total">
+            <span>Difference</span>
+            <span>
+                @if($closure->discrepancy > 0)
+                    +Rs. {{ number_format($closure->discrepancy, 0) }}
+                @elseif($closure->discrepancy < 0)
+                    Rs. {{ number_format(abs($closure->discrepancy), 0) }}
+                @else
+                    Rs. 0
+                @endif
+            </span>
         </div>
 
         {{-- Denomination Breakdown --}}
         @if($closure->denomination_breakdown)
         <div class="divider"></div>
 
-        <div class="section-title">DENOMINATIONS</div>
+        <div class="section-header">DENOMINATIONS</div>
 
         @foreach($closure->denomination_breakdown as $denomination => $count)
             @if($count > 0)
-                <div class="denom-row">
+                <div class="movement-row">
                     <span>Rs. {{ $denomination }} x {{ $count }}</span>
                     <span>Rs. {{ number_format($denomination * $count, 0) }}</span>
                 </div>
@@ -370,9 +345,9 @@
         @if($closure->notes)
         <div class="divider"></div>
 
-        <div class="section-title">NOTES</div>
+        <div class="section-header">NOTES</div>
 
-        <div style="font-size: 13px; white-space: pre-wrap;">{{ $closure->notes }}</div>
+        <div style="font-size: 11px; white-space: pre-wrap;">{{ $closure->notes }}</div>
         @endif
 
         <div class="divider"></div>

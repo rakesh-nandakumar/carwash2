@@ -246,6 +246,18 @@
                 </div>
                 <div class="card-footer">
                     <div class="amount">Rs. {{ number_format($invoice->total, 2) }}</div>
+                    @if(auth()->user()->isFullAdmin())
+                        <button
+                            type="button"
+                            class="btn-reverse"
+                            onclick="event.stopPropagation(); openReverseModal({{ $invoice->id }})"
+                            title="Reverse Invoice"
+                        >
+                            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                            </svg>
+                        </button>
+                    @endif
                     <div class="action-arrow">
                         <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
@@ -347,6 +359,60 @@
                 </button>
                 <button type="submit" class="btn-confirm">
                     Change Till
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{{-- Reverse Invoice Modal --}}
+<div id="reverseInvoiceModal" class="cash-modal hidden">
+    <div class="cash-modal-content">
+        <div class="cash-modal-header">
+            <h2>Reverse Invoice</h2>
+            <button type="button" onclick="closeReverseModal()">×</button>
+        </div>
+
+        <form method="POST" id="reverseInvoiceForm">
+            @csrf
+            <input type="hidden" name="invoice_id" id="reverseInvoiceId">
+
+            <div class="form-group">
+                <label>Reason for Reversal (Required)</label>
+                <select
+                    name="reason"
+                    id="reverseReason"
+                    required
+                >
+                    <option value="">Select a reason</option>
+                    <option value="duplicate_invoice">Duplicate Invoice</option>
+                    <option value="incorrect_customer">Incorrect Customer</option>
+                    <option value="wrong_products">Wrong Products Added</option>
+                    <option value="pricing_error">Pricing Error</option>
+                    <option value="accidental_creation">Accidental Creation</option>
+                    <option value="customer_request">Customer Request</option>
+                    <option value="system_error">System Error</option>
+                    <option value="payment_issue">Payment Issue</option>
+                </select>
+                <small>Select a reason from the list. This action cannot be undone.</small>
+            </div>
+
+            <div class="alert-warning" style="background: #fef3c7; border: 1px solid #fcd34d; padding: 12px; border-radius: 8px; margin-bottom: 16px;">
+                <strong>Warning:</strong> This will:
+                <ul style="margin: 8px 0 0 20px; padding: 0;">
+                    <li>Mark the invoice as cancelled</li>
+                    <li>Restore all stock quantities</li>
+                    <li>Reverse any payments made</li>
+                    <li>Update till balance if cash payment was made</li>
+                </ul>
+            </div>
+
+            <div class="cash-modal-actions">
+                <button type="button" class="btn-cancel" onclick="closeReverseModal()">
+                    Cancel
+                </button>
+                <button type="submit" class="btn-confirm btn-danger">
+                    Reverse Invoice
                 </button>
             </div>
         </form>
@@ -911,6 +977,36 @@
     border-top: 1px solid #f1f5f9;
 }
 
+.btn-reverse {
+    background: #fee2e2;
+    color: #dc2626;
+    border: 1px solid #fecaca;
+    border-radius: 6px;
+    padding: 6px 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-reverse:hover {
+    background: #dc2626;
+    color: white;
+    border-color: #dc2626;
+}
+
+.btn-danger {
+    background: #dc2626 !important;
+    color: white !important;
+    border-color: #dc2626 !important;
+}
+
+.btn-danger:hover {
+    background: #b91c1c !important;
+    border-color: #b91c1c !important;
+}
+
 .amount {
     font-size: 20px;
     font-weight: 700;
@@ -1346,6 +1442,56 @@ function pollForNewJobs() {
             console.error('Error polling for jobs:', error);
         });
 }
+
+// Reverse Invoice Modal Functions
+function openReverseModal(invoiceId) {
+    document.getElementById('reverseInvoiceId').value = invoiceId;
+    const tenant = window.location.pathname.split('/')[1];
+    document.getElementById('reverseInvoiceForm').action = '/' + tenant + '/cashier/reverse-invoice/' + invoiceId;
+    document.getElementById('reverseInvoiceModal').classList.remove('hidden');
+}
+
+function closeReverseModal() {
+    document.getElementById('reverseInvoiceModal').classList.add('hidden');
+    document.getElementById('reverseInvoiceForm').reset();
+}
+
+// Handle reverse invoice form submission
+document.getElementById('reverseInvoiceForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    const reason = document.getElementById('reverseReason').value;
+
+    if (!reason || reason === '') {
+        alert('Please select a reason for reversal.');
+        return;
+    }
+
+    const form = this;
+    const formData = new FormData(form);
+
+    fetch(form.action, {
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            'Accept': 'application/json',
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success || document.location.href.includes('success')) {
+            closeReverseModal();
+            location.reload();
+        } else {
+            alert(data.error || 'Failed to reverse invoice');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to reverse invoice');
+    });
+});
 
 // Start polling
 setInterval(pollForNewJobs, 3000); // Poll every 3 seconds

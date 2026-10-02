@@ -759,10 +759,17 @@
                     @php
                         $readyForPaymentCount = \App\Models\Job::where('status', \App\Enums\JobStatus::READY_FOR_PAYMENT->value)
                             ->whereDoesntHave('invoice.payments') // Exclude jobs that have any payment records
+                            ->where(function ($query) {
+                                $query->whereDoesntHave('invoice')
+                                      ->orWhereHas('invoice', function ($q) {
+                                          $q->where('status', '!=', 'cancelled');
+                                      });
+                            })
                             ->count();
 
                         // Add POS invoices with balance > 0 but no payment records
                         $posInvoiceCount = \App\Models\Invoice::whereNull('job_id')
+                            ->where('status', '!=', 'cancelled')
                             ->where('balance', '>', 0.01)
                             ->whereDoesntHave('payments') // Only count if no payment records exist
                             ->count();

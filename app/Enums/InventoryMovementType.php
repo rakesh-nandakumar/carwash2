@@ -15,6 +15,7 @@ enum InventoryMovementType: string
     case SUPPLIER_RETURN = 'supplier_return';
     case CUSTOMER_RETURN = 'customer_return';
     case RESTOCK = 'restock';
+    case INVOICE_REVERSAL = 'invoice_reversal';
 
     public function getLabel(): string
     {
@@ -30,6 +31,7 @@ enum InventoryMovementType: string
             self::SUPPLIER_RETURN => 'Supplier Return',
             self::CUSTOMER_RETURN => 'Customer Return',
             self::RESTOCK => 'Restock',
+            self::INVOICE_REVERSAL => 'Invoice Reversal',
         };
     }
 

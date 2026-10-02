@@ -24,6 +24,11 @@ class InvoiceController extends Controller
             ->where('tenant_id', $user->tenant_id)
             ->latest();
 
+        // Hide cancelled invoices from non-admin users
+        if (!$user->isFullAdmin()) {
+            $query->where('status', '!=', 'cancelled');
+        }
+
         if ($search) {
             $query->where(function ($q) use ($search) {
                 $q->where('invoice_number', 'like', "%{$search}%")
@@ -41,6 +46,11 @@ class InvoiceController extends Controller
 
     public function show(Invoice $invoice)
     {
+        // Prevent non-admins from viewing cancelled invoices
+        if ($invoice->status === 'cancelled' && !auth()->user()->isFullAdmin()) {
+            abort(403, 'You do not have permission to view cancelled invoices.');
+        }
+
         $invoice->load('customer', 'job.vehicle', 'items', 'payments');
 
         return view('invoices.show', compact('invoice'));
