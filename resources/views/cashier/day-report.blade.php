@@ -42,7 +42,7 @@
 
         body {
             font-family: 'Courier New', monospace;
-            font-size: 20px;
+            font-size: 16px;
             color: #000;
             width: 80mm;
             margin: 0 auto;
@@ -63,106 +63,91 @@
         }
 
         .company-name {
-            font-size: 28px;
+            font-size: 22px;
             font-weight: 900;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
 
         .company-details {
-            font-size: 18px;
-            margin-bottom: 12px;
+            font-size: 14px;
+            margin-bottom: 10px;
             color: #000;
-            font-weight: bold;
+            font-weight: normal;
         }
 
         .divider {
-            border-top: 2px dashed #000;
-            margin: 10px 0;
+            border-top: 1px dashed #000;
+            margin: 8px 0;
         }
 
-        .report-header {
+        .section-title {
+            font-size: 14px;
+            font-weight: 900;
             text-align: center;
-            margin-bottom: 12px;
+            margin: 8px 0;
+            text-transform: uppercase;
         }
 
-        .report-title {
-            font-size: 24px;
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 4px 0;
+            font-size: 14px;
+        }
+
+        .info-label {
+            font-weight: normal;
+        }
+
+        .info-value {
             font-weight: 900;
         }
 
-        .report-date {
-            font-size: 18px;
-            font-weight: bold;
+        .calculation-box {
+            border: 1px solid #000;
+            padding: 8px;
+            margin: 8px 0;
         }
 
-        .report-info {
-            text-align: left;
-            margin-bottom: 12px;
-            font-size: 18px;
-            font-weight: bold;
+        .calc-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 4px 0;
+            font-size: 14px;
         }
 
-        .items-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 12px;
-            font-size: 18px;
-        }
-
-        .items-table td {
-            padding: 3px 2px;
-        }
-
-        .item-name {
-            text-align: left;
-            font-weight: bold;
+        .calc-row.result {
+            border-top: 1px solid #000;
+            margin-top: 6px;
+            padding-top: 6px;
             font-size: 16px;
         }
 
-        .item-qty {
-            text-align: center;
-            font-weight: bold;
-            font-size: 16px;
-        }
-
-        .item-price {
-            text-align: right;
-            font-weight: bold;
-            font-size: 16px;
-        }
-
-        .item-total {
-            text-align: right;
-            font-weight: 900;
-            font-size: 16px;
-        }
-
-        .totals {
-            text-align: right;
-            margin-bottom: 12px;
-            font-size: 18px;
-        }
-
-        .total-row {
+        .movement-item {
             display: flex;
             justify-content: space-between;
             margin: 3px 0;
+            font-size: 13px;
         }
 
-        .grand-total {
-            font-size: 20px;
-            font-weight: 900;
-            border-top: 2px solid #000;
-            margin-top: 8px;
-            padding-top: 8px;
+        .movement-item small {
+            font-weight: normal;
+            color: #666;
+        }
+
+        .denom-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 2px 0;
+            font-size: 13px;
         }
 
         .footer {
             text-align: center;
-            margin-top: 18px;
-            font-size: 14px;
+            margin-top: 12px;
+            font-size: 12px;
             color: #000;
-            font-weight: bold;
+            font-weight: normal;
         }
 
         .no-print {
@@ -211,13 +196,13 @@
 
         {{-- Company Logo --}}
         @if($settings['logo_path'])
-            <div style="text-align: center; margin-bottom: 12px;">
+            <div style="text-align: center; margin-bottom: 8px;">
                 <img
                     src="{{ \App\Support\Media::url($settings['logo_path']) }}"
                     alt="Logo"
                     style="
-                        max-width: 60mm;
-                        max-height: {{ $settings['logo_size_thermal'] ?? 50 }}px;
+                        max-width: 50mm;
+                        max-height: {{ $settings['logo_size_thermal'] ?? 40 }}px;
                         display: block;
                         margin: 0 auto;
                     "
@@ -238,103 +223,83 @@
             @if($settings['phone'])
                 Tel: {{ $settings['phone'] }}<br>
             @endif
-
-            @if($settings['tax_id'])
-                Tax ID: {{ $settings['tax_id'] }}
-            @endif
         </div>
 
         <div class="divider"></div>
 
-        {{-- Report Header --}}
-        <div class="report-header">
-            <div class="report-title">
-                DAY REPORT #{{ $closure->id }}
-            </div>
+        {{-- Report Info --}}
+        <div class="section-title">TILL CLOSURE #{{ $closure->id }}</div>
 
-            <div class="report-date">
-                {{ $closure->closed_at ? $closure->closed_at->format('d/m/Y H:i') : now()->format('d/m/Y H:i') }}
-            </div>
+        <div class="info-row">
+            <span class="info-label">Date:</span>
+            <span class="info-value">{{ $closure->closed_at ? $closure->closed_at->format('d/m/Y H:i') : now()->format('d/m/Y H:i') }}</span>
         </div>
-
-        {{-- Cashier/Till Info --}}
-        <div class="report-info">
-            <strong>Cashier:</strong> {{ $closure->user->name }}<br>
-            <strong>Till:</strong> {{ $till->name }}<br>
-            <strong>Shift:</strong> {{ $closure->opened_at ? $closure->opened_at->format('d/m/Y H:i') : 'N/A' }} - {{ $closure->closed_at ? $closure->closed_at->format('H:i') : 'Open' }}
+        <div class="info-row">
+            <span class="info-label">Cashier:</span>
+            <span class="info-value">{{ $closure->user->name }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Till:</span>
+            <span class="info-value">{{ $till->name }}</span>
         </div>
 
         <div class="divider"></div>
 
-        {{-- Sales Breakdown --}}
-        <table class="items-table">
-            <tr style="border-bottom: 1px solid #000;">
-                <td class="item-name" style="font-size: 11px;">METHOD</td>
-                <td class="item-total" style="font-size: 11px;">AMOUNT</td>
-            </tr>
-            <tr>
-                <td class="item-name">Cash Sales</td>
-                <td class="item-total">Rs. {{ number_format($closure->cash_sales, 0) }}</td>
-            </tr>
-            <tr>
-                <td class="item-name">Card Sales</td>
-                <td class="item-total">Rs. {{ number_format($closure->card_sales, 0) }}</td>
-            </tr>
-            <tr>
-                <td class="item-name">UPI Sales</td>
-                <td class="item-total">Rs. {{ number_format($closure->mobile_money_sales, 0) }}</td>
-            </tr>
-            <tr>
-                <td class="item-name">Bank Transfer</td>
-                <td class="item-total">Rs. {{ number_format($closure->bank_transfer_sales, 0) }}</td>
-            </tr>
-            <tr>
-                <td class="item-name">Cheque</td>
-                <td class="item-total">Rs. {{ number_format($closure->cheque_sales, 0) }}</td>
-            </tr>
-            <tr>
-                <td class="item-name">Other</td>
-                <td class="item-total">Rs. {{ number_format($closure->other_payment_sales, 0) }}</td>
-            </tr>
-        </table>
+        {{-- Sales Summary --}}
+        <div class="section-title">SALES SUMMARY</div>
 
-        <div class="divider"></div>
-
-        {{-- Totals --}}
-        <div class="totals">
-            <div class="total-row">
-                <span>Total Sales:</span>
-                <span>Rs. {{ number_format($closure->total_sales, 0) }}</span>
-            </div>
-            <div class="total-row">
-                <span>Transactions:</span>
-                <span>{{ $transactionCount }}</span>
-            </div>
+        <div class="info-row">
+            <span class="info-label">Cash:</span>
+            <span class="info-value">Rs. {{ number_format($closure->cash_sales, 0) }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Card:</span>
+            <span class="info-value">Rs. {{ number_format($closure->card_sales, 0) }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">UPI:</span>
+            <span class="info-value">Rs. {{ number_format($closure->mobile_money_sales, 0) }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Bank:</span>
+            <span class="info-value">Rs. {{ number_format($closure->bank_transfer_sales, 0) }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Cheque:</span>
+            <span class="info-value">Rs. {{ number_format($closure->cheque_sales, 0) }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Other:</span>
+            <span class="info-value">Rs. {{ number_format($closure->other_payment_sales, 0) }}</span>
         </div>
 
         <div class="divider"></div>
 
         {{-- Cash Movements --}}
-        <div style="margin-bottom: 8px;">
-            <div style="font-size: 14px; font-weight: bold;">CASH IN ({{ $cashInCount }})</div>
+        <div class="section-title">CASH MOVEMENTS</div>
+
+        <div style="margin-bottom: 6px;">
+            <div style="font-size: 13px; font-weight: 900;">CASH IN ({{ $cashInCount }})</div>
         </div>
         @if($cashInMovements->count() > 0)
             @foreach($cashInMovements as $movement)
-                <div style="font-size: 13px; padding: 2px 0;">
-                    {{ $movement->reason }} @if($movement->description) - {{ $movement->description }} @endif - Rs. {{ number_format($movement->amount, 0) }}
+                <div class="movement-item">
+                    <span>{{ $movement->reason }}</span>
+                    <span>Rs. {{ number_format($movement->amount, 0) }}</span>
                 </div>
             @endforeach
         @else
             <div style="font-size: 12px; color: #666;">No cash in</div>
         @endif
 
-        <div style="margin-bottom: 8px; margin-top: 12px;">
-            <div style="font-size: 14px; font-weight: bold;">WITHDRAWALS ({{ $cashOutCount }})</div>
+        <div style="margin-bottom: 6px; margin-top: 8px;">
+            <div style="font-size: 13px; font-weight: 900;">WITHDRAWALS ({{ $cashOutCount }})</div>
         </div>
         @if($cashOutMovements->count() > 0)
             @foreach($cashOutMovements as $movement)
-                <div style="font-size: 13px; padding: 2px 0;">
-                    {{ $movement->reason }} @if($movement->description) - {{ $movement->description }} @endif - Rs. {{ number_format($movement->amount, 0) }}
+                <div class="movement-item">
+                    <span>{{ $movement->reason }}</span>
+                    <span>Rs. {{ number_format($movement->amount, 0) }}</span>
                 </div>
             @endforeach
         @else
@@ -343,34 +308,36 @@
 
         <div class="divider"></div>
 
-        {{-- Balance Summary --}}
-        <div class="totals">
-            <div class="total-row">
-                <span>Opening Balance:</span>
+        {{-- Cash Calculation --}}
+        <div class="section-title">CASH CALCULATION</div>
+
+        <div class="calculation-box">
+            <div class="calc-row">
+                <span>Opening Balance</span>
                 <span>Rs. {{ number_format($closure->opening_balance, 0) }}</span>
             </div>
-            <div class="total-row">
-                <span>+ Cash Sales:</span>
+            <div class="calc-row">
+                <span>+ Cash Sales</span>
                 <span>Rs. {{ number_format($closure->cash_sales, 0) }}</span>
             </div>
-            <div class="total-row">
-                <span>+ Cash In:</span>
+            <div class="calc-row">
+                <span>+ Cash In</span>
                 <span>Rs. {{ number_format($closure->cash_in, 0) }}</span>
             </div>
-            <div class="total-row">
-                <span>- Withdrawals:</span>
+            <div class="calc-row">
+                <span>- Withdrawals</span>
                 <span>Rs. {{ number_format($closure->cash_out, 0) }}</span>
             </div>
-            <div class="total-row grand-total">
-                <span>EXPECTED:</span>
+            <div class="calc-row result">
+                <span>Expected in Till</span>
                 <span>Rs. {{ number_format($closure->expected_balance, 0) }}</span>
             </div>
-            <div class="total-row grand-total">
-                <span>COUNTED:</span>
+            <div class="calc-row result">
+                <span>Actually Counted</span>
                 <span>Rs. {{ number_format($closure->counted_balance, 0) }}</span>
             </div>
-            <div class="total-row">
-                <span>DISCREPANCY:</span>
+            <div class="calc-row result">
+                <span>Difference</span>
                 <span>
                     @if($closure->discrepancy > 0)
                         +Rs. {{ number_format($closure->discrepancy, 0) }}
@@ -387,80 +354,23 @@
         @if($closure->denomination_breakdown)
         <div class="divider"></div>
 
-        <div style="margin-bottom: 8px;">
-            <div style="font-size: 14px; font-weight: bold;">DENOMINATIONS</div>
-        </div>
+        <div class="section-title">DENOMINATIONS</div>
 
-        <table class="items-table">
-            <tr style="border-bottom: 1px solid #000;">
-                <td class="item-name" style="font-size: 11px;">DENOM</td>
-                <td class="item-qty" style="font-size: 11px;">COUNT</td>
-                <td class="item-total" style="font-size: 11px;">TOTAL</td>
-            </tr>
-            @foreach($closure->denomination_breakdown as $denomination => $count)
-                @if($count > 0)
-                    <tr>
-                        <td class="item-name">Rs. {{ $denomination }}</td>
-                        <td class="item-qty">{{ $count }}</td>
-                        <td class="item-total">Rs. {{ number_format($denomination * $count, 0) }}</td>
-                    </tr>
-                @endif
-            @endforeach
-        </table>
-        @endif
-
-        {{-- Variance Information --}}
-        @if($closure->opening_variance != 0 || $closure->discrepancy != 0 || $closure->opening_variance_reason || $closure->variance_reason)
-        <div class="divider"></div>
-
-        <div style="margin-bottom: 8px;">
-            <div style="font-size: 14px; font-weight: bold;">VARIANCE DETAILS</div>
-        </div>
-
-        @if($closure->opening_variance != 0 || $closure->opening_variance_reason)
-        <div style="margin-bottom: 8px;">
-            <div style="font-size: 13px;">Opening:</div>
-            @if($closure->opening_variance != 0)
-            <div style="font-size: 14px; font-weight: 900;">
-                @if($closure->opening_variance > 0)
-                    +Rs. {{ number_format($closure->opening_variance, 0) }}
-                @elseif($closure->opening_variance < 0)
-                    Rs. {{ number_format(abs($closure->opening_variance), 0) }}
-                @endif
-            </div>
+        @foreach($closure->denomination_breakdown as $denomination => $count)
+            @if($count > 0)
+                <div class="denom-row">
+                    <span>Rs. {{ $denomination }} x {{ $count }}</span>
+                    <span>Rs. {{ number_format($denomination * $count, 0) }}</span>
+                </div>
             @endif
-            @if($closure->opening_variance_reason)
-            <div style="font-size: 12px; white-space: pre-wrap;">{{ $closure->opening_variance_reason }}</div>
-            @endif
-        </div>
-        @endif
-
-        @if($closure->discrepancy != 0 || $closure->variance_reason)
-        <div>
-            <div style="font-size: 13px;">Closing:</div>
-            @if($closure->discrepancy != 0)
-            <div style="font-size: 14px; font-weight: 900;">
-                @if($closure->discrepancy > 0)
-                    +Rs. {{ number_format($closure->discrepancy, 0) }}
-                @elseif($closure->discrepancy < 0)
-                    Rs. {{ number_format(abs($closure->discrepancy), 0) }}
-                @endif
-            </div>
-            @endif
-            @if($closure->variance_reason)
-            <div style="font-size: 12px; white-space: pre-wrap;">{{ $closure->variance_reason }}</div>
-            @endif
-        </div>
-        @endif
+        @endforeach
         @endif
 
         {{-- Notes --}}
         @if($closure->notes)
         <div class="divider"></div>
 
-        <div style="margin-bottom: 8px;">
-            <div style="font-size: 14px; font-weight: bold;">NOTES</div>
-        </div>
+        <div class="section-title">NOTES</div>
 
         <div style="font-size: 13px; white-space: pre-wrap;">{{ $closure->notes }}</div>
         @endif
@@ -470,12 +380,7 @@
         {{-- Footer --}}
         <div class="footer">
             {!! nl2br(e($settings['footer_text'])) !!}<br>
-
-            {{ now()->format('d/m/Y H:i') }}<br>
-
-            <span class="powered">
-                Powered by Vellix Global - 0773208478
-            </span>
+            Printed: {{ now()->format('d/m/Y H:i') }}
         </div>
 
         {{-- Print Controls --}}

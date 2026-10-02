@@ -202,12 +202,27 @@ class SearchableDropdown {
     }
 
     positionDropdown() {
-        // Reset to absolute positioning
-        this.optionsContainer.style.position = 'absolute';
-        this.optionsContainer.style.top = '100%';
-        this.optionsContainer.style.left = '0';
-        this.optionsContainer.style.right = '0';
-        this.optionsContainer.style.marginTop = '4px';
+        // Check if this dropdown should use fixed positioning (for modals)
+        const useFixed = this.container.classList.contains('use-fixed-position') ||
+                        this.container.closest('.modal-content');
+
+        if (useFixed) {
+            const rect = this.textInput.getBoundingClientRect();
+            this.optionsContainer.style.position = 'fixed';
+            this.optionsContainer.style.top = (rect.bottom + 4) + 'px';
+            this.optionsContainer.style.left = rect.left + 'px';
+            this.optionsContainer.style.width = rect.width + 'px';
+            this.optionsContainer.style.right = 'auto';
+            this.optionsContainer.style.marginTop = '0';
+        } else {
+            // Reset to absolute positioning
+            this.optionsContainer.style.position = 'absolute';
+            this.optionsContainer.style.top = '100%';
+            this.optionsContainer.style.left = '0';
+            this.optionsContainer.style.right = '0';
+            this.optionsContainer.style.marginTop = '4px';
+            this.optionsContainer.style.width = 'auto';
+        }
     }
     
     setValue(value, label) {

@@ -138,7 +138,7 @@
                     <div class="form-group">
                         <label>Customer *</label>
                         <div class="customer-select-wrapper">
-                            <div class="searchable-dropdown" id="customerDropdown">
+                            <div class="searchable-dropdown use-fixed-position" id="customerDropdown">
                                 <input type="hidden" id="modalVehicleCustomer" name="customer_id" value="">
                                 <input type="text" class="searchable-dropdown-input" id="modalVehicleCustomerInput" placeholder="Search or select customer...">
                                 <div class="searchable-dropdown-options"></div>
@@ -3030,7 +3030,11 @@ document.addEventListener('click', (e) => {
 
 .modal-content {
     position: relative;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.07));
+    /* NOTE: no backdrop-filter / filter / transform / will-change here.
+       Those create a containing block that breaks position:fixed children
+       (the customer dropdown with .use-fixed-position). The .modal overlay
+       already blurs the page behind, so we use a more opaque bg instead. */
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.88), rgba(15, 23, 42, 0.92));
     border: 1px solid var(--panel-border);
     border-radius: 18px;
     width: 100%;
@@ -3039,8 +3043,6 @@ document.addEventListener('click', (e) => {
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    backdrop-filter: blur(30px) saturate(145%);
-    -webkit-backdrop-filter: blur(30px) saturate(145%);
     box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55);
     animation: modalGlassIn 0.3s cubic-bezier(.2,.8,.2,1);
 }
@@ -3062,9 +3064,11 @@ document.addEventListener('click', (e) => {
     display: none; /* Chrome, Safari, and Opera */
 }
 
+/* Opacity only: a transform here would also create a containing block
+   for position:fixed children while the animation runs. */
 @keyframes modalGlassIn {
-    from { opacity: 0; transform: translateY(20px) scale(0.97); }
-    to { opacity: 1; transform: translateY(0) scale(1); }
+    from { opacity: 0; }
+    to   { opacity: 1; }
 }
 
 .modal-header {
@@ -3184,7 +3188,6 @@ document.addEventListener('click', (e) => {
 
 .customer-select-wrapper .searchable-dropdown.open {
     z-index: 10002;
-    position: relative;
 }
 
 /* Ensure customer dropdown matches category dropdown styles */
@@ -3220,12 +3223,7 @@ document.addEventListener('click', (e) => {
     overflow-y: auto !important;
     overflow-x: hidden !important;
     scroll-behavior: smooth !important;
-    z-index: 10003 !important;
-    position: absolute !important;
-    top: 100% !important;
-    left: 0 !important;
-    right: 0 !important;
-    margin-top: 4px !important;
+    z-index: 10001 !important;
 }
 
 .customer-select-wrapper .searchable-dropdown .searchable-dropdown-option {

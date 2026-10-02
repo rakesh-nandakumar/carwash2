@@ -7,6 +7,9 @@
         <p>{{ $vehicle->make }} {{ $vehicle->model }} · {{ $vehicle->category }}</p>
     </div>
     <div>
+        @if(auth()->user()->can('vehicles.edit'))
+        <a class="secondary" href="{{ route('vehicles.edit', $vehicle) }}">Edit Vehicle</a>
+        @endif
         <a class="secondary" href="#" onclick="openTransferModal()">Transfer Ownership</a>
         <a class="primary" href="{{ route('jobs.create', ['vehicle_id' => $vehicle->id]) }}">+ Create Job</a>
     </div>
