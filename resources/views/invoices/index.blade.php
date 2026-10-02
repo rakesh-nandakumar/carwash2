@@ -20,9 +20,10 @@
 <div class="panel">
     <!-- Partial Payments Section -->
     @php
-        $partialInvoices = $invoices->filter(function($i) { return $i->balance > 0.01 && $i->paid > 0; });
-        $paidInvoices = $invoices->filter(function($i) { return $i->balance <= 0.01; });
-        $issuedInvoices = $invoices->filter(function($i) { return $i->paid <= 0 && $i->balance > 0; });
+        $partialInvoices = $invoices->filter(function($i) { return $i->balance > 0.01 && $i->paid > 0 && $i->status !== 'cancelled'; });
+        $paidInvoices = $invoices->filter(function($i) { return $i->balance <= 0.01 && $i->status !== 'cancelled'; });
+        $issuedInvoices = $invoices->filter(function($i) { return $i->paid <= 0 && $i->balance > 0 && $i->status !== 'cancelled'; });
+        $cancelledInvoices = $invoices->filter(function($i) { return $i->status === 'cancelled'; });
     @endphp
 
     @if($partialInvoices->count() > 0)
@@ -38,8 +39,7 @@
                 <th>Invoice</th>
                 <th>Customer</th>
                 <th>Total</th>
-                <th>Paid</th>
-                <th>Balance</th>
+                <th>Reason</th>
                 <th>Status</th>
             </tr>
         </thead>
@@ -53,8 +53,7 @@
                 </td>
                 <td>{{ $i->customer->full_name }}</td>
                 <td>Rs. {{ number_format($i->total,2) }}</td>
-                <td>Rs. {{ number_format($i->paid,2) }}</td>
-                <td style="color: #dc2626; font-weight: bold;">Rs. {{ number_format($i->balance,2) }}</td>
+                <td>-</td>
                 <td><span class="badge partial-badge">{{ $i->status }}</span></td>
             </tr>
             @endforeach
@@ -78,12 +77,8 @@
                     <span class="value">Rs. {{ number_format($i->total,2) }}</span>
                 </div>
                 <div class="detail">
-                    <span class="label">Paid</span>
-                    <span class="value">Rs. {{ number_format($i->paid,2) }}</span>
-                </div>
-                <div class="detail">
-                    <span class="label">Balance</span>
-                    <span class="value" style="color: #dc2626; font-weight: bold;">Rs. {{ number_format($i->balance,2) }}</span>
+                    <span class="label">Reason</span>
+                    <span class="value">-</span>
                 </div>
                 <div class="detail">
                     <span class="label">Status</span>
@@ -109,8 +104,7 @@
                 <th>Invoice</th>
                 <th>Customer</th>
                 <th>Total</th>
-                <th>Paid</th>
-                <th>Balance</th>
+                <th>Reason</th>
                 <th>Status</th>
             </tr>
         </thead>
@@ -124,8 +118,7 @@
                 </td>
                 <td>{{ $i->customer->full_name }}</td>
                 <td>Rs. {{ number_format($i->total,2) }}</td>
-                <td>Rs. {{ number_format($i->paid,2) }}</td>
-                <td style="color: #10b981; font-weight: bold;">Rs. {{ number_format($i->balance,2) }}</td>
+                <td>-</td>
                 <td><span class="badge paid-badge">{{ $i->status }}</span></td>
             </tr>
             @endforeach
@@ -149,12 +142,8 @@
                     <span class="value">Rs. {{ number_format($i->total,2) }}</span>
                 </div>
                 <div class="detail">
-                    <span class="label">Paid</span>
-                    <span class="value">Rs. {{ number_format($i->paid,2) }}</span>
-                </div>
-                <div class="detail">
-                    <span class="label">Balance</span>
-                    <span class="value" style="color: #10b981; font-weight: bold;">Rs. {{ number_format($i->balance,2) }}</span>
+                    <span class="label">Reason</span>
+                    <span class="value">-</span>
                 </div>
                 <div class="detail">
                     <span class="label">Status</span>
@@ -180,8 +169,7 @@
                 <th>Invoice</th>
                 <th>Customer</th>
                 <th>Total</th>
-                <th>Paid</th>
-                <th>Balance</th>
+                <th>Reason</th>
                 <th>Status</th>
             </tr>
         </thead>
@@ -195,8 +183,7 @@
                 </td>
                 <td>{{ $i->customer->full_name }}</td>
                 <td>Rs. {{ number_format($i->total,2) }}</td>
-                <td>Rs. {{ number_format($i->paid,2) }}</td>
-                <td>Rs. {{ number_format($i->balance,2) }}</td>
+                <td>-</td>
                 <td><span class="badge issued-badge">{{ $i->status }}</span></td>
             </tr>
             @endforeach
@@ -220,16 +207,77 @@
                     <span class="value">Rs. {{ number_format($i->total,2) }}</span>
                 </div>
                 <div class="detail">
-                    <span class="label">Paid</span>
-                    <span class="value">Rs. {{ number_format($i->paid,2) }}</span>
-                </div>
-                <div class="detail">
-                    <span class="label">Balance</span>
-                    <span class="value">Rs. {{ number_format($i->balance,2) }}</span>
+                    <span class="label">Reason</span>
+                    <span class="value">-</span>
                 </div>
                 <div class="detail">
                     <span class="label">Status</span>
                     <span class="value issued-badge">{{ $i->status }}</span>
+                </div>
+            </div>
+        </a>
+        @endforeach
+    </div>
+    @endif
+
+    <!-- Cancelled/Removed Section -->
+    @if($cancelledInvoices->count() > 0)
+    <div class="payment-section-header cancelled" data-section="cancelled">
+        <h2>🗑️ Removed ({{ $cancelledInvoices->count() }})</h2>
+        <p>Cancelled invoices - visible only to Full Administrator</p>
+    </div>
+
+    <!-- Desktop Table -->
+    <table class="invoices-table cancelled-table" data-section="cancelled">
+        <thead>
+            <tr>
+                <th>Invoice</th>
+                <th>Customer</th>
+                <th>Total</th>
+                <th>Reason</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($cancelledInvoices as $i)
+            <tr class="cancelled-row">
+                <td>
+                    <a href="{{ route('invoices.show',$i) }}?from=invoices">
+                        <b>{{ $i->invoice_number }}</b>
+                    </a>
+                </td>
+                <td>{{ $i->customer->full_name }}</td>
+                <td>Rs. {{ number_format($i->total,2) }}</td>
+                <td>{{ $i->cancellation_reason ?? '-' }}</td>
+                <td><span class="badge cancelled-badge">{{ $i->status }}</span></td>
+            </tr>
+            @endforeach
+        </tbody>
+    </table>
+
+    <!-- Mobile Cards -->
+    <div class="invoices-cards cancelled-cards" data-section="cancelled">
+        @foreach($cancelledInvoices as $i)
+        <a href="{{ route('invoices.show',$i) }}?from=invoices" class="invoice-card cancelled-card">
+            <div class="card-top">
+                <div class="card-name">
+                    <strong>{{ $i->invoice_number }}</strong>
+                    <small>{{ $i->customer->full_name }}</small>
+                </div>
+                <span class="card-arrow">→</span>
+            </div>
+            <div class="card-details">
+                <div class="detail">
+                    <span class="label">Total</span>
+                    <span class="value">Rs. {{ number_format($i->total,2) }}</span>
+                </div>
+                <div class="detail">
+                    <span class="label">Reason</span>
+                    <span class="value">{{ $i->cancellation_reason ?? '-' }}</span>
+                </div>
+                <div class="detail">
+                    <span class="label">Status</span>
+                    <span class="value cancelled-badge">{{ $i->status }}</span>
                 </div>
             </div>
         </a>
@@ -614,6 +662,15 @@
     color: #6b7280;
 }
 
+.payment-section-header.cancelled {
+    background: #fef3c7;
+    border-left-color: #f59e0b;
+}
+
+.payment-section-header.cancelled h2 {
+    color: #d97706;
+}
+
 /* Badge styling */
 .badge {
     padding: 4px 12px;
@@ -641,6 +698,12 @@
     border: 1px solid #d1d5db;
 }
 
+.cancelled-badge {
+    background: #fef3c7;
+    color: #d97706;
+    border: 1px solid #fcd34d;
+}
+
 /* Row styling */
 .partial-row {
     background: #fef2f2;
@@ -664,6 +727,14 @@
 
 .issued-row:hover {
     background: #f3f4f6;
+}
+
+.cancelled-row {
+    background: #fef3c7;
+}
+
+.cancelled-row:hover {
+    background: #fde68a;
 }
 
 /* Card styling */
@@ -692,6 +763,15 @@
 
 .issued-card:active {
     background: #f9fafb;
+}
+
+.cancelled-card {
+    border: 2px solid #fcd34d;
+    background: #fef3c7;
+}
+
+.cancelled-card:active {
+    background: #fde68a;
 }
 
 /* Pagination styling */

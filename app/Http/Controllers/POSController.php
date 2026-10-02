@@ -189,20 +189,19 @@ class POSController extends Controller
                 // Handle walk-in customer
                 $customerId = $request->customer_id;
                 if (!$customerId) {
-                    // Find or create walk-in customer
-                    $walkinCustomer = Customer::where('tenant_id', auth()->user()->tenant_id)
-                        ->where('full_name', 'Walk-in Customer')
-                        ->first();
+                    // Generate unique walk-in customer code
+                    $walkinCount = Customer::where('tenant_id', auth()->user()->tenant_id)
+                        ->where('customer_code', 'like', 'WALKIN-%')
+                        ->count();
+                    $walkinCode = 'WALKIN-' . str_pad($walkinCount + 1, 3, '0', STR_PAD_LEFT);
 
-                    if (!$walkinCustomer) {
-                        $walkinCustomer = Customer::create([
-                            'tenant_id' => auth()->user()->tenant_id,
-                            'business_id' => auth()->user()->business_id,
-                            'full_name' => 'Walk-in Customer',
-                            'phone' => '0000000000',
-                            'customer_code' => 'WALKIN',
-                        ]);
-                    }
+                    $walkinCustomer = Customer::create([
+                        'tenant_id' => auth()->user()->tenant_id,
+                        'business_id' => auth()->user()->business_id,
+                        'full_name' => 'Walk-in Customer',
+                        'phone' => '0000000000',
+                        'customer_code' => $walkinCode,
+                    ]);
                     $customerId = $walkinCustomer->id;
                 }
 
