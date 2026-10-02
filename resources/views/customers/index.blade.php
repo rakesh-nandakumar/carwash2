@@ -49,7 +49,11 @@ for (let i = 0; i < document.body.children.length; i++) {
                 <td>{{ $c->jobs_count }}</td>
                 <td>Rs. {{ number_format($c->invoices_sum_total ?? 0, 2) }}</td>
                 <td>
-                    <a href="{{ route('customers.show',$c) }}">View →</a>
+                    <a href="{{ route('customers.show',$c) }}">View</a>
+                    @if(auth()->user()->can('customers.edit'))
+                    <span>|</span>
+                    <a href="{{ route('customers.edit',$c) }}">Edit</a>
+                    @endif
                 </td>
             </tr>
             @empty
@@ -63,7 +67,7 @@ for (let i = 0; i < document.body.children.length; i++) {
     <!-- Mobile Cards -->
     <div class="customers-cards">
         @forelse($customers as $c)
-        <a href="{{ route('customers.show',$c) }}" class="customer-card">
+        <div class="customer-card" onclick="window.location.href='{{ route('customers.show',$c) }}'">
             <div class="card-top">
                 <div class="card-name">
                     <strong>{{ $c->full_name }}</strong>
@@ -89,7 +93,12 @@ for (let i = 0; i < document.body.children.length; i++) {
                     <span class="value">Rs. {{ number_format($c->invoices_sum_total ?? 0, 2) }}</span>
                 </div>
             </div>
-        </a>
+            @if(auth()->user()->can('customers.edit'))
+            <div class="card-actions">
+                <a href="{{ route('customers.edit',$c) }}" class="btn-edit" onclick="event.stopPropagation()">Edit</a>
+            </div>
+            @endif
+        </div>
         @empty
         <div class="empty-state">No customers found.</div>
         @endforelse
@@ -107,6 +116,34 @@ for (let i = 0; i < document.body.children.length; i++) {
 .customers-table {
     width: 100%;
     border-collapse: collapse;
+}
+
+.customers-table td:last-child {
+    white-space: nowrap
+}
+
+.customers-table td:last-child a {
+    margin-right: 6px;
+    color: #4a90e2;
+    text-decoration: none;
+    font-weight: 500;
+    padding: 6px 12px;
+    border-radius: 6px;
+    background: #f0f9ff;
+    transition: all 0.2s ease;
+    display: inline-block
+}
+
+.customers-table td:last-child a:hover {
+    background: #4a90e2;
+    color: white;
+    text-decoration: none
+}
+
+.customers-table td:last-child span {
+    color: #d1d5db;
+    margin-right: 4px;
+    font-size: 14px
 }
 
 .customers-cards {
@@ -293,21 +330,6 @@ nav[role="navigation"] svg {
         height: 40px;
     }
 
-    .filter-btn {
-        padding: 0 12px;
-        font-size: 13px;
-        height: 40px;
-    }
-
-    .modal-box {
-        max-width: 90%;
-        padding: 20px;
-    }
-
-    .modal-body {
-        overflow: visible;
-    }
-
     /* Hide the normal table */
     .customers-table {
         display: none;
@@ -326,15 +348,15 @@ nav[role="navigation"] svg {
         border: 1px solid #e5e7eb;
         border-radius: 12px;
         padding: 14px 16px;
-        text-decoration: none;
         color: inherit;
         transition: all 0.2s ease;
         box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        cursor: pointer
     }
 
     .customer-card:active {
         transform: scale(0.98);
-        background: #f9fafb;
+        background: #f9fafb
     }
 
     .card-top {
@@ -342,6 +364,8 @@ nav[role="navigation"] svg {
         justify-content: space-between;
         align-items: flex-start;
         margin-bottom: 12px;
+        text-decoration: none;
+        color: inherit
     }
 
     .card-name strong {
@@ -361,6 +385,33 @@ nav[role="navigation"] svg {
         font-size: 16px;
         color: #9ca3af;
         margin-top: 2px;
+    }
+
+    .card-actions {
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 1px solid #e5e7eb
+    }
+
+    .btn-edit {
+        display: inline-block;
+        padding: 8px 16px;
+        background: #f0f9ff;
+        color: #4a90e2;
+        border-radius: 6px;
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 500;
+        transition: all 0.2s ease
+    }
+
+    .btn-edit:hover {
+        background: #4a90e2;
+        color: white
+    }
+
+    .card-actions .btn-edit {
+        cursor: pointer
     }
 
     .card-details {

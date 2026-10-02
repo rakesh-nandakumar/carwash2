@@ -182,7 +182,7 @@ class VehicleController extends Controller
             'new_values' => $validated,
         ]);
 
-        return back()->with('success', 'Vehicle updated.');
+        return redirect()->route('vehicles.index')->with('success', 'Vehicle updated.');
     }
 
     public function categories(Request $request)
