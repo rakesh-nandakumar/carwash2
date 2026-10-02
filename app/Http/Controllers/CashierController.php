@@ -42,11 +42,18 @@ class CashierController extends Controller
         $jobCount = Job::where('tenant_id', auth()->user()->tenant_id)
             ->where('status', JobStatus::READY_FOR_PAYMENT->value)
             ->whereDoesntHave('invoice.payments') // Exclude jobs that have any payment records
+            ->where(function ($query) {
+                $query->whereDoesntHave('invoice')
+                      ->orWhereHas('invoice', function ($q) {
+                          $q->where('status', '!=', 'cancelled');
+                      });
+            })
             ->where('status', '!=', JobStatus::DELIVERED->value)
             ->count();
 
         $posCount = Invoice::where('tenant_id', auth()->user()->tenant_id)
             ->whereNull('job_id')
+            ->where('status', '!=', 'cancelled')
             ->where('balance', '>', 0)
             ->whereDoesntHave('payments') // Exclude POS invoices that have any payment records
             ->count();
@@ -70,15 +77,22 @@ class CashierController extends Controller
                 JobStatus::READY_FOR_PAYMENT->value
             )
             ->whereDoesntHave('invoice.payments') // Exclude jobs that have any payment records
+            ->where(function ($query) {
+                $query->whereDoesntHave('invoice')
+                      ->orWhereHas('invoice', function ($q) {
+                          $q->where('status', '!=', 'cancelled');
+                      });
+            })
             ->where('status', '!=', JobStatus::DELIVERED->value)
             ->orderBy('updated_at', 'desc')
             ->get();
 
         // Also load POS invoices (invoices with no job)
-        // Only show POS invoices that haven't received any payment yet
+        // Only show POS invoices that haven't received any payment yet and are not cancelled
         $posInvoices = Invoice::with(['customer', 'items'])
             ->where('tenant_id', auth()->user()->tenant_id)
             ->whereNull('job_id')
+            ->where('status', '!=', 'cancelled')
             ->where('balance', '>', 0)
             ->whereDoesntHave('payments') // Only show if no payment records exist
             ->orderBy('created_at', 'desc')
@@ -160,6 +174,12 @@ class CashierController extends Controller
                 $query->where('paid', '>', 0)
                       ->where('balance', '>', 0.01);
             })
+            ->where(function ($query) {
+                $query->whereDoesntHave('invoice')
+                      ->orWhereHas('invoice', function ($q) {
+                          $q->where('status', '!=', 'cancelled');
+                      });
+            })
             ->where(function ($q) use ($query) {
                 $q->whereHas('vehicle', function ($q) use ($query) {
                     $q->where('registration_number', 'like', '%' . $query . '%');
@@ -215,7 +235,17 @@ class CashierController extends Controller
      */
     public function paymentForInvoice(Invoice $invoice)
     {
+        // Tenant check
+        if ($invoice->tenant_id !== auth()->user()->tenant_id) {
+            abort(403, 'You can only view invoices from your tenant.');
+        }
+
         $invoice->load(['customer', 'items']);
+
+        // Check if invoice is cancelled
+        if ($invoice->status === 'cancelled') {
+            return back()->with('error', 'This invoice has been cancelled and cannot be paid.');
+        }
 
         // Check if invoice is already fully paid
         if ($invoice->balance <= 0) {
@@ -1383,5 +1413,137 @@ class CashierController extends Controller
         }
 
         return back()->with('success', 'Cash removed from Till successfully.');
+    }
+
+    public function reverseInvoice(Request $request, Invoice $invoice)
+    {
+        // Only Full Administrator can reverse invoices
+        if (!auth()->user()->isFullAdmin()) {
+            abort(403, 'Only Full Administrator can reverse invoices.');
+        }
+
+        // Tenant check
+        if ($invoice->tenant_id !== auth()->user()->tenant_id) {
+            abort(403, 'You can only reverse invoices from your tenant.');
+        }
+
+        // Cannot reverse already cancelled invoices
+        if ($invoice->status === 'cancelled') {
+            return back()->with('error', 'This invoice is already cancelled.');
+        }
+
+        $data = $request->validate([
+            'reason' => ['required', 'string', 'in:duplicate_invoice,incorrect_customer,wrong_products,pricing_error,accidental_creation,customer_request,system_error,payment_issue'],
+        ]);
+
+        // Map reason codes to readable descriptions
+        $reasonDescriptions = [
+            'duplicate_invoice' => 'Duplicate invoice created',
+            'incorrect_customer' => 'Incorrect customer selected',
+            'wrong_products' => 'Wrong products added to invoice',
+            'pricing_error' => 'Pricing error on invoice',
+            'accidental_creation' => 'Invoice created accidentally',
+            'customer_request' => 'Customer requested cancellation',
+            'system_error' => 'System error during creation',
+            'payment_issue' => 'Payment processing issue',
+        ];
+
+        $readableReason = $reasonDescriptions[$data['reason']] ?? $data['reason'];
+
+        DB::transaction(function () use ($invoice, $data, $readableReason) {
+            // Reverse stock movements for invoice items
+            foreach ($invoice->items as $item) {
+                $productId = null;
+
+                // Handle different item types
+                if ($item->item_type === 'product') {
+                    // POS sales: item_id is the product_id
+                    $productId = $item->item_id;
+                } elseif ($item->item_type === 'part') {
+                    // Job parts: item_id is the job_part id, need to get product_id from it
+                    $jobPart = \App\Models\JobPart::find($item->item_id);
+                    if ($jobPart) {
+                        $productId = $jobPart->product_id;
+                    }
+                }
+
+                if ($productId) {
+                    $inventory = \App\Models\Inventory::where('tenant_id', $invoice->tenant_id)
+                        ->where('product_id', $productId)
+                        ->where('branch_id', $invoice->branch_id)
+                        ->first();
+
+                    if ($inventory) {
+                        // Increment stock back
+                        $inventory->increment('quantity', $item->quantity);
+
+                        // Create inventory movement record for reversal
+                        \App\Models\InventoryMovement::create([
+                            'product_id' => $productId,
+                            'tenant_id' => $invoice->tenant_id,
+                            'business_id' => $invoice->business_id,
+                            'branch_id' => $invoice->branch_id,
+                            'type' => \App\Enums\InventoryMovementType::INVOICE_REVERSAL->value,
+                            'quantity' => $item->quantity,
+                            'unit_cost' => $item->unit_cost ?? 0,
+                            'reference_type' => 'invoice_reversal',
+                            'reference_id' => $invoice->id,
+                            'user_id' => auth()->id(),
+                            'reason' => 'Invoice reversal: ' . $readableReason,
+                        ]);
+                    }
+                }
+            }
+
+            // Reverse payments if they exist
+            foreach ($invoice->payments as $payment) {
+                // If payment was cash, reverse cash movement
+                if ($payment->method === 'cash') {
+                    $till = $this->cashMovements->getSelectedTill();
+                    if ($till) {
+                        // Record cash out to reverse the cash in
+                        $this->cashMovements->recordCashOut(
+                            amount: (float) $payment->amount,
+                            reason: 'Invoice reversal - payment refund',
+                            description: 'Reversing payment for invoice ' . $invoice->invoice_number,
+                            userId: auth()->id(),
+                        );
+                    }
+                }
+
+                // Mark payment as reversed
+                $payment->update([
+                    'status' => 'reversed',
+                    'notes' => ($payment->notes ?? '') . ' | Reversed due to invoice cancellation: ' . $readableReason,
+                ]);
+            }
+
+            // Update invoice status to cancelled
+            $invoice->update([
+                'status' => 'cancelled',
+                'cancellation_reason' => $readableReason,
+            ]);
+
+            // Log the reversal
+            $this->audit->log(
+                'invoice_reversed',
+                "Invoice #{$invoice->invoice_number} reversed",
+                'warning',
+                'tenant_user',
+                auth()->user()->email,
+                [
+                    'invoice_id' => $invoice->id,
+                    'invoice_number' => $invoice->invoice_number,
+                    'old_status' => $invoice->status,
+                    'new_status' => 'cancelled',
+                    'cancellation_reason' => $readableReason,
+                ]
+            );
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Invoice reversed successfully. Stock and payments have been restored.'
+        ]);
     }
 }

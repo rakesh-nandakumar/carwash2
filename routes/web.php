@@ -575,6 +575,9 @@ Route::prefix('{tenant}')
             Route::get('/cashier/day-report/{closure}', [TillClosureController::class, 'printDayReport'])
                 ->name('cashier.day-report')
                 ->middleware('permission:cashier.access');
+
+            Route::post('/cashier/reverse-invoice/{invoice}', [CashierController::class, 'reverseInvoice'])
+                ->name('cashier.reverse-invoice');
             // ==================== END CASHIER ====================
 
             // ==================== CHEQUE PAYMENTS ====================
