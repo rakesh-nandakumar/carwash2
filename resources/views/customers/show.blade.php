@@ -6,9 +6,14 @@
         <h1>{{ $customer->full_name }}</h1>
         <p>{{ $customer->customer_code }} · {{ $customer->phone }}</p>
     </div>
-    <a class="primary" href="{{ route('vehicles.create', ['customer_id' => $customer->id]) }}">
-        + Add Vehicle
-    </a>
+    <div>
+        @if(auth()->user()->can('customers.edit'))
+        <a class="secondary" href="{{ route('customers.edit', $customer) }}">Edit Customer</a>
+        @endif
+        <a class="primary" href="{{ route('vehicles.create', ['customer_id' => $customer->id]) }}">
+            + Add Vehicle
+        </a>
+    </div>
 </div>
 
 {{-- Stats: always 2 per row --}}
