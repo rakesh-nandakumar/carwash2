@@ -83,10 +83,10 @@
                         </td>
                         <td>
                             <strong>
-                                {{ $adjustment->product->name }}
+                                {{ preg_replace('/\s*PRD-\d+\s*/', '', $adjustment->product->name) }}
                             </strong>
                             <small class="muted">
-                                {{ $adjustment->product->sku }}
+                                {{ preg_replace('/\s*PRD-\d+\s*/', '', $adjustment->product->sku) }}
                             </small>
                         </td>
                         <td>
@@ -191,27 +191,13 @@
         >
             @csrf
             <div class="form-grid">
-                <label>
+                <label class="wide">
                     Product
-                    <select
-                        name="product_id"
-                        id="product_id"
-                        required
-                        onchange="loadCurrentStock()"
-                    >
-                        <option value="">Select product</option>
-                        @foreach($products as $product)
-                            <option
-                                value="{{ $product->id }}"
-                                data-name="{{ $product->name }}"
-                            >
-                                {{ $product->name }}
-                                @if($product->sku)
-                                    — {{ $product->sku }}
-                                @endif
-                            </option>
-                        @endforeach
-                    </select>
+                    <div class="searchable-dropdown" id="productDropdown">
+                        <input type="hidden" name="product_id" id="product_id" value="">
+                        <input type="text" class="searchable-dropdown-input" id="productInput" placeholder="Search or select product..." required>
+                        <div class="searchable-dropdown-options"></div>
+                    </div>
                 </label>
                 <label>
                     Current Stock
@@ -308,6 +294,7 @@
         </div>
         <div class="reverse-summary">
             <strong id="reverseProduct"></strong>
+            <input type="hidden" id="reverseProductOriginal">
             <div class="reverse-row">
                 <span>Original stock</span>
                 <strong id="reverseBefore"></strong>
@@ -424,14 +411,15 @@
     padding: 20px;
 }
 .modal-box {
-    background: white;
+    background: linear-gradient(135deg, #1e3a5f 0%, #0f2a44 100%);
     width: 100%;
     max-width: 700px;
     max-height: 90vh;
     overflow-y: auto;
-    border-radius: 14px;
-    padding: 24px;
-    box-shadow: 0 25px 60px rgba(0,0,0,.2);
+    border-radius: 16px;
+    padding: 28px;
+    box-shadow: 0 25px 60px rgba(0,0,0,.3);
+    border: 1px solid rgba(255, 255, 255, 0.1)
 }
 .modal-header {
     display: flex;
@@ -441,19 +429,46 @@
 }
 .modal-header h2 {
     margin: 0;
-    font-size: 20px;
+    font-size: 22px;
+    color: #ffffff;
+    font-weight: 600
 }
 .modal-header p {
     margin: 5px 0 0;
-    color: #6b7280;
-    font-size: 14px;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 14px
+}
+
+#filterModal .modal-header h2 {
+    color: #ffffff
+}
+
+#reverseModal .modal-header h2 {
+    color: #ffffff
+}
+
+#reverseModal .modal-header p {
+    color: rgba(255, 255, 255, 0.7)
 }
 .modal-close {
     border: none;
     background: none;
     font-size: 28px;
     cursor: pointer;
-    color: #6b7280;
+    color: rgba(255, 255, 255, 0.6);
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    transition: background 0.15s ease
+}
+
+.modal-close:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff
 }
 .modal-footer {
     display: flex;
@@ -462,8 +477,8 @@
     margin-top: 24px;
 }
 .reverse-summary {
-    background: #f8fafc;
-    border: 1px solid #e5e7eb;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     padding: 16px;
     border-radius: 10px;
     margin-bottom: 20px;
@@ -472,12 +487,17 @@
     display: block;
     margin-bottom: 12px;
     font-size: 16px;
+    color: #ffffff
 }
 .reverse-row {
     display: flex;
     justify-content: space-between;
     padding: 7px 0;
-    border-top: 1px solid #e5e7eb;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.7)
+}
+.reverse-row strong {
+    color: #ffffff
 }
 .empty-state {
     text-align: center;
@@ -543,40 +563,86 @@
 .modal-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(15, 23, 42, .55);
+    background: rgba(15, 23, 42, .65);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 5000;
     padding: 20px;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px)
+}
+
+#filterModal .modal-box,
+#reverseModal .modal-box {
+    background: linear-gradient(135deg, #1e3a5f 0%, #0f2a44 100%);
+    max-width: 400px
+}
+
+#reverseModal .modal-box {
+    max-width: 500px
 }
 
 .modal-box {
-    background: rgba(10, 31, 51, 0.85);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    background: linear-gradient(135deg, #1e3a5f 0%, #0f2a44 100%);
     width: 100%;
     max-width: 400px;
     max-height: 90vh;
     overflow-y: auto;
-    border-radius: 14px;
+    border-radius: 16px;
     padding: 24px;
     box-shadow: 0 25px 60px rgba(0,0,0,.3);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.1)
 }
 
 .modal-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px;
+    margin-bottom: 20px
 }
 
 .modal-header h2 {
     margin: 0;
     font-size: 18px;
     font-weight: 600;
-    color: #ffffff;
+    color: #ffffff
+}
+
+#filterModal .modal-header h2,
+#reverseModal .modal-header h2 {
+    color: #ffffff
+}
+
+#filterModal label,
+#reverseModal label {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 13px;
+    font-weight: 500;
+    margin-bottom: 6px;
+    display: block
+}
+
+#reverseModal textarea {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    font-size: 14px;
+    background: rgba(255, 255, 255, 0.05);
+    color: rgba(255, 255, 255, 0.9);
+    box-sizing: border-box;
+    resize: vertical
+}
+
+#reverseModal textarea:focus {
+    outline: none;
+    border-color: rgba(255, 255, 255, 0.4);
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1)
+}
+
+#reverseModal textarea::placeholder {
+    color: rgba(255, 255, 255, 0.4)
 }
 
 .modal-close {
@@ -623,23 +689,34 @@
 .modal-footer .secondary {
     background: rgba(255, 255, 255, 0.1);
     border: 1px solid rgba(255, 255, 255, 0.2);
-    color: rgba(255, 255, 255, 0.9);
+    color: rgba(255, 255, 255, 0.9)
 }
 
 .modal-footer .secondary:hover {
     background: rgba(255, 255, 255, 0.2);
-    color: #ffffff;
+    color: #ffffff
 }
 
 .modal-footer .primary {
-    background: rgba(255, 255, 255, 0.9);
-    border: 1px solid rgba(255, 255, 255, 0.9);
-    color: #0a1f33;
+    background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
+    border: 1px solid #4a90e2;
+    color: #ffffff
 }
 
 .modal-footer .primary:hover {
-    background: #ffffff;
-    border-color: #ffffff;
+    background: linear-gradient(135deg, #357abd 0%, #2a639a 100%);
+    border-color: #357abd
+}
+
+.modal-footer .danger {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    border: 1px solid #dc2626;
+    color: #ffffff
+}
+
+.modal-footer .danger:hover {
+    background: linear-gradient(135deg, #b91c1c 0%, #991b1b 100%);
+    border-color: #b91c1c
 }
 
 .filter-section {
@@ -662,24 +739,24 @@
 
 .filter-section select {
     width: 100%;
-    padding: 8px 12px;
+    padding: 10px 14px;
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 8px;
     font-size: 14px;
     color: rgba(255, 255, 255, 0.9);
     background: rgba(255, 255, 255, 0.05);
-    cursor: pointer;
+    cursor: pointer
 }
 
 .filter-section select:focus {
     outline: none;
     border-color: rgba(255, 255, 255, 0.4);
-    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1)
 }
 
 .filter-section select option {
-    background: #0a1f33;
-    color: #ffffff;
+    background: #0f2a44;
+    color: #ffffff
 }
 
 .clear-filters {
@@ -699,6 +776,167 @@
 .clear-filters:hover {
     background: #e5e7eb;
     color: #374151;
+}
+
+/* Searchable Dropdown Styles */
+.searchable-dropdown {
+    position: relative;
+    width: 100%
+}
+
+.searchable-dropdown-input {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    font-size: 14px;
+    background: rgba(255, 255, 255, 0.05);
+    color: rgba(255, 255, 255, 0.9)
+}
+
+.searchable-dropdown-input::placeholder {
+    color: rgba(255, 255, 255, 0.4)
+}
+
+.searchable-dropdown-input:focus {
+    outline: none;
+    border-color: rgba(255, 255, 255, 0.4);
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1)
+}
+
+.searchable-dropdown.open .searchable-dropdown-input {
+    border-color: #4a90e2
+}
+
+.searchable-dropdown.open {
+    z-index: 100
+}
+
+.searchable-dropdown-options {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    max-height: 200px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    background: rgba(15, 42, 68, 0.98);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    margin-top: 4px;
+    z-index: 10001;
+    display: none;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    padding: 4px 0
+}
+
+.searchable-dropdown.open .searchable-dropdown-options {
+    display: block
+}
+
+.searchable-dropdown-options > div {
+    padding: 8px 12px;
+    cursor: pointer;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 14px;
+    transition: background 0.15s ease;
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    text-align: left;
+    border: none !important;
+    background: none !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    border-radius: 0;
+    margin: 0;
+    line-height: 1.4;
+    height: auto;
+    min-height: auto
+}
+
+.searchable-dropdown-option {
+    cursor: pointer;
+    transition: background 0.15s ease
+}
+
+.searchable-dropdown-option:hover {
+    background: rgba(255, 255, 255, 0.1)
+}
+
+.searchable-dropdown-option.selected {
+    background: rgba(255, 255, 255, 0.15)
+}
+
+.searchable-dropdown-no-results {
+    padding: 12px;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 14px;
+    text-align: center;
+    display: block;
+    width: 100%;
+    box-sizing: border-box
+}
+
+.searchable-dropdown-options::-webkit-scrollbar {
+    width: 6px
+}
+
+.searchable-dropdown-options::-webkit-scrollbar-track {
+    background: #f3f4f6
+}
+
+.searchable-dropdown-options::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 3px
+}
+
+.searchable-dropdown-options::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af
+}
+
+.wide {
+    grid-column: 1 / -1
+}
+
+.form-grid label {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 13px;
+    font-weight: 500;
+    margin-bottom: 6px;
+    display: block
+}
+
+.form-grid input,
+.form-grid select,
+.form-grid textarea {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    font-size: 14px;
+    background: rgba(255, 255, 255, 0.05);
+    color: rgba(255, 255, 255, 0.9);
+    box-sizing: border-box
+}
+
+.form-grid input:focus,
+.form-grid select:focus,
+.form-grid textarea:focus {
+    outline: none;
+    border-color: rgba(255, 255, 255, 0.4);
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1)
+}
+
+.form-grid input::placeholder,
+.form-grid textarea::placeholder {
+    color: rgba(255, 255, 255, 0.4)
+}
+
+.form-grid input[readonly] {
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.6)
 }
 
 /* Pagination styling */
@@ -890,7 +1128,8 @@ function openAdjustmentModal() {
     document.getElementById('current_stock_display').value = '0.000';
     document.getElementById('difference_display').value = '0.000';
     document.getElementById('new_quantity').value = '';
-    loadCurrentStock();
+    document.getElementById('product_id').value = '';
+    document.getElementById('productInput').value = '';
 }
 function closeAdjustmentModal() {
     document.getElementById('adjustmentModal').style.display = 'none';
@@ -911,18 +1150,15 @@ function calculateDifference() {
         difference.toFixed(3);
 }
 async function loadCurrentStock() {
-    const productSelect =
-        document.getElementById('product_id');
-    const currentStock =
-        document.getElementById('current_stock_display');
-    const difference =
-        document.getElementById('difference_display');
+    const productIdInput = document.getElementById('product_id');
+    const currentStock = document.getElementById('current_stock_display');
+    const difference = document.getElementById('difference_display');
 
-    if (!productSelect || !currentStock || !difference) {
+    if (!productIdInput || !currentStock || !difference) {
         return;
     }
 
-    const productId = productSelect.value;
+    const productId = productIdInput.value;
 
     if (!productId) {
         currentStock.value = '0.000';
@@ -935,15 +1171,7 @@ async function loadCurrentStock() {
     currentStock.value = 'Loading...';
 
     try {
-        /*
-         * IMPORTANT:
-         * Generate the URL using Laravel's named route.
-         * This automatically includes:
-         * /autocare-pro-service-center/
-         */
-        const stockUrl =
-            `{{ route('inventory.stock', ['product' => '__PRODUCT__']) }}`
-                .replace('__PRODUCT__', productId);
+        const stockUrl = `{{ route('inventory.stock', ['product' => '__PRODUCT__']) }}`.replace('__PRODUCT__', productId);
 
         console.log('Loading stock:', {
             productId: productId,
@@ -964,44 +1192,24 @@ async function loadCurrentStock() {
         );
 
         if (!response.ok) {
-            const errorText =
-                await response.text();
-
-            console.error(
-                'Stock API error:',
-                response.status,
-                errorText
-            );
-
-            throw new Error(
-                `Stock request failed (${response.status})`
-            );
+            const errorText = await response.text();
+            console.error('Stock API error:', response.status, errorText);
+            throw new Error(`Stock request failed (${response.status})`);
         }
 
-        const data =
-            await response.json();
-
+        const data = await response.json();
         console.log('Stock API response:', data);
 
-        const quantity =
-            Number(data.current_stock);
+        const quantity = Number(data.current_stock);
 
         if (Number.isNaN(quantity)) {
-            throw new Error(
-                'Invalid stock quantity returned by server.'
-            );
+            throw new Error('Invalid stock quantity returned by server.');
         }
 
-        currentStock.value =
-            quantity.toFixed(3);
-
+        currentStock.value = quantity.toFixed(3);
         calculateDifference();
     } catch (error) {
-        console.error(
-            'Failed to load current stock:',
-            error
-        );
-
+        console.error('Failed to load current stock:', error);
         currentStock.value = 'Error';
         difference.value = '0.000';
     }
@@ -1013,7 +1221,8 @@ function openReverseModal(
     after,
     difference
 ) {
-    document.getElementById('reverseProduct').textContent = product;
+    document.getElementById('reverseProductOriginal').value = product;
+    document.getElementById('reverseProduct').textContent = product.replace(/\s*PRD-\d+\s*/g, '').trim();
     document.getElementById('reverseBefore').textContent =
         Number(before).toFixed(3);
     document.getElementById('reverseAfter').textContent =
@@ -1021,11 +1230,10 @@ function openReverseModal(
     document.getElementById('reverseDifference').textContent =
         Number(difference).toFixed(3);
     document.getElementById('stockAdjustmentId').value = id;
-    
-    // Get tenant prefix from current URL
+
     const pathParts = window.location.pathname.split('/');
     const tenantPrefix = pathParts[1];
-    
+
     const form = document.getElementById('reverseForm');
     form.action = '/' + tenantPrefix + '/stock-adjustments/reverse';
     document.getElementById('reverseModal').style.display = 'flex';
@@ -1090,6 +1298,73 @@ function clearFilters() {
 document.getElementById('filterModal').addEventListener('click', function(event) {
     if (event.target === this) {
         closeFilterModal();
+    }
+});
+
+// Product searchable dropdown
+document.addEventListener('DOMContentLoaded', function() {
+    const productDropdown = document.getElementById('productDropdown');
+    const productInput = document.getElementById('productInput');
+    const productIdInput = document.getElementById('product_id');
+    
+    if (productDropdown && productInput && productIdInput) {
+        const products = @json($products);
+        const productData = products.map(p => {
+            const cleanName = p.name.replace(/\s*PRD-\d+\s*/g, '').trim();
+            const cleanSku = p.sku ? p.sku.replace(/\s*PRD-\d+\s*/g, '').trim() : '';
+            const label = cleanSku ? cleanName + ' — ' + cleanSku : cleanName;
+            return {
+                id: p.id,
+                label: label,
+                name: p.name,
+                sku: p.sku
+            };
+        });
+        
+        const optionsDiv = productDropdown.querySelector('.searchable-dropdown-options');
+        
+        productInput.addEventListener('input', function() {
+            const query = this.value.toLowerCase();
+            optionsDiv.innerHTML = '';
+            
+            if (query.length === 0) {
+                optionsDiv.style.display = 'none';
+                productIdInput.value = '';
+                return;
+            }
+            
+            const filtered = productData.filter(p => 
+                p.label.toLowerCase().includes(query)
+            );
+            
+            if (filtered.length === 0) {
+                const noResults = document.createElement('div');
+                noResults.className = 'searchable-dropdown-no-results';
+                noResults.textContent = 'No products found';
+                optionsDiv.appendChild(noResults);
+                optionsDiv.style.display = 'block';
+                return;
+            }
+            
+            filtered.forEach(product => {
+                const div = document.createElement('div');
+                div.className = 'searchable-dropdown-option';
+                div.textContent = product.label;
+                div.addEventListener('click', function() {
+                    productInput.value = product.label;
+                    productIdInput.value = product.id;
+                    optionsDiv.style.display = 'none';
+                    loadCurrentStock();
+                });
+                optionsDiv.appendChild(div);
+            });
+            
+            optionsDiv.style.display = 'block';
+        });
+        
+        productInput.addEventListener('blur', function() {
+            setTimeout(() => optionsDiv.style.display = 'none', 200);
+        });
     }
 });
 </script>
