@@ -104,7 +104,8 @@ class CashMovementService
     public function recordSale(
         float $amount,
         ?Model $reference = null,
-        ?int $userId = null
+        ?int $userId = null,
+        ?int $closureId = null
     ): CashMovement {
         $movement = $this->record(
             type: 'in',
@@ -113,6 +114,7 @@ class CashMovementService
             reason: 'Cash Sale',
             reference: $reference,
             userId: $userId,
+            closureId: $closureId,
         );
 
         $this->auditService->log('cash.sale', "Cash sale recorded: Rs. {$amount}", 'info', 'tenant_user', auth()->user()->email, [
@@ -120,6 +122,7 @@ class CashMovementService
             'amount' => $amount,
             'reference_type' => $reference ? $reference->getMorphClass() : null,
             'reference_id' => $reference ? $reference->id : null,
+            'closure_id' => $closureId,
         ]);
 
         return $movement;
@@ -543,6 +546,7 @@ class CashMovementService
         ?Model $reference = null,
         ?int $userId = null,
         ?Till $till = null,
+        ?int $closureId = null
     ): CashMovement {
         if ($amount <= 0) {
             throw new RuntimeException(

@@ -350,6 +350,60 @@ class TillClosureController extends Controller
         return view('cashier.shift-history', compact('till', 'closures'));
     }
 
+    public function addBackdatedPayment(Request $request, TillClosure $closure)
+    {
+        // Only Full Administrator can add backdated payments
+        if (!auth()->user()->isFullAdmin()) {
+            abort(403, 'Only Full Administrator can add backdated payments.');
+        }
+
+        // Tenant check
+        if ($closure->tenant_id !== auth()->user()->tenant_id) {
+            abort(403, 'You can only modify closures from your tenant.');
+        }
+
+        $data = $request->validate([
+            'amount' => ['required', 'numeric', 'min:0.01'],
+            'reason' => ['required', 'string', 'max:255'],
+            'invoice_number' => ['nullable', 'string', 'max:255'],
+            'notes' => ['nullable', 'string'],
+        ]);
+
+        DB::transaction(function () use ($closure, $data) {
+            // Create cash movement linked to the closure
+            \App\Models\CashMovement::create([
+                'till_id' => $closure->till_id,
+                'till_closure_id' => $closure->id,
+                'tenant_id' => $closure->tenant_id,
+                'business_id' => $closure->business_id,
+                'type' => 'in',
+                'source' => 'manual',
+                'amount' => (float) $data['amount'],
+                'reason' => $data['reason'],
+                'description' => $data['invoice_number'] ? "Invoice: {$data['invoice_number']}" : null,
+                'user_id' => auth()->id(),
+            ]);
+
+            // Update closure totals
+            $closure->increment('cash_sales', (float) $data['amount']);
+            $closure->increment('total_sales', (float) $data['amount']);
+            $closure->increment('expected_balance', (float) $data['amount']);
+
+            $this->auditService->log('till.backdated_payment', "Backdated payment added to closure #{$closure->id}: Rs. {$data['amount']}", 'warning', 'tenant_user', auth()->user()->email, [
+                'closure_id' => $closure->id,
+                'amount' => $data['amount'],
+                'reason' => $data['reason'],
+                'invoice_number' => $data['invoice_number'],
+                'notes' => $data['notes'] ?? null,
+            ]);
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Backdated payment added successfully. Till closure has been updated.'
+        ]);
+    }
+
     public function show(TillClosure $closure)
     {
         $till = $this->cashMovements->getSelectedTill();

@@ -94,7 +94,7 @@ class NotificationController extends Controller
             });
 
         // Get jobs ready for payment (excluding jobs that have partial payments)
-        $readyForPayment = Job::with(['customer', 'vehicle', 'invoice'])
+        $readyForPaymentJobs = Job::with(['customer', 'vehicle', 'invoice'])
             ->where('tenant_id', auth()->user()->tenant_id)
             ->where('status', JobStatus::READY_FOR_PAYMENT->value)
             ->whereNotIn('id', $partialPaymentJobIds) // Exclude jobs with partial payments
@@ -117,12 +117,42 @@ class NotificationController extends Controller
                 ];
             });
 
+        // Get POS invoices ready for payment (no job, balance > 0, no payments)
+        $readyForPaymentPOS = Invoice::with(['customer'])
+            ->where('tenant_id', auth()->user()->tenant_id)
+            ->whereNull('job_id')
+            ->where('status', '!=', 'cancelled')
+            ->where('balance', '>', 0)
+            ->whereDoesntHave('payments')
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($invoice) {
+                return [
+                    'id' => $invoice->id,
+                    'type' => 'ready_for_payment_pos',
+                    'invoice_number' => $invoice->invoice_number,
+                    'customer_name' => $invoice->customer->full_name ?? 'Walk-in',
+                    'vehicle_registration' => 'N/A',
+                    'job_id' => null,
+                    'total_amount' => $invoice->total,
+                    'created_at' => $invoice->created_at,
+                ];
+            });
+
+        // Combine jobs and POS invoices for ready for payment
+        $readyForPayment = collect()
+            ->concat($readyForPaymentJobs)
+            ->concat($readyForPaymentPOS)
+            ->sortByDesc('created_at')
+            ->values();
+
         // Combine all notifications
         $allNotifications = collect()
             ->concat($partialPayments)
             ->concat($pendingCheques)
             ->concat($bouncedCheques)
-            ->concat($readyForPayment)
+            ->concat($readyForPaymentJobs)
+            ->concat($readyForPaymentPOS)
             ->sortByDesc('created_at')
             ->values();
 

@@ -77,7 +77,10 @@
     <div class="quick-actions">
         <h3>Quick Actions</h3>
         <div class="action-buttons">
-            @if($job->status->value === \App\Enums\JobStatus::CHECKED_IN->value)
+            @if($job->status->value === \App\Enums\JobStatus::WAITING_FOR_CHECKIN->value)
+                <button onclick="changeStatus('checked_in')" class="action-btn action-blue">Check In Vehicle</button>
+                <button onclick="changeStatus('cancelled')" class="action-btn action-red">Cancel Job</button>
+            @elseif($job->status->value === \App\Enums\JobStatus::CHECKED_IN->value)
                 <button onclick="changeStatus('inspection_pending')" class="action-btn action-yellow">Start Inspection</button>
                 <button onclick="changeStatus('in_service')" class="action-btn action-blue">Start Service</button>
                 <button onclick="changeStatus('cancelled')" class="action-btn action-red">Cancel Job</button>

@@ -1292,6 +1292,35 @@ function goToCashier() {
     window.location.href = '/' + tenant + '/cashier';
 }
 
+function handleClosureSelection() {
+    const select = document.getElementById('closureSelect');
+    const addToBtn = document.getElementById('addToClosureBtn');
+    addToBtn.disabled = !select.value;
+}
+
+function addToSelectedClosure() {
+    const closureId = document.getElementById('closureSelect').value;
+    if (!closureId) {
+        alert('Please select a closure first.');
+        return;
+    }
+
+    // Add hidden input to form with closure_id
+    let closureInput = document.getElementById('selectedClosureId');
+    if (!closureInput) {
+        closureInput = document.createElement('input');
+        closureInput.type = 'hidden';
+        closureInput.name = 'closure_id';
+        closureInput.id = 'selectedClosureId';
+        document.getElementById('paymentForm').appendChild(closureInput);
+    }
+    closureInput.value = closureId;
+
+    // Close modal and submit form
+    closeTillClosedModal();
+    document.getElementById('paymentForm').submit();
+}
+
 function toggleReferenceField() {
     const paymentMethod = document.querySelector('input[name="payment_method"]:checked').value;
     const referenceField = document.getElementById('referenceField');
@@ -1667,10 +1696,39 @@ function calculateBalance() {
             <button class="close-btn" onclick="closeTillClosedModal()">&times;</button>
         </div>
         <div class="modal-body">
-            <p>Cannot process payment. Till is closed. Please open a new shift first.</p>
+            <p>The till is currently closed. How would you like to proceed?</p>
+
+            @if(auth()->user()->isFullAdmin())
+            <div class="till-closure-options">
+                <label style="display: block; margin: 12px 0 6px; font-weight: 600; color: #374151;">
+                    Select Previous Till Closure (Full Admin Only):
+                </label>
+                <select id="closureSelect" onchange="handleClosureSelection()">
+                    <option value="">-- Select a previous closure --</option>
+                    @php
+                        $till = app(\App\Services\CashMovementService::class)->getSelectedTill();
+                        $previousClosures = \App\Models\TillClosure::where('till_id', $till->id)
+                            ->where('tenant_id', auth()->user()->tenant_id)
+                            ->whereNotNull('closed_at')
+                            ->orderBy('closed_at', 'desc')
+                            ->take(10)
+                            ->get();
+                    @endphp
+                    @foreach($previousClosures as $prevClosure)
+                        <option value="{{ $prevClosure->id }}">
+                            {{ $prevClosure->closed_at->format('M d, Y h:i A') }} - Counted: Rs. {{ number_format($prevClosure->counted_balance, 2) }}
+                        </option>
+                    @endforeach
+                </select>
+                <small style="color: #64748b; font-size: 12px;">Select a closure to add this payment to a previous shift.</small>
+            </div>
+            @endif
         </div>
         <div class="modal-footer">
             <button type="button" class="secondary" onclick="closeTillClosedModal()">Close</button>
+            @if(auth()->user()->isFullAdmin())
+            <button type="button" class="primary" id="addToClosureBtn" onclick="addToSelectedClosure()" disabled>Add to Selected Closure</button>
+            @endif
             <button type="button" class="primary" onclick="goToCashier()">Open New Shift</button>
         </div>
     </div>
