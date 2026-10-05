@@ -67,9 +67,21 @@
                         </div>
 
                         <div class="shift-item-footer">
+                            <div class="cash-movements opening-balance">
+                                <span>Opening:</span>
+                                <strong>Rs. {{ number_format($closure->opening_balance ?? 0, 2) }}</strong>
+                            </div>
                             <div class="cash-sales">
                                 <span>Cash Sales:</span>
                                 <strong>Rs. {{ number_format($closure->cash_sales, 2) }}</strong>
+                            </div>
+                            <div class="cash-movements">
+                                <span>Cash In:</span>
+                                <strong>Rs. {{ number_format($closure->cash_in ?? 0, 2) }}</strong>
+                            </div>
+                            <div class="cash-movements">
+                                <span>Cash Out:</span>
+                                <strong>Rs. {{ number_format($closure->cash_out ?? 0, 2) }}</strong>
                             </div>
                             @if($closure->closed_at)
                             <div class="shift-actions">
@@ -266,6 +278,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 16px;
     padding-top: 12px;
     border-top: 1px solid #e5e7eb;
 }
@@ -302,13 +315,15 @@
     flex-shrink: 0;
 }
 
-.cash-sales {
+.cash-sales,
+.cash-movements {
     display: flex;
     flex-direction: column;
     gap: 2px;
 }
 
-.cash-sales span {
+.cash-sales span,
+.cash-movements span {
     font-size: 11px;
     color: #64748b;
     font-weight: 500;
@@ -318,6 +333,16 @@
     font-size: 14px;
     color: #10b981;
     font-weight: 600;
+}
+
+.cash-movements strong {
+    font-size: 14px;
+    color: #64748b;
+    font-weight: 600;
+}
+
+.opening-balance strong {
+    color: #3b82f6;
 }
 
 .action-arrow {
@@ -442,8 +467,19 @@ nav[role="navigation"] svg {
     padding: 0 14px;
 }
 
-/* Responsive pagination for mobile */
+/* Responsive design for mobile */
 @media (max-width: 768px) {
+    .shift-item-footer {
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .cash-sales,
+    .cash-movements {
+        flex: 1;
+        min-width: 70px;
+    }
+
     .pagination-wrap {
         margin-top: 20px;
         gap: 8px;
