@@ -16,7 +16,12 @@ class CustomerController extends Controller
     public function index(Request $r)
     {
         $customers = Customer::with('vehicles')
-            ->withCount('jobs')
+            ->where('customer_code', 'not like', 'WALKIN-%')
+            ->withCount([
+                'jobs' => function ($query) {
+                    $query->where('status', '!=', 'cancelled');
+                }
+            ])
             ->withSum([
                 'invoices' => function ($query) {
                     $query->where('status', '!=', 'cancelled');
