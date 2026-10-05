@@ -413,7 +413,7 @@
 .modal-box {
     background: linear-gradient(135deg, #1e3a5f 0%, #0f2a44 100%);
     width: 100%;
-    max-width: 700px;
+    max-width: 900px;
     max-height: 90vh;
     overflow-y: auto;
     border-radius: 16px;
@@ -576,17 +576,17 @@
 #filterModal .modal-box,
 #reverseModal .modal-box {
     background: linear-gradient(135deg, #1e3a5f 0%, #0f2a44 100%);
-    max-width: 400px
+    max-width: 500px
 }
 
 #reverseModal .modal-box {
-    max-width: 500px
+    max-width: 600px
 }
 
 .modal-box {
     background: linear-gradient(135deg, #1e3a5f 0%, #0f2a44 100%);
     width: 100%;
-    max-width: 400px;
+    max-width: 900px;
     max-height: 90vh;
     overflow-y: auto;
     border-radius: 16px;
@@ -927,6 +927,11 @@
     outline: none;
     border-color: rgba(255, 255, 255, 0.4);
     box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1)
+}
+
+.form-grid select option {
+    background: #0f2a44;
+    color: #ffffff
 }
 
 .form-grid input::placeholder,
@@ -1322,22 +1327,11 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         const optionsDiv = productDropdown.querySelector('.searchable-dropdown-options');
-        
-        productInput.addEventListener('input', function() {
-            const query = this.value.toLowerCase();
+
+        function renderProductDropdown(productsToShow) {
             optionsDiv.innerHTML = '';
-            
-            if (query.length === 0) {
-                optionsDiv.style.display = 'none';
-                productIdInput.value = '';
-                return;
-            }
-            
-            const filtered = productData.filter(p => 
-                p.label.toLowerCase().includes(query)
-            );
-            
-            if (filtered.length === 0) {
+
+            if (productsToShow.length === 0) {
                 const noResults = document.createElement('div');
                 noResults.className = 'searchable-dropdown-no-results';
                 noResults.textContent = 'No products found';
@@ -1345,8 +1339,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 optionsDiv.style.display = 'block';
                 return;
             }
-            
-            filtered.forEach(product => {
+
+            productsToShow.forEach(product => {
                 const div = document.createElement('div');
                 div.className = 'searchable-dropdown-option';
                 div.textContent = product.label;
@@ -1358,10 +1352,34 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
                 optionsDiv.appendChild(div);
             });
-            
+
             optionsDiv.style.display = 'block';
+        }
+
+        productInput.addEventListener('focus', function() {
+            // Show first 20 products when clicked
+            const initialProducts = productData.slice(0, 20);
+            renderProductDropdown(initialProducts);
         });
-        
+
+        productInput.addEventListener('input', function() {
+            const query = this.value.toLowerCase();
+
+            if (query.length === 0) {
+                // Show first 20 products when cleared
+                const initialProducts = productData.slice(0, 20);
+                renderProductDropdown(initialProducts);
+                productIdInput.value = '';
+                return;
+            }
+
+            const filtered = productData.filter(p =>
+                p.label.toLowerCase().includes(query)
+            );
+
+            renderProductDropdown(filtered);
+        });
+
         productInput.addEventListener('blur', function() {
             setTimeout(() => optionsDiv.style.display = 'none', 200);
         });

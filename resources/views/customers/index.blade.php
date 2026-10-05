@@ -19,7 +19,7 @@ for (let i = 0; i < document.body.children.length; i++) {
 </script>
 
 <div class="search">
-    <input id="customerSearch" placeholder="Search name or phone" oninput="filterCustomers()">
+    <input id="customerSearch" placeholder="Search name or phone" value="{{ request('q') }}" oninput="filterCustomers()">
 </div>
 
 <div class="panel">
@@ -452,11 +452,27 @@ nav[role="navigation"] svg {
 </style>
 
 <script>
+let debounceTimer;
+
 function filterCustomers() {
-    const query = document.getElementById('customerSearch').value.trim();
-    const params = new URLSearchParams();
-    if (query) params.set('q', query);
-    window.location.href = '{{ route('customers.index') }}?' + params.toString();
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+        const query = document.getElementById('customerSearch').value.trim().toLowerCase();
+
+        // Filter desktop table rows
+        const tableRows = document.querySelectorAll('.customers-table tbody tr');
+        tableRows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            row.style.display = text.includes(query) ? '' : 'none';
+        });
+
+        // Filter mobile cards
+        const cards = document.querySelectorAll('.customer-card');
+        cards.forEach(card => {
+            const text = card.textContent.toLowerCase();
+            card.style.display = text.includes(query) ? '' : 'none';
+        });
+    }, 300); // Wait 300ms after last keystroke
 }
 </script>
 @endsection

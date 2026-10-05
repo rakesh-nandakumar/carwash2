@@ -76,6 +76,7 @@ class CashierController extends Controller
                 'status',
                 JobStatus::READY_FOR_PAYMENT->value
             )
+            ->where('status', '!=', JobStatus::CANCELLED->value)
             ->whereDoesntHave('invoice.payments') // Exclude jobs that have any payment records
             ->where(function ($query) {
                 $query->whereDoesntHave('invoice')
@@ -1523,6 +1524,18 @@ class CashierController extends Controller
                 'status' => 'cancelled',
                 'cancellation_reason' => $readableReason,
             ]);
+
+            // If invoice was for a job, mark it as cancelled instead of deleting (to avoid foreign key issues)
+            if ($invoice->job) {
+                try {
+                    $invoice->job->update([
+                        'status' => \App\Enums\JobStatus::CANCELLED->value,
+                    ]);
+                } catch (\Exception $e) {
+                    // Log error but don't fail the reversal
+                    \Log::error('Failed to cancel job during invoice reversal: ' . $e->getMessage());
+                }
+            }
 
             // Log the reversal
             $this->audit->log(
