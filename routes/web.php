@@ -556,6 +556,9 @@ Route::prefix('{tenant}')
                 ->name('cashier.cash-out')
                 ->middleware('permission:cashier.cash_out');
 
+            Route::get('/cashier/shift/{closure}/backdated-payment', [TillClosureController::class, 'addBackdatedPayment'])
+                ->name('cashier.shift-backdated-payment');
+
             Route::get('/cashier/till-action', [TillClosureController::class, 'showTillAction'])
                 ->name('cashier.till-action')
                 ->middleware('permission:cashier.open_shift');
@@ -567,6 +570,9 @@ Route::prefix('{tenant}')
             Route::get('/cashier/shift/history', [TillClosureController::class, 'history'])
                 ->name('cashier.shift-history')
                 ->middleware('permission:cashier.access');
+
+            Route::post('/cashier/shift/{closure}/backdated-payment', [TillClosureController::class, 'addBackdatedPayment'])
+                ->name('cashier.backdated-payment');
 
             Route::get('/cashier/shift/{closure}', [TillClosureController::class, 'show'])
                 ->name('cashier.shift-show')
