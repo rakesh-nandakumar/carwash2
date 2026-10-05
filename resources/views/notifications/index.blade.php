@@ -364,23 +364,52 @@
             <table class="modern-table ready-table">
                 <thead>
                     <tr>
-                        <th>Job Number</th>
+                        <th>Type</th>
+                        <th>Number</th>
                         <th>Customer</th>
                         <th>Vehicle</th>
+                        <th>Amount</th>
                         <th></th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach($readyForPayment as $job)
+                    @foreach($readyForPayment as $item)
                     <tr>
-                        <td><span class="job-badge">{{ $job['job_number'] }}</span></td>
-                        <td>{{ $job['customer_name'] }}</td>
-                        <td>{{ $job['vehicle_registration'] }}</td>
                         <td>
-                            <a href="{{ route('cashier.payment', $job['job_id']) }}" class="action-btn process-btn">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
-                                Process
-                            </a>
+                            @if($item['type'] === 'ready_for_payment_pos')
+                                <span class="pos-badge">POS</span>
+                            @else
+                                <span class="job-badge">Job</span>
+                            @endif
+                        </td>
+                        <td>
+                            @if($item['type'] === 'ready_for_payment_pos')
+                                <span class="invoice-badge">{{ $item['invoice_number'] }}</span>
+                            @else
+                                <span class="job-badge">{{ $item['job_number'] }}</span>
+                            @endif
+                        </td>
+                        <td>{{ $item['customer_name'] }}</td>
+                        <td>{{ $item['vehicle_registration'] }}</td>
+                        <td>
+                            @if($item['type'] === 'ready_for_payment_pos')
+                                Rs. {{ number_format($item['total_amount'], 2) }}
+                            @else
+                                -
+                            @endif
+                        </td>
+                        <td>
+                            @if($item['type'] === 'ready_for_payment_pos')
+                                <a href="{{ route('cashier.payment-invoice', $item['id']) }}" class="action-btn process-btn">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
+                                    Process
+                                </a>
+                            @else
+                                <a href="{{ route('cashier.payment', $item['job_id']) }}" class="action-btn process-btn">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
+                                    Process
+                                </a>
+                            @endif
                         </td>
                     </tr>
                     @endforeach
@@ -390,32 +419,58 @@
 
         <!-- Mobile Cards -->
         <div class="notifications-cards ready-cards">
-            @foreach($readyForPayment as $job)
+            @foreach($readyForPayment as $item)
             <div class="notification-card ready-card">
                 <div class="card-top">
                     <div class="card-name">
-                        <strong>{{ $job['job_number'] }}</strong>
-                        <small>{{ $job['customer_name'] }}</small>
+                        @if($item['type'] === 'ready_for_payment_pos')
+                            <strong>{{ $item['invoice_number'] }}</strong>
+                            <small>{{ $item['customer_name'] }}</small>
+                        @else
+                            <strong>{{ $item['job_number'] }}</strong>
+                            <small>{{ $item['customer_name'] }}</small>
+                        @endif
                     </div>
-                    <span class="status-badge resolved">Ready</span>
+                    @if($item['type'] === 'ready_for_payment_pos')
+                        <span class="status-badge pos">POS</span>
+                    @else
+                        <span class="status-badge resolved">Ready</span>
+                    @endif
                 </div>
                 <div class="card-details">
                     <div class="detail">
-                        <span class="label">Vehicle</span>
-                        <span class="value">{{ $job['vehicle_registration'] }}</span>
+                        <span class="label">Customer</span>
+                        <span class="value">{{ $item['customer_name'] }}</span>
                     </div>
+                    <div class="detail">
+                        <span class="label">Vehicle</span>
+                        <span class="value">{{ $item['vehicle_registration'] }}</span>
+                    </div>
+                    @if($item['type'] === 'ready_for_payment_pos')
+                    <div class="detail">
+                        <span class="label">Amount</span>
+                        <span class="value">Rs. {{ number_format($item['total_amount'], 2) }}</span>
+                    </div>
+                    @endif
                 </div>
                 <div class="card-actions">
-                    <a href="{{ route('cashier.payment', $job['job_id']) }}" class="btn-action process">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
-                        Process Payment
-                    </a>
+                    @if($item['type'] === 'ready_for_payment_pos')
+                        <a href="{{ route('cashier.payment-invoice', $item['id']) }}" class="btn-action process">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
+                            Process Payment
+                        </a>
+                    @else
+                        <a href="{{ route('cashier.payment', $item['job_id']) }}" class="btn-action process">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
+                            Process Payment
+                        </a>
+                    @endif
                 </div>
             </div>
             @endforeach
         </div>
     @else
-        <div class="empty-state">No jobs ready for payment.</div>
+        <div class="empty-state">No jobs or POS sales ready for payment.</div>
     @endif
     </div>
 </div>
@@ -580,13 +635,18 @@
     background: #f8fafc;
 }
 
-.invoice-badge, .cheque-badge, .job-badge {
+.invoice-badge, .cheque-badge, .job-badge, .pos-badge {
     background: #dbeafe;
     color: #1d4ed8;
     padding: 4px 8px;
     border-radius: 6px;
     font-size: 12px;
     font-weight: 600;
+}
+
+.pos-badge {
+    background: #fef3c7;
+    color: #92400e;
 }
 
 .cheque-badge.bounced {
@@ -685,6 +745,11 @@
 .status-badge.resolved {
     background: #dcfce7;
     color: #16a34a;
+}
+
+.status-badge.pos {
+    background: #fef3c7;
+    color: #92400e;
 }
 
 .card-details {

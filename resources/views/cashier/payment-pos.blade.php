@@ -91,6 +91,7 @@
 
             <form method="post" action="{{ route('cashier.process-payment-invoice', $invoice) }}" id="paymentForm" onsubmit="handlePaymentSubmit(event)">
                 @csrf
+                <input type="hidden" name="invoice_id" value="{{ $invoice->id }}">
 
                 <div class="form-section">
                     <div class="payment-method-header">
@@ -1407,11 +1408,232 @@ function submitPayment() {
 
 function handlePaymentSubmit(e) {
     e.preventDefault();
-    openPaymentConfirmation();
+
+    // Check till status first
+    const tenant = window.location.pathname.split('/')[1];
+
+    fetch('/' + tenant + '/api/check-till-status')
+        .then(response => response.json())
+        .then(data => {
+            if (!data.till_open) {
+                // Show till closed modal instead
+                document.getElementById('tillClosedModal').classList.add('active');
+                return;
+            }
+            // If till is open, show payment confirmation
+            openPaymentConfirmation();
+        })
+        .catch(error => {
+            console.error('Error checking till status:', error);
+            // If error, proceed with confirmation
+            openPaymentConfirmation();
+        });
 }
 
 document.addEventListener('DOMContentLoaded', function() {
     calculateBalance();
 });
+</script>
+
+<!-- Till Closed Modal -->
+<div id="tillClosedModal" class="modal" style="display:none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Till Closed</h2>
+            <button class="close-btn" onclick="closeTillClosedModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p>The till is currently closed. How would you like to proceed?</p>
+
+            @if(auth()->user()->isFullAdmin())
+            <div class="till-closure-options">
+                <label style="display: block; margin: 12px 0 6px; font-weight: 600; color: #374151;">
+                    Select Previous Till Closure (Full Admin Only):
+                </label>
+                <select id="closureSelect" onchange="handleClosureSelection()">
+                    <option value="">-- Select a previous closure --</option>
+                    @php
+                        $till = app(\App\Services\CashMovementService::class)->getSelectedTill();
+                        $previousClosures = \App\Models\TillClosure::where('till_id', $till->id)
+                            ->where('tenant_id', auth()->user()->tenant_id)
+                            ->whereNotNull('closed_at')
+                            ->orderBy('closed_at', 'desc')
+                            ->take(10)
+                            ->get();
+                    @endphp
+                    @foreach($previousClosures as $prevClosure)
+                        <option value="{{ $prevClosure->id }}">
+                            {{ $prevClosure->closed_at->format('M d, Y h:i A') }} - Counted: Rs. {{ number_format($prevClosure->counted_balance, 2) }}
+                        </option>
+                    @endforeach
+                </select>
+                <small style="color: #64748b; font-size: 12px;">Select a closure to add this payment to a previous shift.</small>
+            </div>
+            @endif
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="secondary" onclick="closeTillClosedModal()">Close</button>
+            @if(auth()->user()->isFullAdmin())
+            <button type="button" class="primary" id="addToClosureBtn" onclick="addToSelectedClosure()" disabled>Add to Selected Closure</button>
+            @endif
+            <button type="button" class="primary" onclick="goToCashier()">Open New Shift</button>
+        </div>
+    </div>
+</div>
+
+<style>
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(15px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 12px;
+    max-width: 500px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.modal-header h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #64748b;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    transition: background 0.15s ease;
+}
+
+.close-btn:hover {
+    background: #f1f5f9;
+    color: #1e293b;
+}
+
+.modal-body {
+    padding: 20px;
+}
+
+.till-closure-options select {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 14px;
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 20px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.modal-footer button {
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.modal-footer button.secondary {
+    background: white;
+    color: #64748b;
+    border: 1px solid #e5e7eb;
+}
+
+.modal-footer button.secondary:hover {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+}
+
+.modal-footer button.primary {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    color: white;
+    border: none;
+}
+
+.modal-footer button.primary:hover {
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+}
+
+.modal-footer button.primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+</style>
+
+<script>
+function closeTillClosedModal() {
+    document.getElementById('tillClosedModal').classList.remove('active');
+}
+
+function goToCashier() {
+    const tenant = window.location.pathname.split('/')[1];
+    window.location.href = '/' + tenant + '/cashier';
+}
+
+function handleClosureSelection() {
+    const select = document.getElementById('closureSelect');
+    const addToBtn = document.getElementById('addToClosureBtn');
+    addToBtn.disabled = !select.value;
+}
+
+function addToSelectedClosure() {
+    const closureId = document.getElementById('closureSelect').value;
+    if (!closureId) {
+        alert('Please select a closure first.');
+        return;
+    }
+
+    // Add hidden input to form with closure_id
+    let closureInput = document.getElementById('selectedClosureId');
+    if (!closureInput) {
+        closureInput = document.createElement('input');
+        closureInput.type = 'hidden';
+        closureInput.name = 'closure_id';
+        closureInput.id = 'selectedClosureId';
+        document.getElementById('paymentForm').appendChild(closureInput);
+    }
+    closureInput.value = closureId;
+
+    // Close modal and submit form
+    closeTillClosedModal();
+    openPaymentConfirmation();
+}
 </script>
 @endsection

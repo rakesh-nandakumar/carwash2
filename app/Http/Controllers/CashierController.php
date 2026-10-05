@@ -265,9 +265,23 @@ class CashierController extends Controller
 
     public function processPayment(Request $request, Job $job)
     {
-        // Check if till is closed (no open shift)
+        // Check if adding to a previous closure (Full Admin only)
+        $selectedClosureId = $request->input('closure_id');
+        $selectedClosure = null;
+        if ($selectedClosureId) {
+            if (!auth()->user()->isFullAdmin()) {
+                abort(403, 'Only Full Administrator can add payments to previous closures.');
+            }
+
+            $selectedClosure = \App\Models\TillClosure::find($selectedClosureId);
+            if (!$selectedClosure || $selectedClosure->tenant_id !== auth()->user()->tenant_id) {
+                return back()->with('error', 'Invalid closure selected.');
+            }
+        }
+
+        // Check if till is closed (no open shift) - only if not adding to previous closure
         $till = $this->cashMovements->getSelectedTill();
-        if ($till) {
+        if ($till && !$selectedClosureId) {
             $lastClosure = $this->cashMovements->lastClosure($till);
             if (!$lastClosure || $lastClosure->closed_at) {
                 return back()->with('error', 'Cannot process payment. Till is closed. Please open a new shift first.');
@@ -301,7 +315,7 @@ class CashierController extends Controller
             'payment_received' => 'nullable|in:yes,no',
         ]);
 
-        return DB::transaction(function () use ($request, $job) {
+        return DB::transaction(function () use ($request, $job, $selectedClosureId, $selectedClosure) {
 
             $job->load([
                 'services',
@@ -898,7 +912,15 @@ class CashierController extends Controller
                     amount: $netCashAmount,
                     reference: $payment,
                     userId: auth()->id(),
+                    closureId: $selectedClosureId ?? null,
                 );
+
+                // If adding to a previous closure, update its totals
+                if ($selectedClosureId) {
+                    $selectedClosure->increment('cash_sales', $netCashAmount);
+                    $selectedClosure->increment('total_sales', $netCashAmount);
+                    $selectedClosure->increment('expected_balance', $netCashAmount);
+                }
             } elseif ($request->payment_method === 'cheque' && $request->payment_received === 'yes' && $amountReceived > 0) {
                 // Only record cheque payment in till when payment is actually received/cleared
                 if ($finalTotal <= 0) {
@@ -911,7 +933,14 @@ class CashierController extends Controller
                     amount: $netChequeAmount,
                     reference: $payment,
                     userId: auth()->id(),
+                    closureId: $selectedClosureId ?? null,
                 );
+
+                // If adding to a previous closure, update its totals
+                if ($selectedClosureId) {
+                    $selectedClosure->increment('cheque_sales', $netChequeAmount);
+                    $selectedClosure->increment('total_sales', $netChequeAmount);
+                }
             }
 
             /*
@@ -1009,9 +1038,23 @@ class CashierController extends Controller
      */
     public function processPaymentForInvoice(Request $request, Invoice $invoice)
     {
-        // Check if till is closed (no open shift)
+        // Check if adding to a previous closure (Full Admin only)
+        $selectedClosureId = $request->input('closure_id');
+        $selectedClosure = null;
+        if ($selectedClosureId) {
+            if (!auth()->user()->isFullAdmin()) {
+                abort(403, 'Only Full Administrator can add payments to previous closures.');
+            }
+
+            $selectedClosure = \App\Models\TillClosure::find($selectedClosureId);
+            if (!$selectedClosure || $selectedClosure->tenant_id !== auth()->user()->tenant_id) {
+                return back()->with('error', 'Invalid closure selected.');
+            }
+        }
+
+        // Check if till is closed (no open shift) - only if not adding to previous closure
         $till = $this->cashMovements->getSelectedTill();
-        if ($till) {
+        if ($till && !$selectedClosureId) {
             $lastClosure = $this->cashMovements->lastClosure($till);
             if (!$lastClosure || $lastClosure->closed_at) {
                 return back()->with('error', 'Cannot process payment. Till is closed. Please open a new shift first.');
@@ -1037,7 +1080,7 @@ class CashierController extends Controller
             'payment_received' => 'nullable|in:yes,no',
         ]);
 
-        return DB::transaction(function () use ($request, $invoice) {
+        return DB::transaction(function () use ($request, $invoice, $selectedClosureId, $selectedClosure) {
             $invoice->load(['items', 'customer']);
 
             $amountReceived = (float) $request->amount_received;
@@ -1261,7 +1304,15 @@ class CashierController extends Controller
                     amount: $netCashAmount,
                     reference: $payment,
                     userId: auth()->id(),
+                    closureId: $selectedClosureId ?? null,
                 );
+
+                // If adding to a previous closure, update its totals
+                if ($selectedClosureId) {
+                    $selectedClosure->increment('cash_sales', $netCashAmount);
+                    $selectedClosure->increment('total_sales', $netCashAmount);
+                    $selectedClosure->increment('expected_balance', $netCashAmount);
+                }
             } elseif ($paymentMethod === 'cheque' && $request->payment_received === 'yes' && $amountReceived > 0) {
                 if ($finalTotal <= 0) {
                     $netChequeAmount = $amountReceived;
@@ -1273,7 +1324,14 @@ class CashierController extends Controller
                     amount: $netChequeAmount,
                     reference: $payment,
                     userId: auth()->id(),
+                    closureId: $selectedClosureId ?? null,
                 );
+
+                // If adding to a previous closure, update its totals
+                if ($selectedClosureId) {
+                    $selectedClosure->increment('cheque_sales', $netChequeAmount);
+                    $selectedClosure->increment('total_sales', $netChequeAmount);
+                }
             }
 
             /*

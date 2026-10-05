@@ -85,6 +85,14 @@
                             </div>
                             @if($closure->closed_at)
                             <div class="shift-actions">
+                                @if(auth()->user()->isFullAdmin())
+                                <button type="button" onclick="openBackdatedPaymentModal({{ $closure->id }})" class="btn-backdated" title="Add Backdated Payment">
+                                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    Add Payment
+                                </button>
+                                @endif
                                 <a href="{{ route('cashier.day-report', $closure) }}" class="btn-print" title="Print Day Report">
                                     <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
@@ -129,6 +137,53 @@
             <a href="{{ route('cashier.index') }}" class="btn-secondary">
                 Back to Cashier
             </a>
+        </div>
+    </div>
+</div>
+
+{{-- Backdated Payment Modal --}}
+<div id="backdatedPaymentModal" class="modal" style="display:none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Add Backdated Payment</h3>
+            <button class="modal-close" onclick="closeBackdatedPaymentModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form method="POST" id="backdatedPaymentForm">
+                @csrf
+                <input type="hidden" name="closure_id" id="backdatedClosureId">
+
+                <div class="form-group">
+                    <label>Amount (Rs.)</label>
+                    <input type="number" name="amount" id="backdatedAmount" step="0.01" min="0.01" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Reason</label>
+                    <select name="reason" id="backdatedReason" required>
+                        <option value="">Select a reason</option>
+                        <option value="Late payment received after till closure">Late payment received after till closure</option>
+                        <option value="Payment recorded in wrong shift">Payment recorded in wrong shift</option>
+                        <option value="Missing payment from previous day">Missing payment from previous day</option>
+                        <option value="Correction entry">Correction entry</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Invoice Number (Optional)</label>
+                    <input type="text" name="invoice_number" id="backdatedInvoiceNumber" placeholder="e.g., INV-2026-00001">
+                </div>
+
+                <div class="alert-warning" style="background: #fef3c7; border: 1px solid #fcd34d; padding: 12px; border-radius: 8px; margin-bottom: 16px;">
+                    <strong>Warning:</strong> This will add the payment to a closed till closure. This action cannot be undone and will affect the closure's totals.
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" onclick="closeBackdatedPaymentModal()">Cancel</button>
+                    <button type="submit" class="btn-primary">Add Payment</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -562,5 +617,195 @@ nav[role="navigation"] svg {
     background: #f8fafc;
     border-color: #cbd5e1;
 }
+
+.btn-backdated {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fcd34d;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-backdated:hover {
+    background: #fcd34d;
+    color: #78350f;
+}
+
+/* Modal styles */
+.modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 5000;
+    padding: 20px;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 12px;
+    max-width: 500px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #64748b;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    transition: background 0.15s ease;
+}
+
+.modal-close:hover {
+    background: #f1f5f9;
+    color: #1e293b;
+}
+
+.modal-body {
+    padding: 20px;
+}
+
+.form-group {
+    margin-bottom: 16px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #374151;
+}
+
+.form-group input,
+.form-group select {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 14px;
+    box-sizing: border-box;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.btn-primary {
+    padding: 10px 20px;
+    background: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+    background: #2563eb;
+}
 </style>
+
+<script>
+function openBackdatedPaymentModal(closureId) {
+    document.getElementById('backdatedClosureId').value = closureId;
+    const tenant = window.location.pathname.split('/')[1];
+    document.getElementById('backdatedPaymentForm').action = '/' + tenant + '/cashier/shift/' + closureId + '/backdated-payment';
+    document.getElementById('backdatedPaymentModal').style.display = 'flex';
+}
+
+function closeBackdatedPaymentModal() {
+    document.getElementById('backdatedPaymentModal').style.display = 'none';
+    document.getElementById('backdatedPaymentForm').reset();
+}
+
+// Handle form submission
+document.getElementById('backdatedPaymentForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    const amount = document.getElementById('backdatedAmount').value;
+    const reason = document.getElementById('backdatedReason').value;
+
+    if (!amount || amount <= 0) {
+        alert('Please enter a valid amount.');
+        return;
+    }
+
+    if (!reason) {
+        alert('Please select a reason.');
+        return;
+    }
+
+    const form = this;
+    const formData = new FormData(form);
+
+    fetch(form.action, {
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            'Accept': 'application/json',
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            closeBackdatedPaymentModal();
+            location.reload();
+        } else {
+            alert('Error: ' + (data.message || 'Failed to add backdated payment'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred. Please try again.');
+    });
+});
+</script>
 @endsection
