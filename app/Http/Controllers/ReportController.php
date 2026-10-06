@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\{Invoice, Job, Customer, Vehicle, Product, Service, InventoryMovement, CashMovement, GoodsReceipt, Supplier, ReturnGrn};
+use App\Models\{Invoice, Job, Customer, Vehicle, Product, Service, InventoryMovement, CashMovement, GoodsReceipt, Supplier, ReturnGrn, Payment};
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
@@ -81,13 +81,23 @@ class ReportController extends Controller
         $totalPaid = $totals->total_paid;
         $totalOutstanding = $totals->total_outstanding;
 
+        // Calculate total of negative balances (overpayments)
+        $negativeBalances = Invoice::whereBetween('created_at', [
+                $startDate,
+                $endDate,
+            ])
+            ->where('status', '!=', 'cancelled')
+            ->where('balance', '<', 0)
+            ->sum('balance');
+
         return view('reports.sales', compact(
             'sales',
             'startDate',
             'endDate',
             'totalRevenue',
             'totalPaid',
-            'totalOutstanding'
+            'totalOutstanding',
+            'negativeBalances'
         ));
     }
 
