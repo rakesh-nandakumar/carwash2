@@ -17,9 +17,9 @@ class ReportController extends Controller
         );
 
         return view('reports.index', [
-            'revenue' => Invoice::sum('total'),
-            'paid' => Invoice::sum('paid'),
-            'outstanding' => Invoice::sum('balance'),
+            'revenue' => Invoice::where('status', '!=', 'cancelled')->sum('total'),
+            'paid' => Invoice::where('status', '!=', 'cancelled')->sum('paid'),
+            'outstanding' => Invoice::where('status', '!=', 'cancelled')->where('balance', '>', 0)->sum('balance'),
             'jobs' => Job::count(),
             'customers' => Customer::count(),
             'vehicles' => Vehicle::count(),
@@ -55,6 +55,7 @@ class ReportController extends Controller
                 $startDate,
                 $endDate,
             ])
+            ->where('status', '!=', 'cancelled')
             ->with('customer', 'job.vehicle')
             ->latest('created_at')
             ->paginate(20)
@@ -68,10 +69,11 @@ class ReportController extends Controller
                 $startDate,
                 $endDate,
             ])
+            ->where('status', '!=', 'cancelled')
             ->selectRaw('
                 COALESCE(SUM(total), 0) as total_revenue,
                 COALESCE(SUM(paid), 0) as total_paid,
-                COALESCE(SUM(balance), 0) as total_outstanding
+                COALESCE(SUM(CASE WHEN balance > 0 THEN balance ELSE 0 END), 0) as total_outstanding
             ')
             ->first();
 

@@ -261,7 +261,7 @@ class ReportingService
                 'jobs' => (clone $jobsQuery)->where('created_at', '>=', $thisMonth)->count(),
                 'completed_jobs' => (clone $jobsQuery)->where('created_at', '>=', $thisMonth)->where('status', 'delivered')->count(),
             ],
-            'active_jobs' => (clone $jobsQuery)->whereNotIn('status', ['delivered', 'cancelled'])->count(),
+            'active_jobs' => (clone $jobsQuery)->whereNotIn('status', ['delivered', 'cancelled', 'paid'])->count(),
             'pending_payments' => (clone $invoicesQuery)->where('balance', '>', 0)->sum('balance'),
             'low_stock' => Inventory::when($tenantId, function ($q) use ($tenantId) {
                 $q->whereHas('product', function ($pq) use ($tenantId) {
