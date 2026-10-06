@@ -60,6 +60,10 @@
             <small>Total Paid</small>
             <h2>Rs. {{ number_format($totalPaid, 2) }}</h2>
         </div>
+        <div class="stat-card orange">
+            <small>Balances Paid</small>
+            <h2>Rs. {{ number_format($negativeBalances, 2) }}</h2>
+        </div>
         <div class="stat-card red">
             <small>Outstanding</small>
             <h2>Rs. {{ number_format($totalOutstanding, 2) }}</h2>
@@ -208,7 +212,7 @@
 /* Stats */
 .stats-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 16px;
     margin-bottom: 28px;
 }
@@ -242,6 +246,13 @@
 }
 .stat-card.green small { color: #065f46; }
 .stat-card.green h2 { color: #065f46; }
+
+.stat-card.orange {
+    background: #fff7ed;
+    border-color: #fed7aa;
+}
+.stat-card.orange small { color: #9a3412; }
+.stat-card.orange h2 { color: #9a3412; }
 
 .stat-card.red {
     background: #fef2f2;
@@ -581,12 +592,12 @@ nav[role="navigation"] svg {
     }
 
     .stats-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, 1fr);
         gap: 12px;
     }
 
     .stat-card h2 {
-        font-size: 20px;
+        font-size: 18px;
     }
 
     .table-wrap {
@@ -771,6 +782,13 @@ function printThermal() {
                     <span>Total Paid</span>
                     <strong>
                         Rs. {{ number_format($totalPaid, 2) }}
+                    </strong>
+                </div>
+
+                <div class="summary-row">
+                    <span>Balances Paid</span>
+                    <strong>
+                        Rs. {{ number_format($negativeBalances, 2) }}
                     </strong>
                 </div>
 
