@@ -27,17 +27,28 @@ class InvoiceService
 
             $calc = $this->pricing->calculateFinalInvoice($jobId, $discountId);
 
+            // Generate invoice number with tenant prefix and lock to prevent race conditions
+            $invoiceNumber = DB::transaction(function () use ($job) {
+                $count = Invoice::where('tenant_id', $job->tenant_id)
+                    ->whereYear('created_at', date('Y'))
+                    ->lockForUpdate()
+                    ->count();
+
+                return $job->tenant_id . '-INV-' . date('Y') . '-' . str_pad(
+                    (string) ($count + 1),
+                    6,
+                    '0',
+                    STR_PAD_LEFT
+                );
+            });
+
             $invoice = Invoice::create([
+                'tenant_id' => $job->tenant_id,
                 'business_id' => $job->business_id,
                 'branch_id' => $job->branch_id,
                 'customer_id' => $job->customer_id,
                 'job_id' => $job->id,
-                'invoice_number' => 'INV-' . date('Y') . '-' . str_pad(
-                    (string) (Invoice::whereYear('created_at', date('Y'))->count() + 1),
-                    6,
-                    '0',
-                    STR_PAD_LEFT
-                ),
+                'invoice_number' => $invoiceNumber,
                 'status' => 'issued',
                 'subtotal' => $calc['subtotal'],
                 'discount' => $calc['discount'] + $calc['membership_discount'],

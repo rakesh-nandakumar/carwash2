@@ -266,20 +266,29 @@ class POSController extends Controller
      */
     private function generateInvoiceNumber()
     {
+        $tenantId = auth()->user()->tenant_id;
         $prefix = 'POS-';
         $date = now()->format('Ymd');
-        $lastInvoice = Invoice::where('invoice_number', 'like', $prefix . $date . '%')
-            ->orderBy('invoice_number', 'desc')
-            ->first();
 
-        if ($lastInvoice) {
-            $lastNumber = (int) substr($lastInvoice->invoice_number, -4);
-            $newNumber = str_pad($lastNumber + 1, 4, '0', STR_PAD_LEFT);
-        } else {
-            $newNumber = '0001';
-        }
+        // Use database lock to prevent race conditions
+        $invoiceNumber = DB::transaction(function () use ($tenantId, $prefix, $date) {
+            $lastInvoice = Invoice::where('tenant_id', $tenantId)
+                ->where('invoice_number', 'like', $prefix . $date . '%')
+                ->orderBy('invoice_number', 'desc')
+                ->lockForUpdate()
+                ->first();
 
-        return $prefix . $date . '-' . $newNumber;
+            if ($lastInvoice) {
+                $lastNumber = (int) substr($lastInvoice->invoice_number, -4);
+                $newNumber = str_pad($lastNumber + 1, 4, '0', STR_PAD_LEFT);
+            } else {
+                $newNumber = '0001';
+            }
+
+            return $tenantId . '-' . $prefix . $date . '-' . $newNumber;
+        });
+
+        return $invoiceNumber;
     }
 
     /**
