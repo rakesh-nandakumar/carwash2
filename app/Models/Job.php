@@ -136,4 +136,40 @@ class Job extends Model
     {
         return $this->hasMany(Communication::class);
     }
+
+    /**
+     * Transition job to a new status with validation and history tracking
+     */
+    public function transitionTo(JobStatus $newStatus, $user, ?string $reason = null): void
+    {
+        $oldStatus = $this->status;
+
+        // Validate transition is allowed
+        if (!$oldStatus->canTransitionTo($newStatus)) {
+            abort(422, "Cannot transition from {$oldStatus->value} to {$newStatus->value}");
+        }
+
+        // Update status
+        $this->status = $newStatus;
+
+        // Set timestamps based on status
+        if ($newStatus === JobStatus::CHECKED_IN && !$this->checked_in_at) {
+            $this->checked_in_at = now();
+        }
+
+        if ($newStatus === JobStatus::DELIVERED && !$this->completed_at) {
+            $this->completed_at = now();
+        }
+
+        $this->save();
+
+        // Create status history record
+        JobStatusHistory::create([
+            'job_id' => $this->id,
+            'from_status' => $oldStatus->value,
+            'to_status' => $newStatus->value,
+            'changed_by' => $user->id ?? auth()->id(),
+            'reason' => $reason,
+        ]);
+    }
 }
