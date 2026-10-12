@@ -272,8 +272,10 @@ class POSController extends Controller
 
         // Use database lock to prevent race conditions
         $invoiceNumber = DB::transaction(function () use ($tenantId, $prefix, $date) {
+            // Look for invoices with tenant prefix pattern: {tenant_id}-POS-{date}-%
+            $pattern = $tenantId . '-' . $prefix . $date . '%';
             $lastInvoice = Invoice::where('tenant_id', $tenantId)
-                ->where('invoice_number', 'like', $prefix . $date . '%')
+                ->where('invoice_number', 'like', $pattern)
                 ->orderBy('invoice_number', 'desc')
                 ->lockForUpdate()
                 ->first();
