@@ -149,7 +149,7 @@ class CashierController extends Controller
 
         $expectedBalance = $isShiftOpen
             ? ((float) $currentClosure->opening_balance + $cashSales + $cashIn - $cashOut)
-            : ($currentClosure ? $currentClosure->counted_balance : 0);
+            : ($currentClosure ? max(0, $currentClosure->counted_balance) : 0);
 
         return view('cashier.index', compact(
             'readyForPayment',
@@ -1449,6 +1449,9 @@ class CashierController extends Controller
             userId: auth()->id(),
         );
 
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true, 'message' => 'Cash added to Till successfully.']);
+        }
         return back()->with('success', 'Cash added to Till successfully.');
     }
 
@@ -1468,9 +1471,15 @@ class CashierController extends Controller
                 userId: auth()->id(),
             );
         } catch (\RuntimeException $e) {
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+            }
             return back()->with('error', $e->getMessage());
         }
 
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true, 'message' => 'Cash removed from Till successfully.']);
+        }
         return back()->with('success', 'Cash removed from Till successfully.');
     }
 

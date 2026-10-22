@@ -43,8 +43,8 @@ class VehicleController extends Controller
             $validated = $r->validate([
                 'customer_id' => 'required|integer|exists:customers,id',
                 'registration_number' => 'required',
-                'make' => 'nullable',
-                'model' => 'nullable',
+                'make' => 'required|string',
+                'model' => 'required|string',
                 'category' => 'required',
                 'mileage' => 'nullable|integer',
                 'image' => 'nullable|image|max:5120', // max 5MB
@@ -143,8 +143,8 @@ class VehicleController extends Controller
         $validated = $r->validate([
             'customer_id' => 'required',
             'registration_number' => 'required',
-            'make' => 'nullable',
-            'model' => 'nullable',
+            'make' => 'required|string',
+            'model' => 'required|string',
             'category' => 'required',
             'mileage' => 'nullable|integer',
             'image' => 'nullable|image|max:5120',
