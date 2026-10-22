@@ -44,7 +44,7 @@
 
                             <div class="detail-row highlight">
                                 <span>Counted:</span>
-                                <strong>Rs. {{ number_format($closure->counted_balance, 2) }}</strong>
+                                <strong>Rs. {{ number_format(max(0, $closure->counted_balance), 2) }}</strong>
                             </div>
 
                             <div class="detail-row">

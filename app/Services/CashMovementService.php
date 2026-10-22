@@ -278,9 +278,9 @@ class CashMovementService
                 );
             }
 
-            // Calculate opening variance from previous closing balance
-            $previousClosingBalance = $lastClosure ? $lastClosure->counted_balance : 0;
-            $openingVariance = $openingBalance - $previousClosingBalance;
+            // Calculate opening variance from previous expected balance (not counted)
+            $previousExpectedBalance = $lastClosure ? $lastClosure->expected_balance : 0;
+            $openingVariance = $openingBalance - $previousExpectedBalance;
 
             $closure = TillClosure::create([
                 'tenant_id' => $till->tenant_id,
@@ -340,6 +340,13 @@ class CashMovementService
             if ($closure->closed_at) {
                 throw new RuntimeException(
                     'Shift is already closed.'
+                );
+            }
+
+            // Prevent negative counted balance
+            if ($countedBalance < 0) {
+                throw new RuntimeException(
+                    'Counted balance cannot be negative. Please verify the cash in the till.'
                 );
             }
 
