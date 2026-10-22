@@ -102,7 +102,7 @@
             <div>
                 <span>{{ $isShiftOpen ? 'Opening Balance' : 'Last Closing Balance' }}</span>
                 <strong>
-                    Rs. {{ number_format($currentClosure ? ($isShiftOpen ? $currentClosure->opening_balance : $currentClosure->counted_balance) : 0, 2) }}
+                    Rs. {{ number_format($currentClosure ? ($isShiftOpen ? $currentClosure->opening_balance : max(0, $currentClosure->counted_balance)) : 0, 2) }}
                 </strong>
             </div>
 
@@ -344,6 +344,70 @@
         </form>
     </div>
 </div>
+
+{{-- Error Modal --}}
+<div id="errorModal" class="cash-modal hidden">
+    <div class="cash-modal-content">
+        <div class="cash-modal-header" style="background: #fee2e2; border-bottom: 1px solid #fecaca;">
+            <h2 style="color: #991b1b;">Error</h2>
+            <button type="button" onclick="closeErrorModal()">×</button>
+        </div>
+        <div class="cash-modal-body" style="padding: 24px;">
+            <p id="errorMessage" style="font-size: 14px; color: #475569; margin: 0;">An error occurred.</p>
+        </div>
+        <div class="cash-modal-actions" style="padding: 0 24px 24px;">
+            <button type="button" class="btn-confirm" onclick="closeErrorModal()" style="background: #ef4444; color: white; border: none;">OK</button>
+        </div>
+    </div>
+</div>
+
+<script>
+function showErrorModal(message) {
+    document.getElementById('errorMessage').textContent = message;
+    document.getElementById('errorModal').classList.remove('hidden');
+}
+
+function closeErrorModal() {
+    document.getElementById('errorModal').classList.add('hidden');
+}
+
+// Handle cash movement form submission via AJAX
+document.getElementById('cashMovementForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    const form = this;
+    const formData = new FormData(form);
+    const submitBtn = form.querySelector('button[type="submit"]');
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Processing...';
+
+    fetch(form.action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            showErrorModal(data.message || 'An error occurred');
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Confirm';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showErrorModal('An error occurred. Please try again.');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Confirm';
+    });
+});
+</script>
 
 {{-- Change Till Modal --}}
 <div id="changeTillModal" class="cash-modal hidden">
