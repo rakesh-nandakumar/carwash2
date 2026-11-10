@@ -284,8 +284,8 @@ class JobController extends Controller
         $message = $newStatus->getWhatsAppMessage(
             $job->job_number,
             $job->vehicle->registration_number,
-            $job->vehicle->make,
-            $job->vehicle->model,
+            $job->vehicle->make ?? 'Unknown',
+            $job->vehicle->model ?? 'Unknown',
             $customNotes
         );
 
